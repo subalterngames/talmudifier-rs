@@ -1,9 +1,11 @@
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping, Style, Weight};
 use markdown::{tokenize, Block, Span};
+use tex_span::TexSpan;
 
 mod columns;
 mod page;
 pub mod prelude;
+mod tex_span;
 
 fn main() {
     let mut font_system = FontSystem::new();
@@ -24,6 +26,10 @@ fn main() {
     );
     buffer.shape_until_scroll(&mut font_system, true);
     println!("{:?}", buffer.layout_runs().count());
+}
+
+fn to_tex(text: &str) -> Vec<TexSpan> {
+    to_rtf(text).iter().map(|value| value.into()).collect()
 }
 
 fn to_rtf(text: &str) -> Vec<(String, Attrs)> {
