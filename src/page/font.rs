@@ -9,9 +9,9 @@ const DEFAULT_COLOR: &str = "#000000FF";
 
 pub struct Font {
     pub regular: PathBuf,
-    pub italic: Option<PathBuf>,
-    pub bold: Option<PathBuf>,
-    pub bold_italic: Option<PathBuf>,
+    pub italic: PathBuf,
+    pub bold: PathBuf,
+    pub bold_italic: PathBuf,
     pub size: f32,
     pub skip: f32,
     pub color: String,
@@ -24,9 +24,9 @@ impl Font {
             .to_path_buf();
         Self {
             regular: directory.join("FeFCrm2.ttf"),
-            italic: Some(directory.join("FeFCit2.ttf")),
-            bold: Some(directory.join("FeFCsc2.ttf")),
-            bold_italic: None,
+            italic: directory.join("FeFCit2.ttf"),
+            bold: directory.join("FeFCsc2.ttf"),
+            bold_italic: directory.join("FeFCsc2.ttf"),
             size: 11.,
             skip: 13.,
             color: DEFAULT_COLOR.to_string(),
@@ -39,9 +39,9 @@ impl Font {
             .to_path_buf();
         Self {
             regular: directory.join("EBGaramond-Regular.ttf"),
-            italic: Some(directory.join("EBGaramond-Italic.ttf")),
-            bold: Some(directory.join("EBGaramond-Bold.ttf")),
-            bold_italic: Some(directory.join("EBGaramond-BoldItalic.ttf")),
+            italic: directory.join("EBGaramond-Italic.ttf"),
+            bold: directory.join("EBGaramond-Bold.ttf"),
+            bold_italic: directory.join("EBGaramond-BoldItalic.ttf"),
             size: 11.,
             skip: 13.,
             color: DEFAULT_COLOR.to_string(),
@@ -54,9 +54,9 @@ impl Font {
             .to_path_buf();
         Self {
             regular: directory.join("AveriaSerifLibre-Regular.ttf"),
-            italic: Some(directory.join("AveriaSerifLibre-Italic.ttf")),
-            bold: Some(directory.join("AveriaSerifLibre-Bold.ttf")),
-            bold_italic: Some(directory.join("AveriaSerifLibre-BoldItalic.ttf")),
+            italic: directory.join("AveriaSerifLibre-Italic.ttf"),
+            bold: directory.join("AveriaSerifLibre-Bold.ttf"),
+            bold_italic: directory.join("AveriaSerifLibre-BoldItalic.ttf"),
             size: 11.,
             skip: 13.,
             color: DEFAULT_COLOR.to_string(),
@@ -66,20 +66,33 @@ impl Font {
 
 impl From<SerializedFont> for Font {
     fn from(value: SerializedFont) -> Self {
+        let regular = value.directory.join(&value.regular);
+        // Fallback: Use the regular font.
+        let italic = match &value.italic {
+            Some(italic) => value.directory.join(italic),
+            None => regular.clone(),
+        };
+        // Fallback: Use the regular font.
+        let bold = match &value.bold {
+            Some(bold) => value.directory.join(bold),
+            None => regular.clone(),
+        };
+        // Fallbacks: Use the bold, italic, then regular font.
+        let bold_italic = match &value.bold_italic {
+            Some(bold_italic) => value.directory.join(bold_italic),
+            None => match &value.bold {
+                Some(bold) => value.directory.join(bold),
+                None => match &value.italic {
+                    Some(italic) => value.directory.join(italic),
+                    None => regular.clone(),
+                },
+            },
+        };
         Font {
-            regular: value.directory.join(&value.regular),
-            italic: match &value.italic {
-                Some(italic) => Some(value.directory.join(italic)),
-                None => None,
-            },
-            bold: match &value.bold {
-                Some(bold) => Some(value.directory.join(bold)),
-                None => None,
-            },
-            bold_italic: match &value.bold_italic {
-                Some(bold_italic) => Some(value.directory.join(bold_italic)),
-                None => None,
-            },
+            regular,
+            italic,
+            bold,
+            bold_italic,
             size: value.size,
             skip: value.skip,
             color: to_string(&value.color).unwrap(),
