@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-use include_directory::include_directory;
 use serde_json::to_string;
 
 use super::serialized_font::SerializedFont;
@@ -20,9 +19,9 @@ pub struct Font {
 impl Font {
     #[cfg(feature = "default-fonts")]
     pub fn default_left() -> Self {
-        let directory = include_directory!("$CARGO_MANIFEST_DIR/src/fonts/IM_Fell_French_Canon/")
-            .path()
-            .to_path_buf();
+        use std::str::FromStr;
+
+        let directory = PathBuf::from_str("./src/fonts/IM_Fell_French_Canon/").unwrap();
         Self {
             regular: directory.join("FeFCrm2.ttf"),
             italic: directory.join("FeFCit2.ttf"),
@@ -36,9 +35,9 @@ impl Font {
 
     #[cfg(feature = "default-fonts")]
     pub fn default_center() -> Self {
-        let directory = include_directory!("$CARGO_MANIFEST_DIR/src/fonts/EB_Garamond/")
-            .path()
-            .to_path_buf();
+        use std::str::FromStr;
+
+        let directory = PathBuf::from_str("./src/fonts/EB_Garamond/").unwrap();
         Self {
             regular: directory.join("EBGaramond-Regular.ttf"),
             italic: directory.join("EBGaramond-Italic.ttf"),
@@ -52,9 +51,9 @@ impl Font {
 
     #[cfg(feature = "default-fonts")]
     pub fn default_right() -> Self {
-        let directory = include_directory!("$CARGO_MANIFEST_DIR/src/fonts/Averia_Serif_Libre/")
-            .path()
-            .to_path_buf();
+        use std::str::FromStr;
+
+        let directory = PathBuf::from_str("./src/fonts/Averia_Serif_Libre/").unwrap();
         Self {
             regular: directory.join("AveriaSerifLibre-Regular.ttf"),
             italic: directory.join("AveriaSerifLibre-Italic.ttf"),
@@ -99,6 +98,25 @@ impl From<SerializedFont> for Font {
             size: value.size,
             skip: value.skip,
             color: to_string(&value.color).unwrap(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    #[cfg(feature = "default-fonts")]
+    fn test_default_fonts_exist() {
+        use super::Font;
+
+        for font in [
+            Font::default_left(),
+            Font::default_center(),
+            Font::default_right(),
+        ] {
+            for path in [font.regular, font.bold, font.italic] {
+                assert!(path.exists(), "{:?}", path);
+            }
         }
     }
 }
