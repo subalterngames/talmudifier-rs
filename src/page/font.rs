@@ -1,7 +1,10 @@
 use std::path::PathBuf;
 
 use cosmic_text::Color;
-use include_directory::{include_directory, Dir};
+use include_directory::include_directory;
+use serde_json::to_string;
+
+use super::serialized_font::SerializedFont;
 
 const DEFAULT_LATEX_COLOR: &str = "#000000FF";
 const DEFAULT_COSMIC_COLOR: Color = Color(4278190080);
@@ -13,8 +16,8 @@ pub struct Font {
     pub bold_italic: Option<PathBuf>,
     pub size: f32,
     pub skip: f32,
-    pub(crate) cosmic_color: Color,
-    pub(crate) latex_color: String,
+    pub cosmic_color: Color,
+    pub latex_color: String,
 }
 
 impl Font {
@@ -63,6 +66,30 @@ impl Font {
             skip: 13.,
             cosmic_color: DEFAULT_COSMIC_COLOR,
             latex_color: DEFAULT_LATEX_COLOR.to_string(),
+        }
+    }
+}
+
+impl From<SerializedFont> for Font {
+    fn from(value: SerializedFont) -> Self {
+        Font {
+            regular: value.directory.join(&value.regular),
+            italic: match &value.italic {
+                Some(italic) => Some(value.directory.join(italic)),
+                None => None,
+            },
+            bold: match &value.bold {
+                Some(bold) => Some(value.directory.join(bold)),
+                None => None,
+            },
+            bold_italic: match &value.bold_italic {
+                Some(bold_italic) => Some(value.directory.join(bold_italic)),
+                None => None,
+            },
+            size: value.size,
+            skip: value.skip,
+            cosmic_color: Color::rgba(value.color.r, value.color.g, value.color.b, value.color.a),
+            latex_color: to_string(&value.color).unwrap(),
         }
     }
 }

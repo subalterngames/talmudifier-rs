@@ -1,16 +1,9 @@
 use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
-use page::Page;
 
-mod font;
-mod length;
 mod page;
-mod paper_size;
 pub mod prelude;
-mod serialized_font;
-mod unit;
 
 fn main() {
-    
     let mut font_system = FontSystem::new();
     let metrics = Metrics::new(14.0, 20.0);
 

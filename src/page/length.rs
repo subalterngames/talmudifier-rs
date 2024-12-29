@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::unit::Unit;
+use super::unit::Unit;
 
 /// A length, in a given unit.
 pub struct Length {
