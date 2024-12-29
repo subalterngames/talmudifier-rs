@@ -1,13 +1,11 @@
 use std::path::PathBuf;
 
-use cosmic_text::Color;
 use include_directory::include_directory;
 use serde_json::to_string;
 
 use super::serialized_font::SerializedFont;
 
-const DEFAULT_LATEX_COLOR: &str = "#000000FF";
-const DEFAULT_COSMIC_COLOR: Color = Color(4278190080);
+const DEFAULT_COLOR: &str = "#000000FF";
 
 pub struct Font {
     pub regular: PathBuf,
@@ -16,8 +14,7 @@ pub struct Font {
     pub bold_italic: Option<PathBuf>,
     pub size: f32,
     pub skip: f32,
-    pub cosmic_color: Color,
-    pub latex_color: String,
+    pub color: String,
 }
 
 impl Font {
@@ -32,8 +29,7 @@ impl Font {
             bold_italic: None,
             size: 11.,
             skip: 13.,
-            cosmic_color: DEFAULT_COSMIC_COLOR,
-            latex_color: DEFAULT_LATEX_COLOR.to_string(),
+            color: DEFAULT_COLOR.to_string(),
         }
     }
 
@@ -48,8 +44,7 @@ impl Font {
             bold_italic: Some(directory.join("EBGaramond-BoldItalic.ttf")),
             size: 11.,
             skip: 13.,
-            cosmic_color: DEFAULT_COSMIC_COLOR,
-            latex_color: DEFAULT_LATEX_COLOR.to_string(),
+            color: DEFAULT_COLOR.to_string(),
         }
     }
 
@@ -64,8 +59,7 @@ impl Font {
             bold_italic: Some(directory.join("AveriaSerifLibre-BoldItalic.ttf")),
             size: 11.,
             skip: 13.,
-            cosmic_color: DEFAULT_COSMIC_COLOR,
-            latex_color: DEFAULT_LATEX_COLOR.to_string(),
+            color: DEFAULT_COLOR.to_string(),
         }
     }
 }
@@ -88,8 +82,7 @@ impl From<SerializedFont> for Font {
             },
             size: value.size,
             skip: value.skip,
-            cosmic_color: Color::rgba(value.color.r, value.color.g, value.color.b, value.color.a),
-            latex_color: to_string(&value.color).unwrap(),
+            color: to_string(&value.color).unwrap(),
         }
     }
 }
