@@ -1,7 +1,16 @@
-use cosmic_text::{Attrs, FontSystem, Buffer, Metrics, Shaping};
+use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping};
+use page::Page;
 
+mod font;
+mod length;
+mod page;
+mod paper_size;
+pub mod prelude;
+mod serialized_font;
+mod unit;
 
 fn main() {
+    
     let mut font_system = FontSystem::new();
     let metrics = Metrics::new(14.0, 20.0);
 
@@ -10,7 +19,12 @@ fn main() {
     buffer.set_size(&mut font_system, Some(500.), None);
     // Attributes indicate what font to choose
     let attrs = Attrs::new();
-    buffer.set_text(&mut font_system, include_str!("lorem.txt"), attrs, Shaping::Advanced);
+    buffer.set_text(
+        &mut font_system,
+        include_str!("lorem.txt"),
+        attrs,
+        Shaping::Advanced,
+    );
     buffer.shape_until_scroll(&mut font_system, true);
     println!("{:?}", buffer.layout_runs().count());
 }
