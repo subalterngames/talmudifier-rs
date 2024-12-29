@@ -1,0 +1,7 @@
+[package]
+name = "talmudifier-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cosmic-text = { version = "0.12.1", default-features = false, features = ["std", "fontconfig", "rayon"] }
