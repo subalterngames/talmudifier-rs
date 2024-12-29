@@ -18,6 +18,7 @@ pub struct Font {
 }
 
 impl Font {
+    #[cfg(feature = "default-fonts")]
     pub fn default_left() -> Self {
         let directory = include_directory!("$CARGO_MANIFEST_DIR/src/fonts/IM_Fell_French_Canon/")
             .path()
@@ -33,6 +34,7 @@ impl Font {
         }
     }
 
+    #[cfg(feature = "default-fonts")]
     pub fn default_center() -> Self {
         let directory = include_directory!("$CARGO_MANIFEST_DIR/src/fonts/EB_Garamond/")
             .path()
@@ -48,6 +50,7 @@ impl Font {
         }
     }
 
+    #[cfg(feature = "default-fonts")]
     pub fn default_right() -> Self {
         let directory = include_directory!("$CARGO_MANIFEST_DIR/src/fonts/Averia_Serif_Libre/")
             .path()

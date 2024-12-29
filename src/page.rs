@@ -70,6 +70,7 @@ impl Page {
     }
 }
 
+#[cfg(feature = "default-fonts")]
 impl Default for Page {
     fn default() -> Self {
         Self {

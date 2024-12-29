@@ -3,6 +3,10 @@ name = "talmudifier-rs"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = ["default-fonts"]
+default-fonts = []
+
 [dependencies]
 cosmic-text = { version = "0.12.1", default-features = false, features = ["std", "fontconfig", "rayon"] }
 hex_color = { version = "3.0.0", features = ["serde"] }
