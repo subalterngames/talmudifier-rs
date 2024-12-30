@@ -1,4 +1,8 @@
-use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping, Style, Weight};
+use std::{path::PathBuf, str::FromStr};
+
+use cosmic_text::{
+    fontdb::Source, Attrs, Buffer, Family, FontSystem, Metrics, Shaping, Style, Weight,
+};
 use markdown::{tokenize, Block, Span};
 use tex_span::TexSpan;
 
@@ -16,8 +20,20 @@ fn main() {
     // A Buffer provides shaping and layout for a UTF-8 string, create one per text widget
     let mut buffer = Buffer::new(&mut font_system, metrics);
     buffer.set_size(&mut font_system, Some(500.), None);
+
+    let path = PathBuf::from_str("src/fonts/IM_Fell_French_Canon/FeFCit2.ttf").unwrap();
+    assert!(path.exists(), "{:?}", path);
+    let font_id = font_system.db_mut().load_font_source(Source::File(path))[0];
+
+    let path = PathBuf::from_str("src/fonts/IM_Fell_French_Canon/FeFCrm2.ttf").unwrap();
+    println!("{:?}", &font_system.db().face(font_id).unwrap());
+    let font_id = font_system.db_mut().load_font_source(Source::File(path))[0];
+
+    let family_name = font_system.db().face(font_id).unwrap().families[0]
+        .0
+        .clone();
     // Attributes indicate what font to choose
-    let attrs = Attrs::new();
+    let attrs = Attrs::new().family(Family::Name(&family_name));
     buffer.set_rich_text(
         &mut font_system,
         rtf.iter().map(|(s, a)| (s.as_str(), *a)),
