@@ -19,7 +19,31 @@ fn main() {
     let mut font_system = FontSystem::new();
     let metrics = Metrics::new(14.0, 20.0);
 
-    let rtf = to_cosmic(include_str!("test.md"));
+    // Load the font.
+    let path = PathBuf::from_str("src/fonts/IM_Fell_French_Canon/FeFCrm2.ttf").unwrap();
+    let font_id = font_system.db_mut().load_font_source(Source::File(path))[0];
+    let family_name = font_system.db().face(font_id).unwrap().families[0]
+        .0
+        .clone();
+    // Attributes indicate what font to choose
+    let attrs = Attrs::new().family(Family::Name(&family_name));
+
+    let column = Column {
+        position: Position::Right,
+        text: include_str!("test.md").to_string(),
+        attrs,
+    };
+
+    let page = Page::default();
+
+    let _ = get_cosmic_index(
+        4,
+        &column,
+        &Columns::LeftRight,
+        &page,
+        &mut font_system,
+        metrics,
+    );
 
     // A Buffer provides shaping and layout for a UTF-8 string, create one per text widget
     let mut buffer = Buffer::new(&mut font_system, metrics);
@@ -27,29 +51,23 @@ fn main() {
 
     let path = PathBuf::from_str("src/fonts/IM_Fell_French_Canon/FeFCit2.ttf").unwrap();
     assert!(path.exists(), "{:?}", path);
-    let font_id = font_system.db_mut().load_font_source(Source::File(path))[0];
-
-    let path = PathBuf::from_str("src/fonts/IM_Fell_French_Canon/FeFCrm2.ttf").unwrap();
-    println!("{:?}", &font_system.db().face(font_id).unwrap());
-    let font_id = font_system.db_mut().load_font_source(Source::File(path))[0];
-
-    let family_name = font_system.db().face(font_id).unwrap().families[0]
-        .0
-        .clone();
-    // Attributes indicate what font to choose
-    let attrs = Attrs::new().family(Family::Name(&family_name));
 }
 
-fn to_tex(text: &str) -> Vec<TexSpan> {
-    to_cosmic(text).iter().map(|value| value.into()).collect()
+/// Convert a raw markdown string to TeX text spans.
+fn markdown_to_tex(text: &str) -> Vec<TexSpan> {
+    markdown_to_cosmic(text)
+        .iter()
+        .map(|value| value.into())
+        .collect()
 }
 
-fn to_cosmic(text: &str) -> Vec<(Vec<String>, Attrs)> {
+/// Convert a raw markdown string to Cosmic text spans.
+fn markdown_to_cosmic(text: &str) -> Vec<(Vec<String>, Attrs)> {
     let attrs = Attrs::new();
     tokenize(text)
         .iter()
         .filter_map(|block| match block {
-            Block::Paragraph(spans) => Some(get_spans(spans, attrs)),
+            Block::Paragraph(spans) => Some(markdown_paragraph_to_cosmic(spans, attrs)),
             _ => None,
         })
         .flatten()
@@ -57,21 +75,37 @@ fn to_cosmic(text: &str) -> Vec<(Vec<String>, Attrs)> {
         .collect()
 }
 
-fn get_spans<'a>(spans: &[Span], attrs: Attrs<'a>) -> Vec<(String, Attrs<'a>)> {
+/// Convert multiple spans in a markdown paragraph into Cosmic text spans.
+fn markdown_paragraph_to_cosmic<'a>(spans: &[Span], attrs: Attrs<'a>) -> Vec<(String, Attrs<'a>)> {
     spans
         .iter()
         .filter_map(|span| match span {
             Span::Text(text) => Some(vec![(text.clone(), attrs.style(Style::Normal))]),
-            Span::Emphasis(spans) => Some(get_spans(spans, attrs.style(Style::Italic))),
-            Span::Strong(spans) => Some(get_spans(spans, attrs.weight(Weight::BOLD))),
+            Span::Emphasis(spans) => Some(markdown_paragraph_to_cosmic(
+                spans,
+                attrs.style(Style::Italic),
+            )),
+            Span::Strong(spans) => Some(markdown_paragraph_to_cosmic(
+                spans,
+                attrs.weight(Weight::BOLD),
+            )),
             _ => None,
         })
         .flatten()
         .collect()
 }
 
+/// Iterate through spans of text to get a block of text that runs for a given number of lines.
+/// Cosmic won't format text the same way as TeX will.
+/// The result of this function is used as a baseline for typesetting with TeX, which is much slower.
+///
+/// - `num_rows`: The target number of rows.
+/// - `column`: The column of text.
+/// - `columns`: All columns on the page. This is used to determine the column width.
+/// - `page`: Page values. This is used to determine the column width.
+/// - `font_system`: Cosmic text font system.
+/// - `metrics`: Font metrics, namely the font size.
 fn get_cosmic_index(
-    spans: &[(Vec<String>, Attrs)],
     num_rows: usize,
     column: &Column,
     columns: &Columns,
@@ -91,6 +125,8 @@ fn get_cosmic_index(
 
     // Get the approximate width of the cell.
     let mut index = Index::default();
+
+    let spans = markdown_to_cosmic(&column.text);
 
     // Add words to this.
     let mut cosmic_spans: Vec<(String, Attrs)> = vec![];
