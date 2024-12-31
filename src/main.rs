@@ -1,7 +1,6 @@
 use std::{path::PathBuf, str::FromStr};
 
-use column_position::ColumnPosition;
-use columns::Columns;
+use column::{columns::Columns, position::Position, Column};
 use cosmic_text::{
     fontdb::Source, Attrs, Buffer, Family, FontSystem, Metrics, Shaping, Style, Weight,
 };
@@ -10,8 +9,7 @@ use markdown::{tokenize, Block, Span};
 use page::{paper_size::WIDTH_PTS, Page};
 use tex_span::TexSpan;
 
-mod column_position;
-mod columns;
+mod column;
 mod index;
 mod page;
 pub mod prelude;
@@ -75,17 +73,16 @@ fn get_spans<'a>(spans: &[Span], attrs: Attrs<'a>) -> Vec<(String, Attrs<'a>)> {
 fn get_cosmic_index(
     spans: &[(Vec<String>, Attrs)],
     num_rows: usize,
-    position: &ColumnPosition,
+    column: &Column,
     columns: &Columns,
     page: &Page,
     font_system: &mut FontSystem,
-    default_attrs: Attrs,
     metrics: Metrics,
 ) -> Option<Index> {
     // Get the total width of the columns.
     let total_width = WIDTH_PTS - (page.left_margin.get_pts() + page.right_margin.get_pts());
     // Get the column width.
-    let column_width = total_width * columns.get_width(position);
+    let column_width = total_width * columns.get_width(&column.position);
 
     // Get the buffer.
     let mut buffer = Buffer::new(font_system, metrics);
@@ -112,7 +109,7 @@ fn get_cosmic_index(
             buffer.set_rich_text(
                 font_system,
                 cosmic_spans.iter().map(|(s, a)| (s.as_str(), *a)),
-                default_attrs,
+                column.attrs,
                 Shaping::Advanced,
             );
             // Create lines.

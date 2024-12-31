@@ -65,9 +65,6 @@ impl Page {
         preamble
     }
 
-    /// Returns the width of all three columns in pts.
-    pub fn get_columns_width_in_pts(&self) -> f32 {}
-
     fn set_length(keyword: &str, length: &Length) -> String {
         format!("\n\\setlength{{{}}}{{{}}}", keyword, length)
     }
