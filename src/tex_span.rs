@@ -7,13 +7,9 @@ pub enum TexSpan {
     BoldItalic(Vec<String>),
 }
 
-impl From<&(String, Attrs<'_>)> for TexSpan {
-    fn from(value: &(String, Attrs<'_>)) -> Self {
-        let words = value
-            .0
-            .split(' ')
-            .map(|s| s.to_string())
-            .collect::<Vec<String>>();
+impl From<&(Vec<String>, Attrs<'_>)> for TexSpan {
+    fn from(value: &(Vec<String>, Attrs<'_>)) -> Self {
+        let words = value.0.clone();
         match (value.1.style, value.1.weight) {
             (Style::Normal, Weight::BOLD) => Self::Bold(words),
             (Style::Italic, Weight::NORMAL) => Self::Italic(words),

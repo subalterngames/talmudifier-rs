@@ -1,5 +1,8 @@
 use std::fmt;
 
+/// The width of a page in pts.
+pub const WIDTH_PTS: f32 = 614.295;
+
 pub enum PaperSize {
     Letter,
     Legal,

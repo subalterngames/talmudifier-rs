@@ -1,3 +1,5 @@
+use crate::column_position::ColumnPosition;
+
 pub enum ColumnType {
     /// There is an empty column.
     Empty,
@@ -7,6 +9,7 @@ pub enum ColumnType {
     Text(String),
 }
 
+#[derive(Debug)]
 pub enum Columns {
     One,
     LeftRight,
@@ -16,12 +19,27 @@ pub enum Columns {
 }
 
 impl Columns {
-    const ONE_HALF: &'static str = "0.5";
-    const TWO_THIRDS: &'static str = "0.675";
-    const ONE_THIRD: &'static str = "0.32";
+    const ONE_HALF: f32 = 0.5;
+    const TWO_THIRDS: f32 = 0.675;
+    const ONE_THIRD: f32 = 0.32;
     const END: &'static str = "\n\n\\end{paracol}";
     const SWITCH_COLUMN: &'static str = "\\switchcolumn";
     const SWITCH_COLUMN_2: &'static str = "\\switchcolumn[2]";
+
+    pub fn get_width(&self, position: &ColumnPosition) -> f32 {
+        match (self, position) {
+            (Self::One, _) => 1.,
+            (Self::LeftRight, ColumnPosition::Left) | (Self::LeftRight, ColumnPosition::Right) => {
+                Columns::ONE_HALF
+            }
+            (Self::LeftCenter, ColumnPosition::Left) => Columns::ONE_THIRD,
+            (Self::LeftCenter, ColumnPosition::Center) => Columns::TWO_THIRDS,
+            (Self::CenterRight, ColumnPosition::Center) => Columns::TWO_THIRDS,
+            (Self::CenterRight, ColumnPosition::Right) => Columns::ONE_THIRD,
+            (Self::Three, _) => Columns::ONE_THIRD,
+            (a, b) => panic!("Invalid position: {:?} {:?}", a, b),
+        }
+    }
 
     pub fn get_columns(left: ColumnType, center: ColumnType, right: ColumnType) -> String {
         let mut tex = String::new();

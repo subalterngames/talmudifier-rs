@@ -32,6 +32,21 @@ impl Length {
             unit: Unit::Pt,
         }
     }
+
+    /// Returns the length in pts.
+    pub fn get_pts(&self) -> f32 {
+        const PTS_IN: f32 = 72.27;
+        const PTS_MM: f32 = 2.85;
+        const PTS_CM: f32 = PTS_MM * 10.;
+
+        match &self.unit {
+            Unit::Pt => self.length,
+            Unit::Mm => self.length * PTS_MM,
+            Unit::Cm => self.length * PTS_CM,
+            Unit::In => self.length * PTS_IN,
+            other => panic!("Sorry, can't directly convert {} to pts", other),
+        }
+    }
 }
 
 impl fmt::Display for Length {

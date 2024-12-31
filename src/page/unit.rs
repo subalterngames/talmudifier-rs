@@ -1,6 +1,7 @@
 use std::fmt;
 
 /// LaTeX units.
+#[derive(Debug)]
 pub enum Unit {
     Pt,
     Mm,
