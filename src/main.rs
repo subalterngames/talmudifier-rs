@@ -10,6 +10,7 @@ use page::{paper_size::WIDTH_PTS, Page};
 use tex_span::TexSpan;
 
 mod column;
+mod font_family;
 mod index;
 mod page;
 pub mod prelude;

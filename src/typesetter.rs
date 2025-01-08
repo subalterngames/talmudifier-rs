@@ -4,7 +4,8 @@ use markdown::{tokenize, Block, Span};
 use crate::{
     column::width::Width,
     index::Index,
-    page::{paper_size::WIDTH_PTS, Page}, tex_span::TexSpan,
+    page::{paper_size::WIDTH_PTS, Page},
+    tex_span::TexSpan,
 };
 
 pub struct Typesetter<'t> {

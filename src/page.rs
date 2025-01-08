@@ -2,7 +2,7 @@ use font::Font;
 use length::Length;
 use paper_size::PaperSize;
 
-use crate::tex;
+use crate::{column::position::Position, tex};
 
 pub mod font;
 pub mod length;
