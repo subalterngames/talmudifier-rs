@@ -14,6 +14,7 @@ mod index;
 mod page;
 pub mod prelude;
 mod tex_span;
+mod typesetter;
 
 fn main() {
     let mut font_system = FontSystem::new();
@@ -61,117 +62,4 @@ fn markdown_to_tex(text: &str) -> Vec<TexSpan> {
         .collect()
 }
 
-/// Convert a raw markdown string to Cosmic text spans.
-fn markdown_to_cosmic(text: &str) -> Vec<(Vec<String>, Attrs)> {
-    let attrs = Attrs::new();
-    tokenize(text)
-        .iter()
-        .filter_map(|block| match block {
-            Block::Paragraph(spans) => Some(markdown_paragraph_to_cosmic(spans, attrs)),
-            _ => None,
-        })
-        .flatten()
-        .map(|(s, a)| (s.split(' ').map(|s| s.to_string()).collect(), a))
-        .collect()
-}
 
-/// Convert multiple spans in a markdown paragraph into Cosmic text spans.
-fn markdown_paragraph_to_cosmic<'a>(spans: &[Span], attrs: Attrs<'a>) -> Vec<(String, Attrs<'a>)> {
-    spans
-        .iter()
-        .filter_map(|span| match span {
-            Span::Text(text) => Some(vec![(text.clone(), attrs.style(Style::Normal))]),
-            Span::Emphasis(spans) => Some(markdown_paragraph_to_cosmic(
-                spans,
-                attrs.style(Style::Italic),
-            )),
-            Span::Strong(spans) => Some(markdown_paragraph_to_cosmic(
-                spans,
-                attrs.weight(Weight::BOLD),
-            )),
-            _ => None,
-        })
-        .flatten()
-        .collect()
-}
-
-/// Iterate through spans of text to get a block of text that runs for a given number of lines.
-/// Cosmic won't format text the same way as TeX will.
-/// The result of this function is used as a baseline for typesetting with TeX, which is much slower.
-///
-/// - `num_rows`: The target number of rows.
-/// - `column`: The column of text.
-/// - `columns`: All columns on the page. This is used to determine the column width.
-/// - `page`: Page values. This is used to determine the column width.
-/// - `font_system`: Cosmic text font system.
-/// - `metrics`: Font metrics, namely the font size.
-fn get_cosmic_index(
-    num_rows: usize,
-    column: &Column,
-    columns: &Columns,
-    page: &Page,
-    font_system: &mut FontSystem,
-    metrics: Metrics,
-) -> Option<Index> {
-    // Get the total width of the columns.
-    let total_width = WIDTH_PTS - (page.left_margin.get_pts() + page.right_margin.get_pts());
-    // Get the column width.
-    let column_width = total_width * columns.get_width(&column.position);
-
-    // Get the buffer.
-    let mut buffer = Buffer::new(font_system, metrics);
-    // Set the width.
-    buffer.set_size(font_system, Some(column_width), None);
-
-    // Get the approximate width of the cell.
-    let mut index = Index::default();
-
-    let spans = markdown_to_cosmic(&column.text);
-
-    // Add words to this.
-    let mut cosmic_spans: Vec<(String, Attrs)> = vec![];
-
-    for (i, (span, attrs)) in spans.iter().enumerate() {
-        // Set the span index.
-        index.span = i;
-        let mut words = vec![];
-        for (j, word) in span.iter().enumerate() {
-            // Add the word.
-            words.push(word.clone());
-            // Add the span.
-            cosmic_spans.push((words.join(" "), *attrs));
-
-            // Set the text.
-            buffer.set_rich_text(
-                font_system,
-                cosmic_spans.iter().map(|(s, a)| (s.as_str(), *a)),
-                column.attrs,
-                Shaping::Advanced,
-            );
-            // Create lines.
-            buffer.shape_until_scroll(font_system, true);
-            let num_lines = buffer.layout_runs().count();
-
-            // Not enough lines. Continue.
-            if num_rows <= num_lines {
-                index.word = j;
-            }
-            // We exceedded the number of lines. Remove the last word and return.
-            else {
-                // Remove the word.
-                let _ = words.pop();
-                // Remove the span.
-                let _ = cosmic_spans.pop();
-                // Add a span.
-                cosmic_spans.push((words.join(" "), *attrs));
-                return Some(index);
-            }
-        }
-    }
-
-    if cosmic_spans.is_empty() {
-        None
-    } else {
-        Some(index)
-    }
-}
