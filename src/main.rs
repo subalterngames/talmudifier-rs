@@ -54,14 +54,6 @@ fn main() {
     assert!(path.exists(), "{:?}", path);
 }
 
-/// Convert a raw markdown string to TeX text spans.
-fn markdown_to_tex(text: &str) -> Vec<TexSpan> {
-    markdown_to_cosmic(text)
-        .iter()
-        .map(|value| value.into())
-        .collect()
-}
-
 #[macro_export]
 macro_rules! tex {
     ($command:expr, $($value:expr),+) => {

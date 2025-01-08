@@ -4,7 +4,7 @@ use markdown::{tokenize, Block, Span};
 use crate::{
     column::width::Width,
     index::Index,
-    page::{paper_size::WIDTH_PTS, Page},
+    page::{paper_size::WIDTH_PTS, Page}, tex_span::TexSpan,
 };
 
 pub struct Typesetter<'t> {
@@ -135,6 +135,14 @@ impl<'t> Typesetter<'t> {
                 _ => None,
             })
             .flatten()
+            .collect()
+    }
+
+    /// Convert a raw markdown string to TeX text spans.
+    fn markdown_to_tex(&self) -> Vec<TexSpan> {
+        self.markdown_to_cosmic()
+            .iter()
+            .map(|value| value.into())
             .collect()
     }
 }

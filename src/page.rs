@@ -62,8 +62,7 @@ impl Page {
         {
             preamble += &Self::set_length(keyword, length)
         }
-        preamble += "\n\\raggedbottom";
-        preamble
+        preamble + "\n\\raggedbottom\n\n\\begin{document}\\begin{sloppypar}\n\n"
     }
 
     fn set_length(keyword: &str, length: &Length) -> String {
