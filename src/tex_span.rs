@@ -10,7 +10,7 @@ pub enum TexSpan {
 }
 
 impl TexSpan {
-    pub fn get_tex(&self, index: &Index) -> String {
+    pub fn get_tex(&self, index: Option<&Index>) -> String {
         let words = match self {
             Self::Regular(words)
             | Self::Bold(words)
@@ -18,11 +18,13 @@ impl TexSpan {
             | Self::BoldItalic(words) => {
                 if words.is_empty() {
                     return String::new();
+                } else {
+                    match index {
+                        Some(index) => words[0..index.word].join(" "),
+                        None => words.join(" "),
+                    }
                 }
-                else {
-                    words[0..index.word].join(" ")
-                }
-            },
+            }
         };
         match self {
             Self::Regular(_) => words,

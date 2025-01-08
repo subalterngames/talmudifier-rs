@@ -11,7 +11,7 @@ pub struct FontFamily {
     /// The command used to set the text to the target font, style, and size.
     pub command: String,
     /// Cosmic font metrics.
-    pub metrics: Metrics
+    pub metrics: Metrics,
 }
 
 impl FontFamily {
@@ -22,7 +22,7 @@ impl FontFamily {
         bold: Option<&str>,
         italic: Option<&str>,
         bold_italic: Option<&str>,
-        metrics: Metrics
+        metrics: Metrics,
     ) -> Self {
         const STYLES: [&str; 3] = ["ItalicFont", "BoldFont", "BoldItalicFont"];
 
@@ -54,11 +54,15 @@ impl FontFamily {
         font_family.push_str(&format!("]{{{}}}", regular));
 
         // This is the font size plus the font command.
-        let command = format!("{}\\{}", tex!("fontsize", metrics.font_size, metrics.line_height), name);
+        let command = format!(
+            "{}\\{}",
+            tex!("fontsize", metrics.font_size, metrics.line_height),
+            name
+        );
         Self {
             command,
             font_family,
-            metrics
+            metrics,
         }
     }
 }
