@@ -62,4 +62,15 @@ fn markdown_to_tex(text: &str) -> Vec<TexSpan> {
         .collect()
 }
 
-
+#[macro_export]
+macro_rules! tex {
+    ($command:expr, $($value:expr),+) => {
+        {
+            let mut t = format!("\\{}", &$command);
+            $(
+                t.push_str(&format!("{{{}}}", &$value));
+            )+
+            t
+        }
+    };
+}

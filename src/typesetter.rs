@@ -106,7 +106,9 @@ impl<'t> Typesetter<'t> {
         tokenize(&self.md)
             .iter()
             .filter_map(|block| match block {
-                Block::Paragraph(spans) => Some(self.markdown_paragraph_to_cosmic(spans, self.attrs)),
+                Block::Paragraph(spans) => {
+                    Some(self.markdown_paragraph_to_cosmic(spans, self.attrs))
+                }
                 _ => None,
             })
             .flatten()
@@ -124,14 +126,12 @@ impl<'t> Typesetter<'t> {
             .iter()
             .filter_map(|span| match span {
                 Span::Text(text) => Some(vec![(text.clone(), attrs.style(Style::Normal))]),
-                Span::Emphasis(spans) => Some(self.markdown_paragraph_to_cosmic(
-                    spans,
-                    attrs.style(Style::Italic),
-                )),
-                Span::Strong(spans) => Some(self.markdown_paragraph_to_cosmic(
-                    spans,
-                    attrs.weight(Weight::BOLD),
-                )),
+                Span::Emphasis(spans) => {
+                    Some(self.markdown_paragraph_to_cosmic(spans, attrs.style(Style::Italic)))
+                }
+                Span::Strong(spans) => {
+                    Some(self.markdown_paragraph_to_cosmic(spans, attrs.weight(Weight::BOLD)))
+                }
                 _ => None,
             })
             .flatten()

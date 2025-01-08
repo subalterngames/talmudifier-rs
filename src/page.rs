@@ -2,6 +2,8 @@ use font::Font;
 use length::Length;
 use paper_size::PaperSize;
 
+use crate::tex;
+
 pub mod font;
 pub mod length;
 pub mod paper_size;
@@ -38,13 +40,12 @@ impl Page {
             "marginnote",
             "sectsty",
             "ragged2e",
-            "lineno",
             "xcolor",
             "paracol",
             "fontspec",
         ]
         .iter()
-        .map(|p| format!("\\usepackage{{{}}}", p))
+        .map(|p| tex!("usepackage", p))
         .collect::<Vec<String>>()
         .join("\n");
 
@@ -66,7 +67,7 @@ impl Page {
     }
 
     fn set_length(keyword: &str, length: &Length) -> String {
-        format!("\n\\setlength{{{}}}{{{}}}", keyword, length)
+        format!("\n{}", tex!("setlength", keyword, length))
     }
 }
 

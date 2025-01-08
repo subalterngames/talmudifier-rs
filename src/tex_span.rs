@@ -1,10 +1,29 @@
 use cosmic_text::{Attrs, Style, Weight};
 
+use crate::tex;
+
 pub enum TexSpan {
     Regular(Vec<String>),
     Bold(Vec<String>),
     Italic(Vec<String>),
     BoldItalic(Vec<String>),
+}
+
+impl TexSpan {
+    pub fn get_tex(&self) -> String {
+        let words = match self {
+            Self::Regular(words)
+            | Self::Bold(words)
+            | Self::Italic(words)
+            | Self::BoldItalic(words) => words.join(" "),
+        };
+        match self {
+            Self::Regular(_) => words,
+            Self::Bold(_) => tex!("textbf", words),
+            Self::Italic(_) => tex!("textit", words),
+            Self::BoldItalic(_) => tex!("textbf", tex!("textit", words)),
+        }
+    }
 }
 
 impl From<&(Vec<String>, Attrs<'_>)> for TexSpan {
