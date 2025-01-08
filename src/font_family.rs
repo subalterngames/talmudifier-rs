@@ -1,5 +1,7 @@
 use std::{fmt, path::Path};
 
+use cosmic_text::Metrics;
+
 use crate::{column::position::Position, tex};
 
 /// An XeLaTeX font family.
@@ -8,6 +10,8 @@ pub struct FontFamily {
     pub font_family: String,
     /// The command used to set the text to the target font, style, and size.
     pub command: String,
+    /// Cosmic font metrics.
+    pub metrics: Metrics
 }
 
 impl FontFamily {
@@ -18,8 +22,7 @@ impl FontFamily {
         bold: Option<&str>,
         italic: Option<&str>,
         bold_italic: Option<&str>,
-        size: f32,
-        skip: f32,
+        metrics: Metrics
     ) -> Self {
         const STYLES: [&str; 3] = ["ItalicFont", "BoldFont", "BoldItalicFont"];
 
@@ -51,10 +54,11 @@ impl FontFamily {
         font_family.push_str(&format!("]{{{}}}", regular));
 
         // This is the font size plus the font command.
-        let command = format!("{}\\{}", tex!("fontsize", size, skip), name);
+        let command = format!("{}\\{}", tex!("fontsize", metrics.font_size, metrics.line_height), name);
         Self {
             command,
             font_family,
+            metrics
         }
     }
 }

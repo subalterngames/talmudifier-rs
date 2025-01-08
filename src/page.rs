@@ -30,6 +30,9 @@ pub struct Page {
 }
 
 impl Page {
+    pub const BEGIN_DOCUMENT: &str = "\n\\raggedbottom\n\n\\begin{document}\\begin{sloppypar}\n\n";
+    pub const END_DOCUMENT: &str = "\\end{sloppypar}\\end{document}";
+
     pub fn get_preamble(&self) -> String {
         let mut preamble = format!(
             "\\documentclass[11pt, {}, openany]{{srcbook}}",
@@ -62,7 +65,7 @@ impl Page {
         {
             preamble += &Self::set_length(keyword, length)
         }
-        preamble + "\n\\raggedbottom\n\n\\begin{document}\\begin{sloppypar}\n\n"
+        preamble + "\n\n"
     }
 
     fn set_length(keyword: &str, length: &Length) -> String {

@@ -1,6 +1,6 @@
 use cosmic_text::{Attrs, Style, Weight};
 
-use crate::tex;
+use crate::{index::Index, tex};
 
 pub enum TexSpan {
     Regular(Vec<String>),
@@ -10,12 +10,19 @@ pub enum TexSpan {
 }
 
 impl TexSpan {
-    pub fn get_tex(&self) -> String {
+    pub fn get_tex(&self, index: &Index) -> String {
         let words = match self {
             Self::Regular(words)
             | Self::Bold(words)
             | Self::Italic(words)
-            | Self::BoldItalic(words) => words.join(" "),
+            | Self::BoldItalic(words) => {
+                if words.is_empty() {
+                    return String::new();
+                }
+                else {
+                    words[0..index.word].join(" ")
+                }
+            },
         };
         match self {
             Self::Regular(_) => words,

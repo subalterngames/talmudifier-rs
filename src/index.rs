@@ -1,5 +1,5 @@
 /// Indices used to traverse spans of words.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Index {
     /// The index in a vec of spans.
     pub span: usize,

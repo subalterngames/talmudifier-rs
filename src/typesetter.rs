@@ -2,10 +2,7 @@ use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping, Style, Weight};
 use markdown::{tokenize, Block, Span};
 
 use crate::{
-    column::width::Width,
-    index::Index,
-    page::{paper_size::WIDTH_PTS, Page},
-    tex_span::TexSpan,
+    column::width::Width, font_family::FontFamily, index::Index, page::{paper_size::WIDTH_PTS, Page}, tex, tex_span::TexSpan
 };
 
 pub struct Typesetter<'t> {
@@ -14,15 +11,39 @@ pub struct Typesetter<'t> {
     column_ratio: f32,
     column_width: f32,
     attrs: Attrs<'t>,
+    index: Index,
+    metrics: Metrics,
+    preamble: String,
+    font_command: String,
 }
 
 impl<'t> Typesetter<'t> {
-    pub fn new(md: String, num_rows: usize, attrs: Attrs<'t>, page: &Page, width: &Width) -> Self {
+    const END_PARACOL: &'static str = "\\end{paracol}";
+
+    pub fn new(
+        md: String,
+        num_rows: usize,
+        attrs: Attrs<'t>,
+        page: &Page,
+        width: &Width,
+        font_family: FontFamily,
+        index: Index,
+    ) -> Self {
         let column_ratio = width.column_ratio();
         // Get the total width of the columns.
         let total_width = WIDTH_PTS - (page.left_margin.get_pts() + page.right_margin.get_pts());
         // Get the column width.
         let column_width = total_width * column_ratio;
+
+        let mut preamble = page.get_preamble();
+        // Add the font family declaration.
+        preamble.push_str(&font_family.font_family);
+        preamble.push_str(Page::BEGIN_DOCUMENT);
+
+        // Add the paracol.
+        preamble.push_str(&tex!("columnratio", column_ratio));
+        preamble.push('\n');
+        preamble.push_str(&tex!("begin", "paracol", 1));
 
         Self {
             md,
@@ -30,6 +51,10 @@ impl<'t> Typesetter<'t> {
             column_ratio,
             column_width,
             attrs,
+            index,
+            preamble,
+            metrics: font_family.metrics,
+            font_command: font_family.command
         }
     }
 
@@ -43,9 +68,9 @@ impl<'t> Typesetter<'t> {
     /// - `page`: Page values. This is used to determine the column width.
     /// - `font_system`: Cosmic text font system.
     /// - `metrics`: Font metrics, namely the font size.
-    fn guess_index(&self, font_system: &mut FontSystem, metrics: Metrics) -> Option<Index> {
+    fn guess_index(&self, font_system: &mut FontSystem) -> Option<Index> {
         // Get the buffer.
-        let mut buffer = Buffer::new(font_system, metrics);
+        let mut buffer = Buffer::new(font_system, self.metrics);
         // Set the width.
         buffer.set_size(font_system, Some(self.column_width), None);
 
@@ -55,11 +80,15 @@ impl<'t> Typesetter<'t> {
         // The spans that we've included so far.
         let mut finished_spans = vec![];
 
-        let mut index = Index::default();
+        // Get the starting index.
+        let mut index = self.index.clone();
 
         for (i, (span, attrs)) in spans.iter().enumerate() {
             // Set the span index.
             index.span = i;
+            // Reset the word and hyphen indices.
+            index.word = 0;
+            index.hyphen = None;
             let mut words = vec![];
             for (j, word) in span.iter().enumerate() {
                 // Add the word.
@@ -102,9 +131,30 @@ impl<'t> Typesetter<'t> {
         }
     }
 
+    pub fn get_tex(&self, mut end_index: Index) -> String {
+        // Get the TeX spans.
+        let tex_spans = self
+            .markdown_to_cosmic()
+            .iter()
+            .map(|value| value.into())
+            .collect::<Vec<TexSpan>>();
+
+        let mut done = false;
+        while !done {
+
+        }
+    }
+
+    pub fn guess_and_get_tex(&mut self, font_system: &mut FontSystem) -> Option<String> {
+        match self.guess_index(font_system) {
+            Some(end_index) => Some(self.get_tex(end_index)),
+            None => None,
+        }
+    }
+
     /// Convert a raw markdown string to Cosmic text spans.
     fn markdown_to_cosmic(&self) -> Vec<(Vec<String>, Attrs)> {
-        tokenize(&self.md)
+        let mut spans = tokenize(&self.md)
             .iter()
             .filter_map(|block| match block {
                 Block::Paragraph(spans) => {
@@ -114,7 +164,13 @@ impl<'t> Typesetter<'t> {
             })
             .flatten()
             .map(|(s, a)| (s.split(' ').map(|s| s.to_string()).collect(), a))
-            .collect()
+            .collect::<Vec<(Vec<String>, Attrs)>>()[self.index.span..]
+            .to_vec();
+        // Remove words prior to the index.
+        if let Some((words, attrs)) = spans.pop() {
+            spans.push((words[self.index.word..].to_vec(), attrs));
+        }
+        spans
     }
 
     /// Convert multiple spans in a markdown paragraph into Cosmic text spans.
@@ -136,14 +192,6 @@ impl<'t> Typesetter<'t> {
                 _ => None,
             })
             .flatten()
-            .collect()
-    }
-
-    /// Convert a raw markdown string to TeX text spans.
-    fn markdown_to_tex(&self) -> Vec<TexSpan> {
-        self.markdown_to_cosmic()
-            .iter()
-            .map(|value| value.into())
             .collect()
     }
 }
