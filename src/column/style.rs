@@ -5,5 +5,4 @@ pub enum Style {
     Italic,
     Bold,
     BoldItalic,
-    Code,
 }

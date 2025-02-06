@@ -65,6 +65,7 @@ impl Page {
         {
             preamble += &Self::set_length(keyword, length)
         }
+        preamble += "\n\\newcommand{\\daftitle}[1]{\\centerfont{\\huge{#1}}}";
         preamble + "\n\n"
     }
 
