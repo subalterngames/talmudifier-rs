@@ -5,7 +5,6 @@ use cosmic_text::{
     fontdb::Source, Attrs, Buffer, Family, FontSystem, Metrics, Shaping, Style, Weight,
 };
 use index::Index;
-use markdown::{tokenize, Block, Span};
 use page::{paper_size::WIDTH_PTS, Page};
 use tex_span::TexSpan;
 
@@ -15,10 +14,11 @@ mod index;
 mod page;
 pub mod prelude;
 mod tex_span;
-mod typesetter;
+// mod typesetter;
 
 fn main() {
     let mut font_system = FontSystem::new();
+    /*
     let metrics = Metrics::new(14.0, 20.0);
 
     // Load the font.
@@ -52,7 +52,7 @@ fn main() {
     buffer.set_size(&mut font_system, Some(500.), None);
 
     let path = PathBuf::from_str("src/fonts/IM_Fell_French_Canon/FeFCit2.ttf").unwrap();
-    assert!(path.exists(), "{:?}", path);
+    assert!(path.exists(), "{:?}", path);*/
 }
 
 #[macro_export]
