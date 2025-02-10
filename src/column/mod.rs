@@ -4,6 +4,7 @@ use position::Position;
 mod builder;
 pub mod column_type;
 pub mod columns;
+mod latex_command;
 pub mod position;
 pub mod style;
 mod word;

@@ -39,18 +39,11 @@ impl Page {
             self.paper_size
         );
         preamble += &format!("\n\\usepackage[{}, bindingoffset={}, left={}, right={}, top={}, bottom={}, footskip={}, marginparwidth={}]{{geometry}}\n\n", self.paper_size, self.binding_offset, self.left_margin, self.right_margin, self.top_margin, self.bottom_margin, self.foot_skip, self.margin_paragraph_width);
-        preamble += &[
-            "marginnote",
-            "sectsty",
-            "ragged2e",
-            "xcolor",
-            "paracol",
-            "fontspec",
-        ]
-        .iter()
-        .map(|p| tex!("usepackage", p))
-        .collect::<Vec<String>>()
-        .join("\n");
+        preamble += &["marginnote", "sectsty", "ragged2e", "paracol", "fontspec"]
+            .iter()
+            .map(|p| tex!("usepackage", p))
+            .collect::<Vec<String>>()
+            .join("\n");
 
         preamble += "\n\n\\allsectionsfont{\\centering}\n";
 
