@@ -2,7 +2,7 @@ use super::latex_command::LatexCommand;
 
 /// The position of a word on a page.
 #[derive(Copy, Clone, Default, Eq, PartialEq, Debug)]
-pub enum WordPosition {
+pub enum Position {
     /// Just some regular ole text.
     #[default]
     Body,
@@ -12,15 +12,15 @@ pub enum WordPosition {
     Title,
 }
 
-impl WordPosition {
+impl Position {
     /// Get a command to start or end a margin note.
-    pub fn get_command(&self, position: &WordPosition) -> LatexCommand {
+    pub fn get_command(&self, position: &Position) -> LatexCommand {
         match (self, position) {
-            (WordPosition::Body, WordPosition::Margin) => LatexCommand {
+            (Position::Body, Position::Margin) => LatexCommand {
                 prefix: Some("\\\\marginnote{\\\\noindent\\\\justifying\\\\tiny "),
                 suffix: None,
             },
-            (WordPosition::Margin, WordPosition::Body) => LatexCommand {
+            (Position::Margin, Position::Body) => LatexCommand {
                 prefix: None,
                 suffix: Some("}"),
             },

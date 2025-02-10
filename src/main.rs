@@ -15,6 +15,7 @@ mod page;
 pub mod prelude;
 mod tex_span;
 // mod typesetter;
+mod word;
 
 fn main() {
     let mut font_system = FontSystem::new();

@@ -4,11 +4,7 @@ use position::Position;
 mod builder;
 pub mod column_type;
 pub mod columns;
-mod latex_command;
 pub mod position;
-pub mod style;
-mod word;
-mod word_position;
 
 /// Text and properties of a column on the page.
 pub struct Column<'a> {

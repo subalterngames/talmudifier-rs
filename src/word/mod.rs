@@ -3,7 +3,12 @@ use markdown::{mdast::Node, message::Message, to_mdast, Constructs, ParseOptions
 
 use crate::tex;
 
-use super::{style::Style, word_position::WordPosition};
+use position::Position;
+use style::Style;
+
+mod latex_command;
+mod position;
+mod style;
 
 /// A word and its style.
 pub struct Word {
@@ -12,7 +17,7 @@ pub struct Word {
     /// The font style.
     pub style: Style,
     /// The position on
-    pub position: WordPosition,
+    pub position: Position,
 }
 
 impl Word {
@@ -25,7 +30,7 @@ impl Word {
         let node = to_mdast(md, &parse_options)?;
         let mut words = vec![];
         // Add the words as nodes.
-        Self::add_node(&node, &mut words, Style::default(), WordPosition::default());
+        Self::add_node(&node, &mut words, Style::default(), Position::default());
         Ok(words)
     }
 
@@ -68,14 +73,14 @@ impl Word {
         // Try to build a title.
         let title = words
             .iter()
-            .filter(|w| w.position == WordPosition::Title)
+            .filter(|w| w.position == Position::Title)
             .collect::<Vec<&Word>>();
         // Build a column.
         if title.is_empty() {
             let mut text = font_command.to_string();
             let mut style = Style::default();
-            let mut position = WordPosition::default();
-            for word in words.iter().filter(|w| w.position != WordPosition::Title) {
+            let mut position = Position::default();
+            for word in words.iter().filter(|w| w.position != Position::Title) {
                 let mut prefixes = vec![];
                 let mut suffixes = vec![];
                 // We changed the style.
@@ -119,7 +124,7 @@ impl Word {
                 Style::Bold | Style::Italic => text.push('}'),
                 Style::BoldItalic => text.push_str("}}"),
             }
-            if let WordPosition::Margin = position {
+            if let Position::Margin = position {
                 text.push('}');
             }
             (text, false)
@@ -136,14 +141,14 @@ impl Word {
     }
 
     /// A words from a node.
-    fn add_node(node: &Node, words: &mut Vec<Self>, style: Style, position: WordPosition) {
+    fn add_node(node: &Node, words: &mut Vec<Self>, style: Style, position: Position) {
         match node {
             Node::Root(node) => node
                 .children
                 .iter()
                 .for_each(|child| Self::add_node(child, words, style, position)),
             Node::InlineCode(node) => {
-                Self::add_words(&node.value, words, style, WordPosition::Margin)
+                Self::add_words(&node.value, words, style, Position::Margin)
             }
             Node::Emphasis(node) => {
                 // Add an italic style.
@@ -169,7 +174,7 @@ impl Word {
             Node::Heading(node) => node
                 .children
                 .iter()
-                .for_each(|child| Self::add_node(child, words, style, WordPosition::Title)),
+                .for_each(|child| Self::add_node(child, words, style, Position::Title)),
             Node::Paragraph(node) => node
                 .children
                 .iter()
@@ -179,7 +184,7 @@ impl Word {
     }
 
     /// Split a string into words and add them to `words`.
-    fn add_words(value: &str, words: &mut Vec<Self>, style: Style, position: WordPosition) {
+    fn add_words(value: &str, words: &mut Vec<Self>, style: Style, position: Position) {
         value.split(' ').filter(|s| !s.is_empty()).for_each(|w| {
             words.push(Word {
                 word: w.to_string(),
@@ -192,9 +197,7 @@ impl Word {
 
 #[cfg(test)]
 mod tests {
-    use crate::column::{style::Style, word_position::WordPosition};
-
-    use super::Word;
+    use super::{Position, Style, Word};
 
     #[test]
     fn test_words() {
@@ -222,7 +225,7 @@ mod tests {
         assert_eq!(words[6].style, Style::Bold);
 
         for word in words.iter() {
-            assert_eq!(word.position, WordPosition::Body);
+            assert_eq!(word.position, Position::Body);
         }
     }
 
@@ -232,11 +235,11 @@ mod tests {
         let words = Word::from_md(md).unwrap();
         assert_eq!(&words[0].word, "A");
         assert_eq!(words[0].style, Style::Regular);
-        assert_eq!(words[0].position, WordPosition::Body);
+        assert_eq!(words[0].position, Position::Body);
         assert_eq!(&words[1].word, "footnote");
-        assert_eq!(words[1].position, WordPosition::Margin);
+        assert_eq!(words[1].position, Position::Margin);
         assert_eq!(words[1].style, Style::Regular);
-        assert_eq!(words[2].position, WordPosition::Body);
+        assert_eq!(words[2].position, Position::Body);
         assert_eq!(words[2].style, Style::Italic);
     }
 
@@ -277,11 +280,11 @@ mod tests {
         let words = Word::from_md(md).unwrap();
         for word in &words[0..4] {
             assert_eq!(word.style, Style::Regular);
-            assert_eq!(word.position, WordPosition::Title);
+            assert_eq!(word.position, Position::Title);
         }
         for word in &words[4..] {
             assert_eq!(word.style, Style::Regular);
-            assert_eq!(word.position, WordPosition::Body);
+            assert_eq!(word.position, Position::Body);
         }
         let words = Word::from_md(md).unwrap();
         let (tex, title) = Word::to_tex(&words, "\\font");
