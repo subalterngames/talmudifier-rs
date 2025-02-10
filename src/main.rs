@@ -8,11 +8,12 @@ use index::Index;
 use page::{paper_size::WIDTH_PTS, Page};
 use tex_span::TexSpan;
 
-mod column;
+pub(crate) mod column;
 mod font_family;
 mod index;
 mod page;
 pub mod prelude;
+mod column_maker;
 mod tex_span;
 // mod typesetter;
 mod word;

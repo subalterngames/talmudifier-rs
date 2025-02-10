@@ -5,6 +5,7 @@ mod builder;
 pub mod column_type;
 pub mod columns;
 pub mod position;
+pub mod width;
 
 /// Text and properties of a column on the page.
 pub struct Column<'a> {
