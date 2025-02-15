@@ -1,25 +1,8 @@
-use std::{path::PathBuf, str::FromStr};
-
-use column::{columns::Columns, position::Position, Column};
-use cosmic_text::{
-    fontdb::Source, Attrs, Buffer, Family, FontSystem, Metrics, Shaping, Style, Weight,
-};
-use index::Index;
-use page::{paper_size::WIDTH_PTS, Page};
-use tex_span::TexSpan;
-
-pub(crate) mod column;
-mod font_family;
-mod index;
-mod page;
-pub mod prelude;
-mod column_maker;
-mod tex_span;
-// mod typesetter;
+mod font;
 mod word;
 
 fn main() {
-    let mut font_system = FontSystem::new();
+    // let mut font_system = FontSystem::new();
     /*
     let metrics = Metrics::new(14.0, 20.0);
 
