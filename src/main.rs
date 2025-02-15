@@ -1,5 +1,6 @@
-mod font;
-mod word;
+mod column;
+pub(crate) mod font;
+pub(crate) mod word;
 
 fn main() {
     // let mut font_system = FontSystem::new();

@@ -1,19 +1,26 @@
-use cosmic_text::Attrs;
-use position::Position;
+use crate::word::Word;
 
-mod builder;
-pub mod column_type;
-pub mod columns;
-pub mod position;
-pub mod width;
+mod cosmic;
+mod width;
 
-/// Text and properties of a column on the page.
-pub struct Column<'a> {
-    pub position: Position,
-    /// The column's raw markdown text.
-    /// This will change throughout the typesetting process.
-    /// It will only include words that haven't been typeset.
-    pub text: String,
-    /// Cosmic text attributes.
-    pub attrs: Attrs<'a>,
+pub trait ColumnMaker {
+    fn get_num_lines(&mut self, words: &[Word]) -> usize;
+
+    fn get_words(&mut self, words: &[Word], num_lines: usize) -> Option<usize>{
+        if num_lines == 0 {
+            return None;
+        }
+        for i in 0..words.len() {
+            // We exceeded the number of lines. Break!
+            if self.get_num_lines(&words[..i]) > num_lines {
+                return if i == 0 {
+                    None
+                }
+                else {
+                    Some(i - 1)
+                };
+            }
+        }
+        None
+    }
 }

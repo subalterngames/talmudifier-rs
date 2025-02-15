@@ -1,6 +1,6 @@
 use std::{fs::read, io, sync::Arc};
 
-use cosmic_text::{fontdb::Source, Attrs, AttrsOwned, Family, FontSystem};
+use cosmic_text::{fontdb::Source, Attrs, AttrsOwned, Family, FontSystem, Metrics};
 
 #[cfg(feature = "default-fonts")]
 use super::default_fonts::*;
@@ -11,8 +11,7 @@ pub struct CosmicFont {
     pub italic: AttrsOwned,
     pub bold: AttrsOwned,
     pub bold_italic: AttrsOwned,
-    pub size: f32,
-    pub skip: f32,
+    pub metrics: Metrics
 }
 
 impl CosmicFont {
@@ -55,13 +54,13 @@ impl CosmicFont {
         let italic = Self::get_font(italic, font_system);
         let bold = Self::get_font(bold, font_system);
         let bold_italic = Self::get_font(bold_italic, font_system);
+        let metrics = Metrics::new(size, skip);
         Self {
             regular,
             italic,
             bold,
             bold_italic,
-            size,
-            skip,
+            metrics
         }
     }
 

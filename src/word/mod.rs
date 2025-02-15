@@ -1,7 +1,7 @@
-use cosmic_text::{Attrs, Weight};
+use cosmic_text::{Attrs, AttrsOwned, Weight};
 use markdown::{mdast::Node, message::Message, to_mdast, Constructs, ParseOptions};
 
-use crate::tex;
+use crate::{font::cosmic_font::CosmicFont, tex};
 
 use position::Position;
 use style::Style;
@@ -35,10 +35,11 @@ impl Word {
     }
 
     /// Convert a slice of words into Cosmic text spans.
-    pub fn to_cosmic<'t>(words: &[Self], mut attrs: Attrs<'t>) -> Vec<(String, Attrs<'t>)> {
+    pub fn to_cosmic(words: &[Self], font: &CosmicFont) -> Vec<(String, AttrsOwned)> {
         let mut cosmic_spans = vec![];
         let mut span = vec![];
         let mut style = Style::default();
+        let mut attrs = font.regular.clone();
         for word in words.iter() {
             // Add the word to the current span.
             if style == word.style {
@@ -50,23 +51,25 @@ impl Word {
                 // Reset the span.
                 span.clear();
                 // Set the new attrs.
-                attrs = match word.style {
-                    Style::Bold => attrs.weight(Weight::BOLD).style(cosmic_text::Style::Normal),
-                    Style::Italic => attrs
-                        .weight(Weight::NORMAL)
-                        .style(cosmic_text::Style::Italic),
-                    Style::BoldItalic => {
-                        attrs.weight(Weight::BOLD).style(cosmic_text::Style::Italic)
-                    }
-                    _ => attrs
-                        .weight(Weight::NORMAL)
-                        .style(cosmic_text::Style::Normal),
-                };
+                attrs = Self::get_attrs(font, &word.style);
                 // Remember the style.
                 style = word.style;
             }
         }
+        // Push the last span.
+        if !span.is_empty() {
+            cosmic_spans.push((span.join(" "), attrs));
+        }
         cosmic_spans
+    }
+
+    fn get_attrs(font: &CosmicFont, style: &Style) -> AttrsOwned {
+        match style {
+            Style::Regular => &font.regular,
+            Style::Italic => &font.italic,
+            Style::Bold => &font.bold,
+            Style::BoldItalic => &font.bold_italic
+        }.clone()
     }
 
     pub fn to_tex(words: &[Self], font_command: &str) -> (String, bool) {

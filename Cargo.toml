@@ -12,8 +12,8 @@ default-fonts = []
 cosmic-text = { version = "0.12.1", default-features = false, features = ["std", "fontconfig", "rayon"] }
 hex_color = { version = "3.0.0", features = ["serde"] }
 markdown = "1.0.0-alpha.22"
-pdf-extract = "0.8.0"
+# pdf-extract = "0.8.0"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.134"
-tectonic = { git = "https://github.com/tectonic-typesetting/tectonic.git", branch = "master" }
+# tectonic = { git = "https://github.com/tectonic-typesetting/tectonic.git", branch = "master" }
 thiserror = "2.0.9"
