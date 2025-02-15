@@ -1,6 +1,10 @@
-use std::sync::Arc;
+use std::{fs::read, io, sync::Arc};
 
 use cosmic_text::{fontdb::Source, Attrs, AttrsOwned, Family, FontSystem};
+
+#[cfg(feature = "default-fonts")]
+use super::default_fonts::*;
+use super::font_paths::FontPaths;
 
 pub struct CosmicFont {
     pub regular: AttrsOwned,
@@ -16,6 +20,27 @@ impl CosmicFont {
     const DEFAULT_SIZE: f32 = 11.;
     #[cfg(feature = "default-fonts")]
     const DEFAULT_SKIP: f32 = 13.;
+
+    pub fn new(
+        paths: &FontPaths,
+        size: f32,
+        skip: f32,
+        font_system: &mut FontSystem,
+    ) -> Result<Self, io::Error> {
+        let regular = read(&paths.regular)?;
+        let italic = read(&paths.italic)?;
+        let bold = read(&paths.bold)?;
+        let bold_italic = read(&paths.bold_italic)?;
+        Ok(Self::new_from_bytes(
+            regular,
+            italic,
+            bold,
+            bold_italic,
+            size,
+            skip,
+            font_system,
+        ))
+    }
 
     fn new_from_bytes(
         regular: Vec<u8>,
@@ -64,10 +89,10 @@ impl CosmicFont {
     #[cfg(feature = "default-fonts")]
     pub fn default_center(font_system: &mut FontSystem) -> Self {
         Self::new_from_bytes(
-            include_bytes!("../fonts/EB_Garamond/EBGaramond-Regular.ttf").to_vec(),
-            include_bytes!("../fonts/EB_Garamond/EBGaramond-Italic.ttf").to_vec(),
-            include_bytes!("../fonts/EB_Garamond/EBGaramond-Bold.ttf").to_vec(),
-            include_bytes!("../fonts/EB_Garamond/EBGaramond-BoldItalic.ttf").to_vec(),
+            IM_FELL_REGULAR.to_vec(),
+            IM_FELL_ITALIC.to_vec(),
+            IM_FELL_BOLD.to_vec(),
+            IM_FELL_BOLD.to_vec(),
             11.,
             13.,
             font_system,
@@ -77,10 +102,10 @@ impl CosmicFont {
     #[cfg(feature = "default-fonts")]
     pub fn default_right(font_system: &mut FontSystem) -> Self {
         Self::new_from_bytes(
-            include_bytes!("../fonts/Averia_Serif_Libre/AveriaSerifLibre-Regular.ttf").to_vec(),
-            include_bytes!("../fonts/Averia_Serif_Libre/AveriaSerifLibre-Italic.ttf").to_vec(),
-            include_bytes!("../fonts/Averia_Serif_Libre/AveriaSerifLibre-Bold.ttf").to_vec(),
-            include_bytes!("../fonts/Averia_Serif_Libre/AveriaSerifLibre-BoldItalic.ttf").to_vec(),
+            EB_GARAMOND_REGULAR.to_vec(),
+            EB_GARAMOND_ITALIC.to_vec(),
+            EB_GARAMOND_BOLD.to_vec(),
+            EB_GARAMOND_BOLD_ITALIC.to_vec(),
             11.,
             13.,
             font_system,
