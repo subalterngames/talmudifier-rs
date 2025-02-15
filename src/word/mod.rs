@@ -147,9 +147,7 @@ impl Word {
                 .children
                 .iter()
                 .for_each(|child| Self::add_node(child, words, style, position)),
-            Node::InlineCode(node) => {
-                Self::add_words(&node.value, words, style, Position::Margin)
-            }
+            Node::InlineCode(node) => Self::add_words(&node.value, words, style, Position::Margin),
             Node::Emphasis(node) => {
                 // Add an italic style.
                 let style = match style {

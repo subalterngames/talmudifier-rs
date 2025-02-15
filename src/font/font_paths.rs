@@ -1,14 +1,23 @@
-use std::{fmt::Display, io::{self, ErrorKind}, path::{Path, PathBuf}};
+use std::{
+    fmt::Display,
+    io::{self, ErrorKind},
+    path::{Path, PathBuf},
+};
 
 pub struct FontPaths {
     pub regular: PathBuf,
     pub italic: PathBuf,
     pub bold: PathBuf,
-    pub bold_italic: PathBuf
+    pub bold_italic: PathBuf,
 }
 
 impl FontPaths {
-    pub fn new<P: AsRef<Path> + Display + Into<PathBuf>>(regular: P, italic: Option<P>, bold: Option<P>, bold_italic: Option<P>) -> Result<Self, io::Error>{
+    pub fn new<P: AsRef<Path> + Display + Into<PathBuf>>(
+        regular: P,
+        italic: Option<P>,
+        bold: Option<P>,
+        bold_italic: Option<P>,
+    ) -> Result<Self, io::Error> {
         let regular = Self::get_font(regular)?;
         let italic = Self::get_optional_font(italic, &regular)?;
         let bold = Self::get_optional_font(bold, &regular)?;
@@ -17,7 +26,7 @@ impl FontPaths {
             regular,
             italic,
             bold,
-            bold_italic
+            bold_italic,
         })
     }
 
@@ -25,16 +34,21 @@ impl FontPaths {
         let path = Into::<PathBuf>::into(path);
         if path.exists() {
             Ok(path)
-        }
-        else {
-            Err(io::Error::new(ErrorKind::NotFound, format!("Font file not found: {:?}", path)))
+        } else {
+            Err(io::Error::new(
+                ErrorKind::NotFound,
+                format!("Font file not found: {:?}", path),
+            ))
         }
     }
 
-    fn get_optional_font<P: AsRef<Path> + Display + Into<PathBuf>>(path: Option<P>, fallback: &Path) -> Result<PathBuf, io::Error> {
+    fn get_optional_font<P: AsRef<Path> + Display + Into<PathBuf>>(
+        path: Option<P>,
+        fallback: &Path,
+    ) -> Result<PathBuf, io::Error> {
         match path {
             Some(path) => Self::get_font(path),
-            None => Ok(fallback.to_path_buf())
+            None => Ok(fallback.to_path_buf()),
         }
     }
 }
