@@ -15,11 +15,6 @@ pub struct CosmicFont {
 }
 
 impl CosmicFont {
-    #[cfg(feature = "default-fonts")]
-    const DEFAULT_SIZE: f32 = 11.;
-    #[cfg(feature = "default-fonts")]
-    const DEFAULT_SKIP: f32 = 13.;
-
     pub fn new(
         paths: &FontPaths,
         size: f32,
