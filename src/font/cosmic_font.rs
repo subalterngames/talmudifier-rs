@@ -11,7 +11,7 @@ pub struct CosmicFont {
     pub italic: AttrsOwned,
     pub bold: AttrsOwned,
     pub bold_italic: AttrsOwned,
-    pub metrics: Metrics
+    pub metrics: Metrics,
 }
 
 impl CosmicFont {
@@ -60,7 +60,7 @@ impl CosmicFont {
             italic,
             bold,
             bold_italic,
-            metrics
+            metrics,
         }
     }
 

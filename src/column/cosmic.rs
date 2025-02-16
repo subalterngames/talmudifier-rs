@@ -7,17 +7,22 @@ use super::{width::Width, ColumnMaker};
 pub struct Cosmic<'c> {
     font: &'c CosmicFont,
     column_width: f32,
-    font_system: &'c mut FontSystem
+    font_system: &'c mut FontSystem,
 }
 
 impl<'c> Cosmic<'c> {
-    pub fn new(font: &'c CosmicFont, width: Width, page_width: f32, font_system: &'c mut FontSystem) -> Self {
+    pub fn new(
+        font: &'c CosmicFont,
+        width: Width,
+        page_width: f32,
+        font_system: &'c mut FontSystem,
+    ) -> Self {
         let column_width = page_width * width.column_ratio();
 
         Self {
-            font, 
+            font,
             column_width,
-            font_system
+            font_system,
         }
     }
 }
@@ -38,7 +43,7 @@ impl<'c> ColumnMaker for Cosmic<'c> {
         // Create lines.
         buffer.shape_until_scroll(&mut self.font_system, true);
         // Return the number of lines.
-        buffer.layout_runs().count()   
+        buffer.layout_runs().count()
     }
 }
 
@@ -46,7 +51,11 @@ impl<'c> ColumnMaker for Cosmic<'c> {
 mod tests {
     use cosmic_text::FontSystem;
 
-    use crate::{column::{width::Width, ColumnMaker}, font::cosmic_font::CosmicFont, word::Word};
+    use crate::{
+        column::{width::Width, ColumnMaker},
+        font::cosmic_font::CosmicFont,
+        word::Word,
+    };
 
     use super::Cosmic;
 

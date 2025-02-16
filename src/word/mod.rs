@@ -40,7 +40,7 @@ impl Word {
         let mut span = vec![];
         let mut style = Style::default();
         let mut attrs = font.regular.clone();
-        for word in words.iter() {
+        for word in words.iter().filter(|w| w.position == Position::Body) {
             // Add the word to the current span.
             if style == word.style {
                 span.push(word.word.clone());
@@ -68,8 +68,9 @@ impl Word {
             Style::Regular => &font.regular,
             Style::Italic => &font.italic,
             Style::Bold => &font.bold,
-            Style::BoldItalic => &font.bold_italic
-        }.clone()
+            Style::BoldItalic => &font.bold_italic,
+        }
+        .clone()
     }
 
     pub fn to_tex(words: &[Self], font_command: &str) -> (String, bool) {
