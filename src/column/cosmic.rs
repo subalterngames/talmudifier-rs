@@ -2,7 +2,7 @@ use cosmic_text::{Buffer, FontSystem, Shaping};
 
 use crate::{font::cosmic_font::CosmicFont, word::Word};
 
-use super::{width::Width, ColumnMaker};
+use super::{error::Error, width::Width, ColumnMaker};
 
 pub struct Cosmic<'c> {
     font: &'c CosmicFont,
@@ -28,7 +28,7 @@ impl<'c> Cosmic<'c> {
 }
 
 impl<'c> ColumnMaker for Cosmic<'c> {
-    fn get_num_lines(&mut self, words: &[Word]) -> usize {
+    fn get_num_lines(&mut self, words: &[Word]) -> Result<usize, Error> {
         let mut buffer = Buffer::new(&mut self.font_system, self.font.metrics);
         // Set the width.
         buffer.set_size(&mut self.font_system, Some(self.column_width), None);
@@ -43,7 +43,7 @@ impl<'c> ColumnMaker for Cosmic<'c> {
         // Create lines.
         buffer.shape_until_scroll(&mut self.font_system, true);
         // Return the number of lines.
-        buffer.layout_runs().count()
+        Ok(buffer.layout_runs().count())
     }
 }
 
@@ -67,7 +67,7 @@ mod tests {
         let mut font_system = FontSystem::new();
         let font = CosmicFont::default_left(&mut font_system);
         let mut cosmic_colunmn = Cosmic::new(&font, Width::Half, 614., &mut font_system);
-        let num_lines = cosmic_colunmn.get_num_lines(&words);
+        let num_lines = cosmic_colunmn.get_num_lines(&words).unwrap();
         assert_eq!(num_lines, 52);
     }
 }

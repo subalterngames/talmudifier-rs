@@ -1,21 +1,29 @@
 use crate::word::Word;
 
+use error::Error;
+
 mod cosmic;
+mod error;
+mod tex;
 mod width;
 
 pub trait ColumnMaker {
-    fn get_num_lines(&mut self, words: &[Word]) -> usize;
+    fn get_num_lines(&mut self, words: &[Word]) -> Result<usize, Error>;
 
-    fn get_words(&mut self, words: &[Word], num_lines: usize) -> Option<usize> {
-        if num_lines == 0 {
-            return None;
-        }
-        for i in 0..words.len() {
-            // We exceeded the number of lines. Break!
-            if self.get_num_lines(&words[..i]) > num_lines {
-                return if i == 0 { None } else { Some(i - 1) };
+    fn get_words(&mut self, words: &[Word], num_lines: usize) -> Result<Option<usize>, Error> {
+        if num_lines > 0 {
+            for i in 0..words.len() {
+                // We exceeded the number of lines. Break!
+                match self.get_num_lines(&words[..i]) {
+                    Ok(num) => {
+                        if num > num_lines {
+                            return Ok(if i == 0 { None } else { Some(i - 1) });
+                        }
+                    }
+                    Err(error) => return Err(error),
+                }
             }
         }
-        None
+        Ok(None)
     }
 }
