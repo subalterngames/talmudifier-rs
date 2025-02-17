@@ -3,3 +3,4 @@ pub mod cosmic_font;
 mod default_fonts;
 mod font_paths;
 pub mod tex_font;
+pub mod tex_fonts;

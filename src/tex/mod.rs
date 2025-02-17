@@ -1,194 +1,162 @@
+use std::{
+    path::Path,
+    thread::{spawn, JoinHandle},
+};
+
 use column_type::ColumnType;
+use error::Error;
+use page::Page;
+use pdf_extract::extract_text_from_mem;
 use position::Position;
+use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
+use table::Table;
+use tectonic::latex_to_pdf;
+
+use crate::{
+    column::width::Width,
+    font::{self, tex_font::TexFont, tex_fonts::TexFonts},
+    word::Word,
+};
 
 pub(crate) mod column_type;
+mod error;
 mod length;
 pub(crate) mod page;
 mod paper_size;
 mod position;
+mod table;
 mod unit;
 
-/// Enum values used to describe the columns that we currently want to typeset.
-#[derive(Debug)]
-pub enum Table {
-    One,
-    LeftRight,
-    LeftCenter,
-    CenterRight,
-    Three,
+pub struct Tex<P: AsRef<Path>> {
+    pub fonts: TexFonts<P>,
+    pub preamble: String,
 }
 
-impl Table {
-    const ONE_HALF: f32 = 0.5;
-    const TWO_THIRDS: f32 = 0.675;
-    const ONE_THIRD: f32 = 0.32;
-    const END: &'static str = "\n\n\\end{paracol}";
-    const SWITCH_COLUMN: &'static str = "\\switchcolumn";
-    const SWITCH_COLUMN_2: &'static str = "\\switchcolumn[2]";
-
-    /// Returns the width of the column as a fraction of the page width.
-    pub fn get_width(&self, position: &Position) -> f32 {
-        match (self, position) {
-            (Self::One, _) => 1.,
-            (Self::LeftRight, Position::Left) | (Self::LeftRight, Position::Right) => {
-                Self::ONE_HALF
+impl<P: AsRef<Path>> Tex<P> {
+    pub fn get_table(
+        &self,
+        left: &[Word],
+        center: &[Word],
+        right: &[Word],
+        table: Table,
+    ) -> Result<String, Error> {
+        // Get the column with the least words.
+        match [left, center, right]
+            .into_par_iter()
+            .zip([Position::Left, Position::Center, Position::Right])
+            .filter_map(|(w, p)| {
+                if w.is_empty() {
+                    None
+                } else {
+                    let font = match p {
+                        Position::Left => &self.fonts.left,
+                        Position::Center => &self.fonts.center,
+                        Position::Right => &self.fonts.right,
+                    };
+                    let width = table.get_width(&p);
+                    let preamble = self.preamble.clone();
+                    let font_command = font.command.clone();
+                    let words = w.clone();
+                    Some(Self::get_num_lines(&preamble, &words, &font_command, width).unwrap())
+                }
+            })
+            .min()
+        {
+            Some(min_num_lines) => {
+                // TODO start indices.
             }
-            (Self::LeftCenter, Position::Left) => Self::ONE_THIRD,
-            (Self::LeftCenter, Position::Center) => Self::TWO_THIRDS,
-            (Self::CenterRight, Position::Center) => Self::TWO_THIRDS,
-            (Self::CenterRight, Position::Right) => Self::ONE_THIRD,
-            (Self::Three, _) => Self::ONE_THIRD,
-            (a, b) => panic!("Invalid position: {:?} {:?}", a, b),
+            None => Err(Error::MinNumLines),
         }
     }
 
-    /// Given three columns (some of which are potentially non-existent), create a TeX string.
-    /// This string is the table with the appropriate number of columns, and with text in each column that needs it.
-    pub fn get_columns(left: ColumnType, center: ColumnType, right: ColumnType) -> String {
-        let mut tex = String::new();
-        match (left, center, right) {
-            // Left, Right, Center.
-            (ColumnType::Text(left), ColumnType::Text(center), ColumnType::Text(right)) => {
-                tex.push_str(&Self::Three.get_latex_header());
-                tex.push_str(&left);
-                tex.push_str(Self::SWITCH_COLUMN);
-                tex.push_str(&center);
-                tex.push_str(Self::SWITCH_COLUMN);
-                tex.push_str(&right);
+    fn get_words(
+        preamble: &str,
+        font_command: &str,
+        words: &[Word],
+        width: Width,
+        start: usize,
+        cosmic_index: usize,
+        num_lines: usize,
+    ) -> Result<Option<usize>, Error> {
+        if words.is_empty() {
+            Ok(None)
+        } else {
+            let mut end = cosmic_index;
+
+            // Decrement until we have enough lines.
+            while end > 0
+                && Self::get_num_lines(preamble, &words[start..end], font_command, width)?
+                    > num_lines
+            {
+                end -= 1;
             }
-            // Left, Center, Empty.
-            (ColumnType::Text(left), ColumnType::Text(center), ColumnType::Empty) => {
-                tex.push_str(&Self::Three.get_latex_header());
-                tex.push_str(&left);
-                tex.push_str(Self::SWITCH_COLUMN);
-                tex.push_str(&center);
+
+            // Increment until we go over.
+            while end < words.len()
+                && Self::get_num_lines(preamble, &words[start..end], font_command, width)?
+                    <= num_lines
+            {
+                end += 1;
             }
-            // Left, Empty, Right.
-            (ColumnType::Text(left), ColumnType::Empty, ColumnType::Text(right)) => {
-                tex.push_str(&Self::Three.get_latex_header());
-                tex.push_str(&left);
-                tex.push_str(Self::SWITCH_COLUMN_2);
-                tex.push_str(&right);
-            }
-            // Empty, Center, Right.
-            (ColumnType::Empty, ColumnType::Text(center), ColumnType::Text(right)) => {
-                tex.push_str(&Self::Three.get_latex_header());
-                tex.push_str(Self::SWITCH_COLUMN);
-                tex.push_str(&center);
-                tex.push_str(Self::SWITCH_COLUMN);
-                tex.push_str(&right);
-            }
-            // Left, Center, None.
-            (ColumnType::Text(left), ColumnType::Text(center), ColumnType::None) => {
-                tex.push_str(&Self::LeftCenter.get_latex_header());
-                tex.push_str(&left);
-                tex.push_str(Self::SWITCH_COLUMN);
-                tex.push_str(&center);
-            }
-            // Left, None, Right.
-            (ColumnType::Text(left), ColumnType::None, ColumnType::Text(right)) => {
-                tex.push_str(&Self::LeftRight.get_latex_header());
-                tex.push_str(&left);
-                tex.push_str(Self::SWITCH_COLUMN);
-                tex.push_str(&right);
-            }
-            // None, Center, Right.
-            (ColumnType::None, ColumnType::Text(center), ColumnType::Text(right)) => {
-                tex.push_str(&Self::CenterRight.get_latex_header());
-                tex.push_str(&center);
-                tex.push_str(Self::SWITCH_COLUMN);
-                tex.push_str(&right);
-            }
-            // Left, Empty, Empty.
-            (ColumnType::Text(left), ColumnType::Empty, ColumnType::Empty) => {
-                tex.push_str(&Self::Three.get_latex_header());
-                tex.push_str(&left);
-            }
-            // Empty, Center, Empty.
-            (ColumnType::Empty, ColumnType::Text(center), ColumnType::Empty) => {
-                tex.push_str(&Self::Three.get_latex_header());
-                tex.push_str(Self::SWITCH_COLUMN);
-                tex.push_str(&center);
-            }
-            // Empty, Empty, Left.
-            (ColumnType::Empty, ColumnType::Empty, ColumnType::Text(left)) => {
-                tex.push_str(&Self::Three.get_latex_header());
-                tex.push_str(Self::SWITCH_COLUMN_2);
-                tex.push_str(&left);
-            }
-            // Left, Empty, None.
-            (ColumnType::Text(left), ColumnType::Empty, ColumnType::None) => {
-                tex.push_str(&Self::LeftCenter.get_latex_header());
-                tex.push_str(&left);
-            }
-            // Empty, Center, None.
-            (ColumnType::Empty, ColumnType::Text(center), ColumnType::None) => {
-                tex.push_str(&Self::LeftCenter.get_latex_header());
-                tex.push_str(Self::SWITCH_COLUMN);
-                tex.push_str(&center);
-            }
-            // Empty, None, Right.
-            (ColumnType::Empty, ColumnType::None, ColumnType::Text(right)) => {
-                tex.push_str(&Self::LeftRight.get_latex_header());
-                tex.push_str(Self::SWITCH_COLUMN);
-                tex.push_str(&right);
-            }
-            // Left, None, Empty.
-            (ColumnType::Text(left), ColumnType::None, ColumnType::Empty) => {
-                tex.push_str(&Self::Three.get_latex_header());
-                tex.push_str(&left);
-            }
-            // None, Center, Empty.
-            (ColumnType::None, ColumnType::Text(center), ColumnType::Empty) => {
-                tex.push_str(&Self::LeftCenter.get_latex_header());
-                tex.push_str(Self::SWITCH_COLUMN);
-                tex.push_str(&center);
-            }
-            // None, Empty, Right.
-            (ColumnType::None, ColumnType::Empty, ColumnType::Text(right)) => {
-                tex.push_str(&Self::CenterRight.get_latex_header());
-                tex.push_str(Self::SWITCH_COLUMN);
-                tex.push_str(&right);
-            }
-            // Left, None, None.
-            // None, Center, None,
-            // None, None, Right.
-            (ColumnType::Text(text), ColumnType::None, ColumnType::None)
-            | (ColumnType::None, ColumnType::Text(text), ColumnType::None)
-            | (ColumnType::None, ColumnType::None, ColumnType::Text(text)) => {
-                tex.push_str(&Self::One.get_latex_header());
-                tex.push_str(&text);
-            }
-            // All empty and/or none.
-            _ => {
-                tex.push_str(&Self::One.get_latex_header());
-            }
+
+            Ok(if end == 0 {
+                None
+            } else if end == words.len() {
+                Some(end)
+            } else {
+                Some(end - 1)
+            })
         }
-        tex.push_str(Self::END);
-        tex
     }
 
-    /// Returns the start of a paracol.
-    fn get_latex_header(&self) -> String {
-        format!(
-            "\\columnratio{{{}}}\n\\begin{{paracol}}{{{}}}\n",
-            match self {
-                Self::LeftRight => format!("{},{}", Self::ONE_HALF, Self::ONE_HALF),
-                Self::One => "1".to_string(),
-                Self::Three => format!(
-                    "{},{},{}",
-                    Self::ONE_THIRD,
-                    Self::ONE_THIRD,
-                    Self::ONE_THIRD
+    fn get_num_lines(
+        preamble: &str,
+        words: &[Word],
+        font_command: &str,
+        width: Width,
+    ) -> Result<usize, Error> {
+        let (column, title) = Word::to_tex(words, font_command);
+
+        if title || column.is_empty() {
+            Ok(0)
+        } else {
+            // Get the preamble.
+            let mut tex = preamble.to_string();
+
+            // Get a table.
+            tex.push_str(&match width {
+                Width::Half => Table::get_columns(
+                    ColumnType::Text(column),
+                    ColumnType::None,
+                    ColumnType::Empty,
                 ),
-                Self::LeftCenter => format!("{},{}", Self::ONE_THIRD, Self::TWO_THIRDS),
-                Self::CenterRight => format!("{},{}", Self::TWO_THIRDS, Self::ONE_THIRD),
-            },
-            match self {
-                Self::One => 1,
-                Self::Three => 3,
-                _ => 2,
+                Width::One => {
+                    Table::get_columns(ColumnType::Text(column), ColumnType::None, ColumnType::None)
+                }
+                Width::Third => Table::get_columns(
+                    ColumnType::Text(column),
+                    ColumnType::Empty,
+                    ColumnType::Empty,
+                ),
+                Width::TwoThirds => Table::get_columns(
+                    ColumnType::None,
+                    ColumnType::Text(column),
+                    ColumnType::Empty,
+                ),
+            });
+
+            // End the document.
+            tex.push_str(Page::END_DOCUMENT);
+
+            // Create a PDF.
+            match latex_to_pdf(&tex) {
+                // Extract the text of the PDF.
+                Ok(pdf) => match extract_text_from_mem(&pdf) {
+                    Ok(text) => Ok(text.split('\n').count()),
+                    Err(error) => Err(Error::Extract(error)),
+                },
+                Err(error) => Err(Error::Pdf(error)),
             }
-        )
+        }
     }
 }

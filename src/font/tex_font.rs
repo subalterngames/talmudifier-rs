@@ -6,6 +6,7 @@ use tempdir::TempDir;
 #[cfg(feature = "default-fonts")]
 use super::default_fonts::*;
 
+#[derive(Clone)]
 pub struct TexFont<P: AsRef<Path>> {
     /// The font family declaration.
     pub font_family: String,
@@ -70,14 +71,7 @@ impl TexFont<TempDir> {
     const BOLD: &str = "bold";
     const BOLD_ITALIC: &str = "bold_italic";
 
-    pub fn default_fonts() -> Result<(Self, Self, Self), io::Error> {
-        let left = Self::default_left()?;
-        let center = Self::default_center()?;
-        let right = Self::default_right()?;
-        Ok((left, center, right))
-    }
-
-    fn default_left() -> Result<Self, io::Error> {
+    pub fn default_left() -> Result<Self, io::Error> {
         let directory = TempDir::new("talmudifier_font_left")?;
         Self::dump_font(IM_FELL_REGULAR, Self::REGULAR, &directory)?;
         Self::dump_font(IM_FELL_ITALIC, Self::ITALIC, &directory)?;
@@ -95,7 +89,7 @@ impl TexFont<TempDir> {
         ))
     }
 
-    fn default_center() -> Result<Self, io::Error> {
+    pub fn default_center() -> Result<Self, io::Error> {
         let directory = TempDir::new("talmudifier_font_center")?;
         Self::dump_font(EB_GARAMOND_REGULAR, Self::REGULAR, &directory)?;
         Self::dump_font(EB_GARAMOND_ITALIC, Self::ITALIC, &directory)?;
@@ -114,7 +108,7 @@ impl TexFont<TempDir> {
         ))
     }
 
-    fn default_right() -> Result<Self, io::Error> {
+    pub fn default_right() -> Result<Self, io::Error> {
         let directory = TempDir::new("talmudifier_font_center")?;
         Self::dump_font(AVERIA_REGULAR, Self::REGULAR, &directory)?;
         Self::dump_font(AVERIA_ITALIC, Self::ITALIC, &directory)?;
@@ -135,15 +129,5 @@ impl TexFont<TempDir> {
 
     fn dump_font(font: &[u8], filename: &str, dir: &TempDir) -> Result<(), io::Error> {
         write(dir.path().join(format!("{}.ttf", filename)), font)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::TexFont;
-
-    #[test]
-    fn test_default_tex_fonts() {
-        TexFont::default_fonts().unwrap();
     }
 }

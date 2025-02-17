@@ -18,3 +18,4 @@ serde_json = "1.0.134"
 tempdir = "0.3.7"
 tectonic = { git = "https://github.com/tectonic-typesetting/tectonic.git", branch = "master" }
 thiserror = "2.0.9"
+rayon = "1.10.0"

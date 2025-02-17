@@ -3,7 +3,6 @@ use crate::word::Word;
 use error::Error;
 
 pub mod cosmic;
-mod error;
 pub mod tex;
 pub mod width;
 
