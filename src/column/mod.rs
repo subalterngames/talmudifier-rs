@@ -2,10 +2,10 @@ use crate::word::Word;
 
 use error::Error;
 
-mod cosmic;
+pub mod cosmic;
 mod error;
-mod tex;
-mod width;
+pub mod tex;
+pub mod width;
 
 pub trait ColumnMaker {
     fn get_num_lines(&mut self, words: &[Word]) -> Result<usize, Error>;

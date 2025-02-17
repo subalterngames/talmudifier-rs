@@ -113,11 +113,11 @@ impl Word {
                     position = word.position;
                 }
                 // Add the suffixes.
-                suffixes.iter().for_each(|s| text.push_str(*s));
+                suffixes.iter().for_each(|s| text.push_str(s));
                 // Add a space.
                 text.push(' ');
                 // Add the prefixes.
-                prefixes.iter().for_each(|p| text.push_str(*p));
+                prefixes.iter().for_each(|p| text.push_str(p));
                 // Add the word.
                 text.push_str(&word.word);
             }

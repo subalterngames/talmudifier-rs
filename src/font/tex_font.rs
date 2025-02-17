@@ -5,7 +5,6 @@ use tempdir::TempDir;
 
 #[cfg(feature = "default-fonts")]
 use super::default_fonts::*;
-use super::font_paths::FontPaths;
 
 pub struct TexFont<P: AsRef<Path>> {
     /// The font family declaration.
@@ -41,10 +40,7 @@ impl<P: AsRef<Path>> TexFont<P> {
         let styles = [bold, italic, bold_italic]
             .iter()
             .zip(STYLES)
-            .filter_map(|(f, s)| match f {
-                Some(f) => Some(format!("{}={}", s, f)),
-                None => None,
-            })
+            .filter_map(|(f, s)| f.as_ref().map(|f| format!("{}={}", s, f)))
             .collect::<Vec<String>>()
             .join(", ");
         if !styles.is_empty() {
@@ -138,7 +134,7 @@ impl TexFont<TempDir> {
     }
 
     fn dump_font(font: &[u8], filename: &str, dir: &TempDir) -> Result<(), io::Error> {
-        write(&dir.path().join(format!("{}.ttf", filename)), font)
+        write(dir.path().join(format!("{}.ttf", filename)), font)
     }
 }
 

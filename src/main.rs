@@ -1,44 +1,50 @@
+use std::fs::write;
+
+use column::{cosmic::Cosmic, tex::Tex, width::Width, ColumnMaker};
+use cosmic_text::FontSystem;
+use font::{cosmic_font::CosmicFont, tex_font::TexFont};
+use tectonic::latex_to_pdf;
+use tex::page::Page;
+use word::Word;
+
 mod column;
 pub(crate) mod font;
+pub(crate) mod tex;
 pub(crate) mod word;
 
 fn main() {
-    // let mut font_system = FontSystem::new();
-    /*
-    let metrics = Metrics::new(14.0, 20.0);
+    let md = include_str!("test.md");
+    let page = Page::default();
+    let (left, center, right) = TexFont::default_fonts().unwrap();
+    let fonts = [&left, &center, &right];
+    let preamble = page.get_preamble(fonts);
 
-    // Load the font.
-    let path = PathBuf::from_str("src/fonts/IM_Fell_French_Canon/FeFCrm2.ttf").unwrap();
-    let font_id = font_system.db_mut().load_font_source(Source::File(path))[0];
-    let family_name = font_system.db().face(font_id).unwrap().families[0]
-        .0
-        .clone();
-    // Attributes indicate what font to choose
-    let attrs = Attrs::new().family(Family::Name(&family_name));
+    let width = Width::Half;
 
-    let column = Column {
-        position: Position::Right,
-        text: include_str!("test.md").to_string(),
-        attrs,
+    let mut font_system = FontSystem::new();
+    let cosmic_font = CosmicFont::default_left(&mut font_system);
+    let table_width = page.get_table_width();
+    let mut cosmic = Cosmic::new(&cosmic_font, width, table_width, &mut font_system);
+
+    let words = Word::from_md(md).unwrap();
+
+    let index = cosmic.get_words(&words, 4).unwrap().unwrap();
+
+    let mut tex = Tex {
+        preamble: &preamble,
+        font: &left,
+        width,
     };
 
-    let page = Page::default();
+    // TODO make the tex decrement.
 
-    let _ = get_cosmic_index(
-        4,
-        &column,
-        &Columns::LeftRight,
-        &page,
-        &mut font_system,
-        metrics,
-    );
+    let index = tex.get_words(&words, 4).unwrap().unwrap();
 
-    // A Buffer provides shaping and layout for a UTF-8 string, create one per text widget
-    let mut buffer = Buffer::new(&mut font_system, metrics);
-    buffer.set_size(&mut font_system, Some(500.), None);
+    let (column, _) = Word::to_tex(&words[..index], &left.command);
+    let tex = tex.get_tex(column);
 
-    let path = PathBuf::from_str("src/fonts/IM_Fell_French_Canon/FeFCit2.ttf").unwrap();
-    assert!(path.exists(), "{:?}", path);*/
+    let pdf = latex_to_pdf(&tex).unwrap();
+    write("out.pdf", pdf).unwrap();
 }
 
 #[macro_export]

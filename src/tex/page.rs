@@ -1,14 +1,11 @@
-use font::Font;
-use length::Length;
-use paper_size::PaperSize;
+use std::path::Path;
 
-use crate::{column::position::Position, tex};
+use crate::font::tex_font::TexFont;
 
-pub mod font;
-pub mod length;
-pub mod paper_size;
-mod serialized_font;
-pub mod unit;
+use super::{
+    length::Length,
+    paper_size::{PaperSize, WIDTH_PTS},
+};
 
 /// Page layout parameters.
 pub struct Page {
@@ -24,16 +21,12 @@ pub struct Page {
     pub column_separation: Length,
     pub paragraph_fill_skip: Length,
     pub tabular_column_separation: Length,
-    pub left_font: Font,
-    pub center_font: Font,
-    pub right_font: Font,
 }
 
 impl Page {
-    pub const BEGIN_DOCUMENT: &str = "\n\\raggedbottom\n\n\\begin{document}\\begin{sloppypar}\n\n";
-    pub const END_DOCUMENT: &str = "\\end{sloppypar}\\end{document}";
+    pub const END_DOCUMENT: &str = "\n\\end{sloppypar}\\end{document}";
 
-    pub fn get_preamble(&self) -> String {
+    pub fn get_preamble<P: AsRef<Path>>(&self, fonts: [&TexFont<P>; 3]) -> String {
         let mut preamble = format!(
             "\\documentclass[11pt, {}, openany]{{srcbook}}",
             self.paper_size
@@ -41,7 +34,7 @@ impl Page {
         preamble += &format!("\n\\usepackage[{}, bindingoffset={}, left={}, right={}, top={}, bottom={}, footskip={}, marginparwidth={}]{{geometry}}\n\n", self.paper_size, self.binding_offset, self.left_margin, self.right_margin, self.top_margin, self.bottom_margin, self.foot_skip, self.margin_paragraph_width);
         preamble += &["marginnote", "sectsty", "ragged2e", "paracol", "fontspec"]
             .iter()
-            .map(|p| tex!("usepackage", p))
+            .map(|p| crate::tex!("usepackage", p))
             .collect::<Vec<String>>()
             .join("\n");
 
@@ -58,12 +51,20 @@ impl Page {
         {
             preamble += &Self::set_length(keyword, length)
         }
-        preamble += "\n\\newcommand{\\daftitle}[1]{\\centerfont{\\huge{#1}}}";
-        preamble + "\n\n"
+        preamble += "\n\\newcommand{\\daftitle}[1]{\\centerfont{\\huge{#1}}}\n";
+        for font in fonts.iter() {
+            preamble.push_str(&font.command);
+            preamble.push('\n');
+        }
+        preamble + "\n\n\\raggedbottom\n\n\\begin{document}\\begin{sloppypar}\n\n"
+    }
+
+    pub fn get_table_width(&self) -> f32 {
+        WIDTH_PTS - (self.left_margin.get_pts() + self.right_margin.get_pts())
     }
 
     fn set_length(keyword: &str, length: &Length) -> String {
-        format!("\n{}", tex!("setlength", keyword, length))
+        format!("\n{}", crate::tex!("setlength", keyword, length))
     }
 }
 
@@ -83,9 +84,6 @@ impl Default for Page {
             column_separation: Length::em(1.25),
             paragraph_fill_skip: Length::pt(0.),
             tabular_column_separation: Length::em(1.),
-            left_font: Font::default_left(),
-            center_font: Font::default_center(),
-            right_font: Font::default_right(),
         }
     }
 }
