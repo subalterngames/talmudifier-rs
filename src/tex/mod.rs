@@ -44,20 +44,13 @@ impl<P: AsRef<Path>> Tex<P> {
         match [left, center, right]
             .into_par_iter()
             .zip([Position::Left, Position::Center, Position::Right])
-            .filter_map(|(w, p)| {
+            .zip([&self.fonts.left, &self.fonts.center, &self.fonts.right])
+            .filter_map(|(w, p, f)| {
                 if w.is_empty() {
                     None
                 } else {
-                    let font = match p {
-                        Position::Left => &self.fonts.left,
-                        Position::Center => &self.fonts.center,
-                        Position::Right => &self.fonts.right,
-                    };
                     let width = table.get_width(&p);
-                    let preamble = self.preamble.clone();
-                    let font_command = font.command.clone();
-                    let words = w.clone();
-                    Some(Self::get_num_lines(&preamble, &words, &font_command, width).unwrap())
+                    Some(Self::get_num_lines(&self.preamble, w, &f.command, width).unwrap())
                 }
             })
             .min()
