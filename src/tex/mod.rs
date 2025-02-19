@@ -16,17 +16,17 @@ use tectonic::latex_to_pdf;
 
 use crate::{
     column::width::Width,
+    error::Error,
     font::tex_fonts::TexFonts,
     word::Word,
 };
 
 pub(crate) mod column_type;
-mod error;
 mod length;
 pub(crate) mod page;
 mod paper_size;
 mod position;
-mod table;
+pub(crate) mod table;
 mod unit;
 
 pub struct Tex<P: AsRef<Path>> {
@@ -77,7 +77,6 @@ impl<P: AsRef<Path>> Tex<P> {
         font_command: &str,
         words: &[Word],
         width: Width,
-        start: usize,
         cosmic_index: usize,
         num_lines: usize,
     ) -> Result<Option<usize>, Error> {
@@ -88,7 +87,7 @@ impl<P: AsRef<Path>> Tex<P> {
 
             // Decrement until we have enough lines.
             while end > 0
-                && Self::get_num_lines(preamble, &words[start..end], font_command, width)?
+                && Self::get_num_lines(preamble, &words[..end], font_command, width)?
                     > num_lines
             {
                 end -= 1;
@@ -96,7 +95,7 @@ impl<P: AsRef<Path>> Tex<P> {
 
             // Increment until we go over.
             while end < words.len()
-                && Self::get_num_lines(preamble, &words[start..end], font_command, width)?
+                && Self::get_num_lines(preamble, &words[..end], font_command, width)?
                     <= num_lines
             {
                 end += 1;

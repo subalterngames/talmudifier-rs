@@ -4,14 +4,17 @@ use column::{cosmic::Cosmic, tex::Tex, width::Width, ColumnMaker};
 use cosmic_text::FontSystem;
 use error::Error;
 use font::{cosmic_font::CosmicFont, tex_font::TexFont};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use tectonic::latex_to_pdf;
-use tex::page::Page;
+use tex::{column_type::ColumnType, page::Page, table::Table, Tex};
+use typeset_table::TypesetTable;
 use word::Word;
 
 mod column;
 pub(crate) mod error;
 pub(crate) mod font;
 pub(crate) mod tex;
+mod typeset_table;
 pub(crate) mod word;
 
 fn main() {
@@ -47,6 +50,30 @@ fn main() {
 
     let pdf = latex_to_pdf(&tex).unwrap();
     write("out.pdf", pdf).unwrap();
+}
+
+pub fn get_table<'t>(tex: &'t Tex, left: &'t [Word], center: &'t [Word], right: &'t [Word], num_lines: Option<usize>) -> Result<TypesetTable<'t>, Error> {
+    // Derive the table from which columns still have words.
+    let table = match (!left.is_empty(), !center.is_empty(), !right.is_empty()) {
+        (true, true, true) => Table::Three,
+        (true, false, false) | (false, true, false) | (false, false, true) => Table::One,
+        (true, true, false) => Table::LeftCenter,
+        (true, false, true) => Table::LeftRight,
+        (false, true, true) => Table::CenterRight,
+        (false, false, false) => { 
+            return Err(Error::NoMoreWords);
+        }
+    };
+    // Get the target number of lines.
+    let num_lines = match num_lines {
+        // Use a hardcoded number of lines.
+        Some(num_lines) => num_lines,
+        // Get the minimum number of lines.
+        None => tex.get_min_lines(left, center, right, table)?
+    };
+    let end_indices = [left, center, right].into_par_iter().map(|words| {
+        // TODO get the cosmic index.
+    });
 }
 
 #[macro_export]

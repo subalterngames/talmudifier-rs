@@ -9,5 +9,7 @@ pub enum Error {
     #[error("Failed to get the minimum number of lines")]
     MinNumLines,
     #[error("Markdown parsing error: {0}")]
-    Md(markdown::message::Message)
+    Md(markdown::message::Message),
+    #[error("Tried to create a table but there are no words.")]
+    NoMoreWords
 }
