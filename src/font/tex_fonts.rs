@@ -12,7 +12,7 @@ pub struct TexFonts<P: AsRef<Path>> {
 
 #[cfg(feature = "default-fonts")]
 impl TexFonts<TempDir> {
-    fn default() -> Result<Self, io::Error> {
+    pub fn default() -> Result<Self, io::Error> {
         let left = TexFont::default_left()?;
         let center = TexFont::default_center()?;
         let right = TexFont::default_right()?;

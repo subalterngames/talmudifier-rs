@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::font::tex_font::TexFont;
+use crate::font::tex_fonts::TexFonts;
 
 use length::Length;
 use paper_size::PaperSize;
@@ -29,7 +29,7 @@ pub struct Page {
 impl Page {
     pub const END_DOCUMENT: &str = "\n\\end{sloppypar}\\end{document}";
 
-    pub fn get_preamble<P: AsRef<Path>>(&self, fonts: [&TexFont<P>; 3]) -> String {
+    pub fn get_preamble<P: AsRef<Path>>(&self, fonts: &TexFonts<P>) -> String {
         let mut preamble = format!(
             "\\documentclass[11pt, {}, openany]{{srcbook}}",
             self.paper_size
@@ -55,7 +55,7 @@ impl Page {
             preamble += &Self::set_length(keyword, length)
         }
         preamble += "\n\\newcommand{\\daftitle}[1]{\\centerfont{\\huge{#1}}}\n";
-        for font in fonts.iter() {
+        for font in [&fonts.left, &fonts.center, &fonts.right].iter() {
             preamble.push_str(&font.command);
             preamble.push('\n');
         }

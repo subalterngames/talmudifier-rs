@@ -7,7 +7,6 @@ use column_type::ColumnType;
 use error::Error;
 use page::Page;
 use pdf_extract::extract_text_from_mem;
-use position::Position;
 use rayon::iter::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
 };
@@ -17,7 +16,6 @@ use tectonic::latex_to_pdf;
 use crate::{column::width::Width, error::Error, font::tex_fonts::TexFonts, word::Word};
 
 pub(crate) mod column_type;
-mod position;
 pub(crate) mod table;
 
 pub struct Tex<P: AsRef<Path>> {

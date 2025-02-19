@@ -61,17 +61,6 @@ pub fn get_table<'t>(
     right: &'t [Word],
     num_lines: Option<usize>,
 ) -> Result<TypesetTable<'t>, Error> {
-    // Derive the table from which columns still have words.
-    let table = match (!left.is_empty(), !center.is_empty(), !right.is_empty()) {
-        (true, true, true) => Table::Three,
-        (true, false, false) | (false, true, false) | (false, false, true) => Table::One,
-        (true, true, false) => Table::LeftCenter,
-        (true, false, true) => Table::LeftRight,
-        (false, true, true) => Table::CenterRight,
-        (false, false, false) => {
-            return Err(Error::NoMoreWords);
-        }
-    };
     // Get the target number of lines.
     let num_lines = match num_lines {
         // Use a hardcoded number of lines.
