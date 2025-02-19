@@ -2,10 +2,13 @@ use std::path::Path;
 
 use crate::font::tex_font::TexFont;
 
-use super::{
-    length::Length,
-    paper_size::{PaperSize, WIDTH_PTS},
-};
+use length::Length;
+use paper_size::PaperSize;
+pub use paper_size::WIDTH_PTS;
+
+mod length;
+mod paper_size;
+mod unit;
 
 /// Page layout parameters.
 pub struct Page {

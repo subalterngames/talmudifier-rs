@@ -13,6 +13,7 @@ use word::Word;
 mod column;
 pub(crate) mod error;
 pub(crate) mod font;
+pub(crate) mod page;
 pub(crate) mod tex;
 mod typeset_table;
 pub(crate) mod word;
@@ -35,6 +36,7 @@ fn main() {
 
     let index = cosmic.get_words(&words, 4).unwrap().unwrap();
 
+    /*
     let mut tex = Tex {
         preamble: &preamble,
         font: &left,
@@ -49,10 +51,16 @@ fn main() {
     let tex = tex.get_tex(column);
 
     let pdf = latex_to_pdf(&tex).unwrap();
-    write("out.pdf", pdf).unwrap();
+    write("out.pdf", pdf).unwrap();*/
 }
 
-pub fn get_table<'t>(tex: &'t Tex, left: &'t [Word], center: &'t [Word], right: &'t [Word], num_lines: Option<usize>) -> Result<TypesetTable<'t>, Error> {
+pub fn get_table<'t>(
+    tex: &'t Tex,
+    left: &'t [Word],
+    center: &'t [Word],
+    right: &'t [Word],
+    num_lines: Option<usize>,
+) -> Result<TypesetTable<'t>, Error> {
     // Derive the table from which columns still have words.
     let table = match (!left.is_empty(), !center.is_empty(), !right.is_empty()) {
         (true, true, true) => Table::Three,
@@ -60,7 +68,7 @@ pub fn get_table<'t>(tex: &'t Tex, left: &'t [Word], center: &'t [Word], right: 
         (true, true, false) => Table::LeftCenter,
         (true, false, true) => Table::LeftRight,
         (false, true, true) => Table::CenterRight,
-        (false, false, false) => { 
+        (false, false, false) => {
             return Err(Error::NoMoreWords);
         }
     };
@@ -69,7 +77,7 @@ pub fn get_table<'t>(tex: &'t Tex, left: &'t [Word], center: &'t [Word], right: 
         // Use a hardcoded number of lines.
         Some(num_lines) => num_lines,
         // Get the minimum number of lines.
-        None => tex.get_min_lines(left, center, right, table)?
+        None => tex.get_min_lines(left, center, right, table)?,
     };
     let end_indices = [left, center, right].into_par_iter().map(|words| {
         // TODO get the cosmic index.
