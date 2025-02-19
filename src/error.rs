@@ -8,4 +8,6 @@ pub enum Error {
     Extract(pdf_extract::OutputError),
     #[error("Failed to get the minimum number of lines")]
     MinNumLines,
+    #[error("Markdown parsing error: {0}")]
+    Md(markdown::message::Message)
 }

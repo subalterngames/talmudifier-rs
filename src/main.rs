@@ -2,12 +2,14 @@ use std::fs::write;
 
 use column::{cosmic::Cosmic, tex::Tex, width::Width, ColumnMaker};
 use cosmic_text::FontSystem;
+use error::Error;
 use font::{cosmic_font::CosmicFont, tex_font::TexFont};
 use tectonic::latex_to_pdf;
 use tex::page::Page;
 use word::Word;
 
 mod column;
+pub(crate) mod error;
 pub(crate) mod font;
 pub(crate) mod tex;
 pub(crate) mod word;
