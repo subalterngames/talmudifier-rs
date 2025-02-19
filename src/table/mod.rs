@@ -1,6 +1,9 @@
-use crate::column::width::Width;
+use rayon::iter::{IntoParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
+use typeset_table::TypesetTable;
 
-use super::{column_type::ColumnType, position::Position};
+use crate::{column::{position::Position, width::Width, Column}, error::Error};
+
+mod input_table;
 
 /// Enum values used to describe the columns that we currently want to typeset.
 #[derive(Debug)]
@@ -160,6 +163,8 @@ impl Table {
         tex.push_str(Self::END);
         tex
     }
+
+
 
     /// Returns the start of a paracol.
     fn get_latex_header(&self) -> String {

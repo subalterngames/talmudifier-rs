@@ -7,8 +7,10 @@ pub enum Error {
     Pdf(tectonic::Error),
     #[error("Error extracting text from PDF: {0}")]
     Extract(pdf_extract::OutputError),
+    #[error("Failed to get the minimum number of lines: {0}")]
+    MinNumLines(String),
     #[error("Failed to get the minimum number of lines")]
-    MinNumLines,
+    NoMinNumLines,
     #[error("Markdown parsing error: {0}")]
     Md(markdown::message::Message),
     #[error("Tried to create a table but there are no words.")]

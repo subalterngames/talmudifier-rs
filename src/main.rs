@@ -5,8 +5,8 @@ use cosmic_text::FontSystem;
 use error::Error;
 use font::{cosmic_font::CosmicFont, tex_font::TexFont};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use table::{column_type::ColumnType, page::Page, table::Table, Tex};
 use tectonic::latex_to_pdf;
-use tex::{column_type::ColumnType, page::Page, table::Table, Tex};
 use typeset_table::TypesetTable;
 use word::Word;
 
@@ -14,7 +14,7 @@ mod column;
 pub(crate) mod error;
 pub(crate) mod font;
 pub(crate) mod page;
-pub(crate) mod tex;
+pub(crate) mod table;
 mod typeset_table;
 pub(crate) mod word;
 
@@ -54,24 +54,7 @@ fn main() {
     write("out.pdf", pdf).unwrap();*/
 }
 
-pub fn get_table<'t>(
-    tex: &'t Tex,
-    left: &'t [Word],
-    center: &'t [Word],
-    right: &'t [Word],
-    num_lines: Option<usize>,
-) -> Result<TypesetTable<'t>, Error> {
-    // Get the target number of lines.
-    let num_lines = match num_lines {
-        // Use a hardcoded number of lines.
-        Some(num_lines) => num_lines,
-        // Get the minimum number of lines.
-        None => tex.get_min_lines(left, center, right, table)?,
-    };
-    let end_indices = [left, center, right].into_par_iter().map(|words| {
-        // TODO get the cosmic index.
-    });
-}
+
 
 #[macro_export]
 macro_rules! tex {

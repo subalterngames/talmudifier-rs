@@ -2,16 +2,18 @@ use crate::{
     error::Error,
     font::cosmic_font::CosmicFont,
     page::{Page, WIDTH_PTS},
-    tex::{column_type::ColumnType, table::Table},
+    table::Table,
     word::Word,
 };
 
 use cosmic_text::{Buffer, FontSystem, Shaping};
 use position::Position;
 use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
+use tex_column::TexColumn;
 use width::Width;
 
-mod position;
+mod tex_column;
+pub mod position;
 pub mod width;
 
 pub struct Column {
@@ -52,7 +54,7 @@ impl Column {
         }
     }
 
-    pub fn get_words<'t>(
+    pub fn get_tex_column<'t>(
         &'t mut self,
         num_lines: usize,
         width: Width,
@@ -61,63 +63,6 @@ impl Column {
         match self.get_cosmic_index(num_lines, width)? {
             Some(cosmic_index) => self.get_tex_words(width, cosmic_index, num_lines),
             None => Err(Error::NoMoreWords),
-        }
-    }
-
-    pub fn get_min_num_lines(
-        left: &mut Self,
-        center: &mut Self,
-        right: &mut Self,
-    ) -> Result<usize, Error> {
-        let has_words = [left, center, right]
-            .iter()
-            .map(|c| !c.words[c.start..].is_empty())
-            .collect::<Vec<bool>>();
-        // Derive the table from which columns still have words.
-        let table = match (has_words[0], has_words[1], has_words[2]) {
-            (true, true, true) => Table::Three,
-            (true, false, false) | (false, true, false) | (false, false, true) => Table::One,
-            (true, true, false) => Table::LeftCenter,
-            (true, false, true) => Table::LeftRight,
-            (false, true, true) => Table::CenterRight,
-            (false, false, false) => {
-                return Err(Error::NoMoreWords);
-            }
-        };
-        // Get the column with the least words.
-        let num_lines = [left, center, right]
-            .into_par_iter()
-            .zip(
-                [Position::Left, Position::Center, Position::Right]
-                    .into_par_iter()
-                    .zip(has_words.into_par_iter()),
-            )
-            .filter_map(|(w, (p, h))| {
-                if !h {
-                    None
-                } else {
-                    let width = table.get_width(&p);
-                    Some(w.get_num_lines_tex(None, width))
-                }
-            })
-            .collect::<Vec<Result<usize, Error>>>();
-        if let Some(err) = num_lines.iter().find_map(|n| match n {
-            Ok(n) => None,
-            Err(error) => Some(error),
-        }) {
-            Err(err.clone())
-        } else {
-            match num_lines
-                .iter()
-                .filter_map(|n| match n {
-                    Ok(n) => Some(n),
-                    Err(_) => None,
-                })
-                .min()
-            {
-                Some(min) => Ok(*min),
-                None => Err(Error::MinNumLines),
-            }
         }
     }
 
@@ -172,22 +117,22 @@ impl Column {
             // Get a table.
             tex.push_str(&match width {
                 Width::Half => Table::get_columns(
-                    ColumnType::Text(column),
-                    ColumnType::None,
-                    ColumnType::Empty,
+                    TexColumn::Text(column),
+                    TexColumn::None,
+                    TexColumn::Empty,
                 ),
                 Width::One => {
-                    Table::get_columns(ColumnType::Text(column), ColumnType::None, ColumnType::None)
+                    Table::get_columns(TexColumn::Text(column), TexColumn::None, TexColumn::None)
                 }
                 Width::Third => Table::get_columns(
-                    ColumnType::Text(column),
-                    ColumnType::Empty,
-                    ColumnType::Empty,
+                    TexColumn::Text(column),
+                    TexColumn::Empty,
+                    TexColumn::Empty,
                 ),
                 Width::TwoThirds => Table::get_columns(
-                    ColumnType::None,
-                    ColumnType::Text(column),
-                    ColumnType::Empty,
+                    TexColumn::None,
+                    TexColumn::Text(column),
+                    TexColumn::Empty,
                 ),
             });
 

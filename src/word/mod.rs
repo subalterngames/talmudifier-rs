@@ -1,4 +1,4 @@
-use cosmic_text::{Attrs, AttrsOwned, Weight};
+use cosmic_text::AttrsOwned;
 use markdown::{mdast::Node, message::Message, to_mdast, Constructs, ParseOptions};
 
 use crate::{font::cosmic_font::CosmicFont, tex};
