@@ -1,12 +1,11 @@
 use crate::{error::Error, font::cosmic_font::CosmicFont, page::Page, word::Word};
 
 use cosmic_text::{Buffer, FontSystem, Shaping};
-use table::get_table;
+use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 use tex_column::TexColumn;
 use width::Width;
 
 pub mod position;
-mod table;
 mod tex_column;
 pub mod width;
 
@@ -109,7 +108,7 @@ impl Column {
         } else {
             // Get the preamble.
             let mut tex = page.preamble.clone();
-            tex.push_str(&get_table(&[TexColumn {
+            tex.push_str(&TexColumn::get_table(&[TexColumn {
                 text: Some(column),
                 width,
             }]));
@@ -170,6 +169,66 @@ impl Column {
                 };
                 Some(&self.words[start..self.start])
             })
+        }
+    }
+
+    /// Returns the width of the left, center, and right columns.
+    /// Only returns widths for the columns that aren't `None`.
+    fn get_widths(left: Option<&Self>, center: Option<&Self>, right: Option<&Self>) -> Vec<Width> {
+        match (left.is_some(), center.is_some(), right.is_some()) {
+            (true, true, true) => vec![Width::Third; 3],
+            (true, true, false) => vec![Width::Third, Width::TwoThirds],
+            (true, false, true) => vec![Width::Half; 2],
+            (true, false, false) | (false, true, false) | (false, false, true) => vec![Width::One],
+            (false, true, true) => vec![Width::TwoThirds, Width::Third],
+            (false, false, false) => vec![],
+        }
+    }
+
+    pub fn get_min_num_lines(
+        left: Option<&Self>,
+        center: Option<&Self>,
+        right: Option<&Self>,
+        page: &Page,
+    ) -> Result<usize, Error> {
+        let widths = Self::get_widths(left, center, right);
+        let columns = [left, center, right]
+            .into_iter()
+            .flat_map(|c| c)
+            .collect::<Vec<&Self>>();
+        let has_words = columns
+            .iter()
+            .map(|c| !c.words[c.start..].is_empty())
+            .collect::<Vec<bool>>();
+        // Get the column with the least words.
+        let num_lines = columns
+            .into_par_iter()
+            .zip(has_words.into_par_iter().zip(widths.into_par_iter()))
+            .filter_map(|(column, (has_words, width))| {
+                if !has_words {
+                    None
+                } else {
+                    Some(column.get_num_lines_tex(None, width, page))
+                }
+            })
+            .collect::<Vec<Result<usize, Error>>>();
+        if let Some(error) = num_lines.iter().find_map(|n| match n {
+            Ok(_) => None,
+            Err(error) => Some(error),
+        }) {
+            Err(Error::MinNumLines(error.to_string()))
+        } else {
+            match num_lines
+                .iter()
+                .filter_map(|n| match n {
+                    Ok(n) => Some(n),
+                    Err(_) => None,
+                })
+                .min()
+            {
+                Some(min) => Ok(*min),
+                None => Err(Error::NoMinNumLines),
+            }
         }
     }
 }
