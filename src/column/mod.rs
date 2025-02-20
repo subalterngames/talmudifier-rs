@@ -1,17 +1,12 @@
-use crate::{
-    error::Error,
-    font::cosmic_font::CosmicFont,
-    page::{Page, WIDTH_PTS},
-    word::Word,
-};
+use crate::{error::Error, font::cosmic_font::CosmicFont, page::Page, word::Word};
 
 use cosmic_text::{Buffer, FontSystem, Shaping};
-use position::Position;
-use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
+use table::get_table;
 use tex_column::TexColumn;
 use width::Width;
 
 pub mod position;
+mod table;
 mod tex_column;
 pub mod width;
 
@@ -26,10 +21,6 @@ pub struct Column {
     tex_font: String,
     /// The Cosmic font system.
     font_system: FontSystem,
-    /// The width of the table on the page in pts.
-    table_width: f32,
-    /// The TeX preamble.
-    preamble: String,
 }
 
 impl Column {
@@ -38,18 +29,13 @@ impl Column {
         cosmic_font: CosmicFont,
         tex_font: &str,
         font_system: FontSystem,
-        page: &Page,
-        preamble: &str,
     ) -> Self {
-        let table_width = WIDTH_PTS - (page.left_margin.get_pts() + page.right_margin.get_pts());
         Self {
             words,
             start: 0,
             cosmic_font,
             tex_font: tex_font.to_string(),
             font_system,
-            table_width,
-            preamble: preamble.to_string(),
         }
     }
 
@@ -57,19 +43,25 @@ impl Column {
         &'t mut self,
         num_lines: usize,
         width: Width,
+        page: &Page,
     ) -> Result<Option<&'t [Word]>, Error> {
         // Guess the end index with cosmic.
-        match self.get_cosmic_index(num_lines, width)? {
-            Some(cosmic_index) => self.get_tex_words(width, cosmic_index, num_lines),
+        match self.get_cosmic_index(num_lines, width, page)? {
+            Some(cosmic_index) => self.get_tex_words(width, cosmic_index, num_lines, page),
             None => Err(Error::NoMoreWords),
         }
     }
 
-    fn get_cosmic_index(&mut self, num_lines: usize, width: Width) -> Result<Option<usize>, Error> {
+    fn get_cosmic_index(
+        &mut self,
+        num_lines: usize,
+        width: Width,
+        page: &Page,
+    ) -> Result<Option<usize>, Error> {
         if num_lines > 0 {
             let num_words = self.words[self.start..].len();
             for i in 0..num_words {
-                let num = self.get_num_lines_cosmic(i, width);
+                let num = self.get_num_lines_cosmic(i, width, page);
                 if num > num_lines {
                     return Ok(if i == 0 { None } else { Some(i - 1) });
                 }
@@ -78,9 +70,9 @@ impl Column {
         Ok(None)
     }
 
-    fn get_num_lines_cosmic<'t>(&'t mut self, end: usize, width: Width) -> usize {
+    fn get_num_lines_cosmic<'t>(&'t mut self, end: usize, width: Width, page: &Page) -> usize {
         // Get the width of the column in pts.
-        let column_width = self.table_width * width.column_ratio();
+        let column_width = page.table_width * width.column_ratio();
         // Prepare the Cosmic buffer.
         let mut buffer = Buffer::new(&mut self.font_system, self.cosmic_font.metrics);
         // Set the width.
@@ -100,7 +92,12 @@ impl Column {
         buffer.layout_runs().count()
     }
 
-    fn get_num_lines_tex(&self, end: Option<usize>, width: Width) -> Result<usize, Error> {
+    fn get_num_lines_tex(
+        &self,
+        end: Option<usize>,
+        width: Width,
+        page: &Page,
+    ) -> Result<usize, Error> {
         let end = match end {
             Some(end) => end,
             None => self.words.len(),
@@ -111,23 +108,11 @@ impl Column {
             Ok(0)
         } else {
             // Get the preamble.
-            let mut tex = self.preamble.to_string();
-
-            // Get a table.
-            tex.push_str(&match width {
-                Width::Half => {
-                    Table::get_columns(TexColumn::Text(column), TexColumn::None, TexColumn::Empty)
-                }
-                Width::One => {
-                    Table::get_columns(TexColumn::Text(column), TexColumn::None, TexColumn::None)
-                }
-                Width::Third => {
-                    Table::get_columns(TexColumn::Text(column), TexColumn::Empty, TexColumn::Empty)
-                }
-                Width::TwoThirds => {
-                    Table::get_columns(TexColumn::None, TexColumn::Text(column), TexColumn::Empty)
-                }
-            });
+            let mut tex = page.preamble.clone();
+            tex.push_str(&get_table(&[TexColumn {
+                text: Some(column),
+                width,
+            }]));
 
             // End the document.
             tex.push_str(Page::END_DOCUMENT);
@@ -153,6 +138,7 @@ impl Column {
         width: Width,
         cosmic_index: usize,
         num_lines: usize,
+        page: &Page,
     ) -> Result<Option<&'t [Word]>, Error> {
         if self.start == self.words.len() {
             Ok(None)
@@ -160,12 +146,14 @@ impl Column {
             let mut end = cosmic_index;
 
             // Decrement until we have enough lines.
-            while end > 0 && self.get_num_lines_tex(Some(end), width)? > num_lines {
+            while end > 0 && self.get_num_lines_tex(Some(end), width, page)? > num_lines {
                 end -= 1;
             }
 
             // Increment until we go over.
-            while end < self.words.len() && self.get_num_lines_tex(Some(end), width)? <= num_lines {
+            while end < self.words.len()
+                && self.get_num_lines_tex(Some(end), width, page)? <= num_lines
+            {
                 end += 1;
             }
 
@@ -200,24 +188,19 @@ mod tests {
     use super::Column;
 
     #[test]
-    fn test_cosmic() {
+    fn test_cosmic_index() {
         let lorem = include_str!("../lorem.txt");
         let words = Word::from_md(lorem).unwrap();
         assert_eq!(words.len(), 402);
         let mut font_system = FontSystem::new();
         let cosmic_font = CosmicFont::default_left(&mut font_system);
         let tex_fonts = TexFonts::default().unwrap();
+        let mut column = Column::new(words, cosmic_font, &tex_fonts.left.command, font_system);
         let page = Page::default();
-        let preamble = page.get_preamble(&tex_fonts);
-        let mut column = Column::new(
-            words,
-            cosmic_font,
-            &tex_fonts.left.command,
-            font_system,
-            &page,
-            &preamble,
-        );
-        let cosmic_index = column.get_cosmic_index(4, Width::Half).unwrap().unwrap();
+        let cosmic_index = column
+            .get_cosmic_index(4, Width::Half, &page)
+            .unwrap()
+            .unwrap();
         assert_eq!(cosmic_index, 52);
     }
 }
