@@ -43,3 +43,14 @@ macro_rules! tex {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    pub(crate) fn get_test_md() -> (String, String, String) {
+        let raw = include_str!("../test_text/test.md")
+            .split("\n\n")
+            .collect::<Vec<&str>>();
+        assert_eq!(raw.len(), 3);
+        (raw[0].to_string(), raw[1].to_string(), raw[2].to_string())
+    }
+}

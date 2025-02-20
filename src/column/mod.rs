@@ -241,6 +241,7 @@ mod tests {
         column::width::Width,
         font::{cosmic_font::CosmicFont, tex_fonts::TexFonts},
         page::Page,
+        tests::get_test_md,
         word::Word,
     };
 
@@ -248,7 +249,7 @@ mod tests {
 
     #[test]
     fn test_cosmic_index() {
-        let lorem = include_str!("../lorem.txt");
+        let lorem = include_str!("../../test_text/lorem.txt");
         let words = Word::from_md(lorem).unwrap();
         assert_eq!(words.len(), 402);
         let mut font_system = FontSystem::new();
@@ -260,6 +261,39 @@ mod tests {
             .get_cosmic_index(4, Width::Half, &page)
             .unwrap()
             .unwrap();
-        assert_eq!(cosmic_index, 52);
+        assert_eq!(cosmic_index, 22);
+    }
+
+    #[test]
+    fn test_widths() {
+        let (left, center, right) = get_columns();
+        let widths = Column::get_widths(Some(&left), Some(&center), Some(&right));
+        assert_eq!(widths.len(), 3);
+        assert!(widths.iter().all(|w| *w == Width::Third));
+
+        let widths = Column::get_widths(Some(&left), None, Some(&right));
+        assert_eq!(widths.len(), 2);
+        assert!(widths.iter().all(|w| *w == Width::Half));
+
+        let widths = Column::get_widths(Some(&left), None, None);
+        assert_eq!(widths.len(), 1);
+        assert!(widths.iter().all(|w| *w == Width::One));
+    }
+
+    fn get_columns() -> (Column, Column, Column) {
+        let (left, center, right) = get_test_md();
+
+        let tex_fonts = TexFonts::default().unwrap();
+        let left = get_column(&left, &tex_fonts.left.command, CosmicFont::default_left);
+        let center = get_column(&center, &tex_fonts.left.command, CosmicFont::default_left);
+        let right = get_column(&right, &tex_fonts.left.command, CosmicFont::default_left);
+        (left, center, right)
+    }
+
+    fn get_column(md: &str, tex_font: &str, f: impl Fn(&mut FontSystem) -> CosmicFont) -> Column {
+        let words = Word::from_md(&md).unwrap();
+        let mut font_system = FontSystem::new();
+        let cosmic_font = f(&mut font_system);
+        Column::new(words, cosmic_font, tex_font, font_system)
     }
 }
