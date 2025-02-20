@@ -1,21 +1,15 @@
 use std::fs::write;
 
-use column::{cosmic::Cosmic, tex::Tex, width::Width, ColumnMaker};
 use cosmic_text::FontSystem;
 use error::Error;
 use font::{cosmic_font::CosmicFont, tex_font::TexFont};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use table::{column_type::ColumnType, page::Page, table::Table, Tex};
-use tectonic::latex_to_pdf;
-use typeset_table::TypesetTable;
 use word::Word;
 
 mod column;
 pub(crate) mod error;
 pub(crate) mod font;
 pub(crate) mod page;
-pub(crate) mod table;
-mod typeset_table;
 pub(crate) mod word;
 
 fn main() {
@@ -53,8 +47,6 @@ fn main() {
     let pdf = latex_to_pdf(&tex).unwrap();
     write("out.pdf", pdf).unwrap();*/
 }
-
-
 
 #[macro_export]
 macro_rules! tex {

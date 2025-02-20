@@ -1,9 +1,10 @@
 use std::fmt;
 
-/// The width of a page in pts.
-pub const WIDTH_PTS: f32 = 614.295;
+use serde::{Deserialize, Serialize};
 
+#[derive(Default, Deserialize, Serialize)]
 pub enum PaperSize {
+    #[default]
     Letter,
     Legal,
 }

@@ -1,5 +1,4 @@
 use rayon::iter::{IntoParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
-use typeset_table::TypesetTable;
 
 use crate::{column::{position::Position, width::Width, Column}, error::Error};
 

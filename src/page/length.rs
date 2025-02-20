@@ -1,8 +1,11 @@
 use std::fmt;
 
+use serde::{Deserialize, Serialize};
+
 use super::unit::Unit;
 
 /// A length, in a given unit.
+#[derive(Deserialize, Serialize)]
 pub struct Length {
     pub length: f32,
     pub unit: Unit,

@@ -2,7 +2,6 @@ use crate::{
     error::Error,
     font::cosmic_font::CosmicFont,
     page::{Page, WIDTH_PTS},
-    table::Table,
     word::Word,
 };
 
@@ -12,8 +11,8 @@ use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterato
 use tex_column::TexColumn;
 use width::Width;
 
-mod tex_column;
 pub mod position;
+mod tex_column;
 pub mod width;
 
 pub struct Column {
@@ -116,24 +115,18 @@ impl Column {
 
             // Get a table.
             tex.push_str(&match width {
-                Width::Half => Table::get_columns(
-                    TexColumn::Text(column),
-                    TexColumn::None,
-                    TexColumn::Empty,
-                ),
+                Width::Half => {
+                    Table::get_columns(TexColumn::Text(column), TexColumn::None, TexColumn::Empty)
+                }
                 Width::One => {
                     Table::get_columns(TexColumn::Text(column), TexColumn::None, TexColumn::None)
                 }
-                Width::Third => Table::get_columns(
-                    TexColumn::Text(column),
-                    TexColumn::Empty,
-                    TexColumn::Empty,
-                ),
-                Width::TwoThirds => Table::get_columns(
-                    TexColumn::None,
-                    TexColumn::Text(column),
-                    TexColumn::Empty,
-                ),
+                Width::Third => {
+                    Table::get_columns(TexColumn::Text(column), TexColumn::Empty, TexColumn::Empty)
+                }
+                Width::TwoThirds => {
+                    Table::get_columns(TexColumn::None, TexColumn::Text(column), TexColumn::Empty)
+                }
             });
 
             // End the document.
