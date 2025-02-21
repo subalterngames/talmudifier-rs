@@ -1,7 +1,7 @@
 use cosmic_text::AttrsOwned;
-use markdown::{mdast::Node, message::Message, to_mdast, Constructs, ParseOptions};
+use markdown::{mdast::Node, to_mdast, Constructs, ParseOptions};
 
-use crate::{font::cosmic_font::CosmicFont, tex};
+use crate::{error::Error, font::cosmic_font::CosmicFont, tex};
 
 use position::Position;
 use style::Style;
@@ -22,16 +22,20 @@ pub struct Word {
 
 impl Word {
     /// Parse raw markdown text and get a vec of words.
-    pub fn from_md(md: &str) -> Result<Vec<Self>, Message> {
+    pub fn from_md(md: &str) -> Result<Vec<Self>, Error> {
         let parse_options = ParseOptions {
             constructs: Constructs::gfm(),
             ..Default::default()
         };
-        let node = to_mdast(md, &parse_options)?;
-        let mut words = vec![];
-        // Add the words as nodes.
-        Self::add_node(&node, &mut words, Style::default(), Position::default());
-        Ok(words)
+        match to_mdast(md, &parse_options) {
+            Ok(node) => {
+                let mut words = vec![];
+                // Add the words as nodes.
+                Self::add_node(&node, &mut words, Style::default(), Position::default());
+                Ok(words)
+            }
+            Err(error) => Err(Error::Md(error))
+        }
     }
 
     /// Convert a slice of words into Cosmic text spans.

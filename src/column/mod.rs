@@ -1,12 +1,16 @@
 use crate::{error::Error, font::cosmic_font::CosmicFont, page::Page, word::Word};
 
 use cosmic_text::{Buffer, FontSystem, Shaping};
+#[cfg(not(target_os = "windows"))]
+use pdf_extract::extract_text_from_mem;
 use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
+#[cfg(not(target_os = "windows"))]
+use tectonic::latex_to_pdf;
 use tex_column::TexColumn;
 use width::Width;
 
 pub mod position;
-mod tex_column;
+pub mod tex_column;
 pub mod width;
 
 pub struct Column {
@@ -43,12 +47,16 @@ impl Column {
         num_lines: usize,
         width: Width,
         page: &Page,
-    ) -> Result<Option<&'t [Word]>, Error> {
+    ) -> Result<TexColumn, Error> {
         // Guess the end index with cosmic.
         match self.get_cosmic_index(num_lines, width, page)? {
             Some(cosmic_index) => self.get_tex_words(width, cosmic_index, num_lines, page),
             None => Err(Error::NoMoreWords),
         }
+    }
+
+    pub fn done(&self) -> bool {
+        self.start >= self.words.len()
     }
 
     fn get_cosmic_index(
@@ -138,9 +146,12 @@ impl Column {
         cosmic_index: usize,
         num_lines: usize,
         page: &Page,
-    ) -> Result<Option<&'t [Word]>, Error> {
+    ) -> Result<TexColumn, Error> {
         if self.start == self.words.len() {
-            Ok(None)
+            Ok(TexColumn{
+                text: None,
+                width
+            })
         } else {
             let mut end = cosmic_index;
 
@@ -157,7 +168,10 @@ impl Column {
             }
 
             Ok(if end == 0 {
-                None
+                TexColumn{
+                    text: None,
+                    width
+                }
             } else {
                 let start = self.start;
                 self.start = if end > self.words.len() {
@@ -167,15 +181,19 @@ impl Column {
                 } else {
                     end - 1
                 };
-                Some(&self.words[start..self.start])
+                let (text, _) = Word::to_tex(&self.words[start..self.start], &self.tex_font);
+                TexColumn{
+                    text: Some(text),
+                    width
+                }
             })
         }
     }
 
     /// Returns the width of the left, center, and right columns.
     /// Only returns widths for the columns that aren't `None`.
-    fn get_widths(left: Option<&Self>, center: Option<&Self>, right: Option<&Self>) -> Vec<Width> {
-        match (left.is_some(), center.is_some(), right.is_some()) {
+    fn get_widths(left: bool, center: bool, right: bool) -> Vec<Width> {
+        match (left, center, right) {
             (true, true, true) => vec![Width::Third; 3],
             (true, true, false) => vec![Width::Third, Width::TwoThirds],
             (true, false, true) => vec![Width::Half; 2],
@@ -191,7 +209,7 @@ impl Column {
         right: Option<&Self>,
         page: &Page,
     ) -> Result<usize, Error> {
-        let widths = Self::get_widths(left, center, right);
+        let widths = Self::get_widths(left.is_some(), center.is_some(), right.is_some());
         let columns = [left, center, right]
             .into_iter()
             .flat_map(|c| c)
@@ -266,16 +284,15 @@ mod tests {
 
     #[test]
     fn test_widths() {
-        let (left, center, right) = get_columns();
-        let widths = Column::get_widths(Some(&left), Some(&center), Some(&right));
+        let widths = Column::get_widths(true, true, true);
         assert_eq!(widths.len(), 3);
         assert!(widths.iter().all(|w| *w == Width::Third));
 
-        let widths = Column::get_widths(Some(&left), None, Some(&right));
+        let widths = Column::get_widths(true, false, true);
         assert_eq!(widths.len(), 2);
         assert!(widths.iter().all(|w| *w == Width::Half));
 
-        let widths = Column::get_widths(Some(&left), None, None);
+        let widths = Column::get_widths(true, false, false);
         assert_eq!(widths.len(), 1);
         assert!(widths.iter().all(|w| *w == Width::One));
     }

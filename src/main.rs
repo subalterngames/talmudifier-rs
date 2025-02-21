@@ -1,9 +1,11 @@
 use std::fs::write;
 
+use column::{tex_column::TexColumn, width::Width, Column};
 use cosmic_text::FontSystem;
 use error::Error;
 use font::{cosmic_font::CosmicFont, tex_font::TexFont};
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use page::Page;
+use rayon::iter::{IntoParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
 use word::Word;
 
 mod column;
@@ -29,6 +31,42 @@ fn main() {
 
     let pdf = latex_to_pdf(&tex).unwrap();
     write("out.pdf", pdf).unwrap();*/
+}
+
+pub fn talmudify(mut left: Column, mut center: Column, mut right: Column, page: &Page) -> Result<String, Error> {
+    let mut tables = vec![];
+    // First four lines.
+    let table = [&mut left, &mut right].par_iter_mut().map(|c| {
+        c.get_tex_column(4, Width::Half, page)
+    }).collect::<Vec<Result<TexColumn, Error>>>();
+    if table.iter().any(|t| t.is_err()) {
+        return table.into_iter().find_map(|t| match t {
+            Ok(_) => None,
+            Err(error) => Some(Err(error))
+        }).unwrap();
+    }
+    let table = table.into_iter().map(|t| t.unwrap()).collect::<Vec<TexColumn>>();
+    tables.push(table);
+
+    // Skip.
+    let left_skip = left.get_tex_column(1, Width::Third, page)?;
+    let right_skip = right.get_tex_column(1, Width::Third, page)?;
+    tables.push(vec![left_skip, TexColumn {
+        text: None,
+        width: Width::Third
+    }, right_skip]);
+
+    while !left.done() && !center.done() && !right.done() {
+        let widths = Column:g
+    }
+
+    // Build the document.
+    let mut tex = page.preamble.clone();
+    for table in tables.iter() {
+        tex.push_str(&TexColumn::get_table(table));
+    }
+    tex.push_str(Page::END_DOCUMENT);
+    Ok(tex)
 }
 
 #[macro_export]
