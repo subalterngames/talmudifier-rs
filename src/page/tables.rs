@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use super::length::Length;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize)]
 pub struct Tables {
     pub paragraph_indent: Length,
     pub column_separation: Length,

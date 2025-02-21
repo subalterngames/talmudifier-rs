@@ -2,6 +2,7 @@ use std::{fs::write, path::PathBuf};
 
 use clap::{Arg, Command};
 use column::{input_column::InputColumn, tex_column::TexColumn, width::Width, Column};
+use config::Config;
 use cosmic_text::FontSystem;
 use error::Error;
 use font::{cosmic_font::CosmicFont, tex_font::TexFont, tex_fonts::TexFonts};
@@ -10,6 +11,7 @@ use word::Word;
 
 mod column;
 mod config;
+mod daf;
 pub(crate) mod error;
 pub(crate) mod font;
 pub(crate) mod page;
@@ -30,14 +32,8 @@ fn main() {
                 .help("The absolute path to the output file."),
         ]).get_matches();
     // Get the fonts.
-    let tex_fonts = match args.get_one::<PathBuf>("config") {
-        Some(path) => {
-
-        }
-        None => {
-
-        }
-    };
+    let path = args.get_one::<PathBuf>("config").unwrap();
+    let config = Config::new(path).unwrap();
 
     /*
     let mut tex = Tex {

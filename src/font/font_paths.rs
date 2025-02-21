@@ -1,5 +1,5 @@
 use std::{
-    fmt::Display,
+    fmt,
     io::{self, ErrorKind},
     path::{Path, PathBuf},
 };
@@ -12,7 +12,7 @@ pub struct FontPaths {
 }
 
 impl FontPaths {
-    pub fn new<P: AsRef<Path> + Display + Into<PathBuf>>(
+    pub fn new<P: AsRef<Path> + fmt::Debug + Into<PathBuf>>(
         regular: P,
         italic: Option<P>,
         bold: Option<P>,
@@ -30,7 +30,9 @@ impl FontPaths {
         })
     }
 
-    fn get_font<P: AsRef<Path> + Display + Into<PathBuf>>(path: P) -> Result<PathBuf, io::Error> {
+    fn get_font<P: AsRef<Path> + fmt::Debug + Into<PathBuf>>(
+        path: P,
+    ) -> Result<PathBuf, io::Error> {
         let path = Into::<PathBuf>::into(path);
         if path.exists() {
             Ok(path)
@@ -42,7 +44,7 @@ impl FontPaths {
         }
     }
 
-    fn get_optional_font<P: AsRef<Path> + Display + Into<PathBuf>>(
+    fn get_optional_font<P: AsRef<Path> + fmt::Debug + Into<PathBuf>>(
         path: Option<P>,
         fallback: &Path,
     ) -> Result<PathBuf, io::Error> {

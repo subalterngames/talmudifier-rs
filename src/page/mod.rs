@@ -5,7 +5,7 @@ use crate::font::tex_fonts::TexFonts;
 use length::Length;
 use margins::Margins;
 use paper_size::PaperSize;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use tables::Tables;
 
 mod length;
@@ -15,7 +15,7 @@ mod tables;
 mod unit;
 
 /// Page layout parameters.
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize)]
 pub struct Page {
     pub paper_size: PaperSize,
     pub margins: Margins,
@@ -29,8 +29,8 @@ pub struct Page {
 impl Page {
     pub const END_DOCUMENT: &str = "\n\\end{sloppypar}\\end{document}";
 
-    fn get_preamble<P: AsRef<Path>>(
-        fonts: &TexFonts<P>,
+    fn get_preamble(
+        fonts: &TexFonts,
         paper_size: &PaperSize,
         margins: &Margins,
         tables: &Tables,

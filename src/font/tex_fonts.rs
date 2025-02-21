@@ -1,17 +1,15 @@
-use std::{io, path::Path};
-
-use tempdir::TempDir;
+use std::io;
 
 use super::tex_font::TexFont;
 
-pub struct TexFonts<P: AsRef<Path>> {
-    pub left: TexFont<P>,
-    pub center: TexFont<P>,
-    pub right: TexFont<P>,
+pub struct TexFonts {
+    pub left: TexFont,
+    pub center: TexFont,
+    pub right: TexFont,
 }
 
 #[cfg(feature = "default-fonts")]
-impl TexFonts<TempDir> {
+impl TexFonts {
     pub fn default() -> Result<Self, io::Error> {
         let left = TexFont::default_left()?;
         let center = TexFont::default_center()?;

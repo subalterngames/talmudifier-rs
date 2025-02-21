@@ -1,10 +1,10 @@
 use std::fmt::Display;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use super::length::Length;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize)]
 pub struct Margins {
     pub left: Length,
     pub right: Length,

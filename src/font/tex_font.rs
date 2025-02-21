@@ -6,25 +6,23 @@ use tempdir::TempDir;
 #[cfg(feature = "default-fonts")]
 use super::default_fonts::*;
 
-#[derive(Clone)]
-pub struct TexFont<P: AsRef<Path>> {
+pub struct TexFont {
     /// The font family declaration.
     pub font_family: String,
     /// The command used to set the text to the target font, style, and size.
     pub command: String,
-    pub size: f32,
-    pub skip: f32,
-    _directory: P,
+    /// Sometimes we need to hold this until the `TexFont` drops.
+    temp_directory: Option<TempDir>,
 }
 
-impl<P: AsRef<Path>> TexFont<P> {
-    pub fn new(
+impl TexFont {
+    pub fn new<P: AsRef<Path>>(
         name: &str,
         path: P,
         regular: &str,
-        italic: Option<&str>,
-        bold: Option<&str>,
-        bold_italic: Option<&str>,
+        italic: &Option<String>,
+        bold: &Option<String>,
+        bold_italic: &Option<String>,
         size: f32,
         skip: f32,
     ) -> Self {
@@ -57,15 +55,13 @@ impl<P: AsRef<Path>> TexFont<P> {
         Self {
             command,
             font_family,
-            size,
-            skip,
-            _directory: path,
+            temp_directory: None,
         }
     }
 }
 
 #[cfg(feature = "default-fonts")]
-impl TexFont<TempDir> {
+impl TexFont {
     const REGULAR: &str = "regular";
     const ITALIC: &str = "italic";
     const BOLD: &str = "bold";
@@ -77,16 +73,19 @@ impl TexFont<TempDir> {
         Self::dump_font(IM_FELL_ITALIC, Self::ITALIC, &directory)?;
         Self::dump_font(IM_FELL_BOLD, Self::BOLD, &directory)?;
 
-        Ok(Self::new(
+        let mut tex_font = Self::new(
             "leftfont",
-            directory,
+            &directory,
             Self::REGULAR,
-            Some(Self::ITALIC),
-            Some(Self::BOLD),
-            None,
+            &Some(Self::ITALIC.to_string()),
+            &Some(Self::BOLD.to_string()),
+            &None,
             DEFAULT_SIZE,
             DEFAULT_SKIP,
-        ))
+        );
+        tex_font.temp_directory = Some(directory);
+
+        Ok(tex_font)
     }
 
     pub fn default_center() -> Result<Self, io::Error> {
@@ -96,16 +95,19 @@ impl TexFont<TempDir> {
         Self::dump_font(EB_GARAMOND_BOLD, Self::BOLD, &directory)?;
         Self::dump_font(EB_GARAMOND_BOLD_ITALIC, Self::BOLD_ITALIC, &directory)?;
 
-        Ok(Self::new(
-            "leftfont",
-            directory,
+        let mut tex_font = Self::new(
+            "centerfont",
+            &directory,
             Self::REGULAR,
-            Some(Self::ITALIC),
-            Some(Self::BOLD),
-            Some(Self::BOLD_ITALIC),
+            &Some(Self::ITALIC.to_string()),
+            &Some(Self::BOLD.to_string()),
+            &None,
             DEFAULT_SIZE,
             DEFAULT_SKIP,
-        ))
+        );
+        tex_font.temp_directory = Some(directory);
+
+        Ok(tex_font)
     }
 
     pub fn default_right() -> Result<Self, io::Error> {
@@ -115,16 +117,19 @@ impl TexFont<TempDir> {
         Self::dump_font(AVERIA_BOLD, Self::BOLD, &directory)?;
         Self::dump_font(AVERIA_BOLD_ITALIC, Self::BOLD_ITALIC, &directory)?;
 
-        Ok(Self::new(
-            "leftfont",
-            directory,
+        let mut tex_font = Self::new(
+            "rightfont",
+            &directory,
             Self::REGULAR,
-            Some(Self::ITALIC),
-            Some(Self::BOLD),
-            Some(Self::BOLD_ITALIC),
+            &Some(Self::ITALIC.to_string()),
+            &Some(Self::BOLD.to_string()),
+            &None,
             DEFAULT_SIZE,
             DEFAULT_SKIP,
-        ))
+        );
+        tex_font.temp_directory = Some(directory);
+
+        Ok(tex_font)
     }
 
     fn dump_font(font: &[u8], filename: &str, dir: &TempDir) -> Result<(), io::Error> {
