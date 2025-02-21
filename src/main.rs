@@ -35,7 +35,7 @@ fn main() {
 pub fn talmudify(mut left: Column, mut center: Column, mut right: Column, page: &Page) -> Result<String, Error> {
     let mut tables = vec![];
     // First four lines.
-    let table = [&mut left, &mut right].par_iter_mut().map(|c| {
+    let table = [&mut left, &mut right].iter_mut().map(|c| {
         c.get_tex_column(4, Width::Half, page)
     }).collect::<Vec<Result<TexColumn, Error>>>();
     if table.iter().any(|t| t.is_err()) {
@@ -56,7 +56,6 @@ pub fn talmudify(mut left: Column, mut center: Column, mut right: Column, page: 
     }, right_skip]);
 
     while !left.done() && !center.done() && !right.done() {
-       // let widths = Column:g
     }
 
     // Build the document.
