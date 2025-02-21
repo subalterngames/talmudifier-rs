@@ -5,7 +5,6 @@ use cosmic_text::FontSystem;
 use error::Error;
 use font::{cosmic_font::CosmicFont, tex_font::TexFont};
 use page::Page;
-use rayon::iter::{IntoParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
 use word::Word;
 
 mod column;
@@ -57,7 +56,7 @@ pub fn talmudify(mut left: Column, mut center: Column, mut right: Column, page: 
     }, right_skip]);
 
     while !left.done() && !center.done() && !right.done() {
-        let widths = Column:g
+       // let widths = Column:g
     }
 
     // Build the document.
@@ -67,6 +66,21 @@ pub fn talmudify(mut left: Column, mut center: Column, mut right: Column, page: 
     }
     tex.push_str(Page::END_DOCUMENT);
     Ok(tex)
+}
+
+fn get_table(columns: &mut [&mut Column], num_lines: usize, page: &Page) -> Result<Vec<TexColumn>, Error> {
+    let results = columns.iter_mut().map(|c| {
+        c.get_tex_column(num_lines, Width::Half, page)
+    }).collect::<Vec<Result<TexColumn, Error>>>();
+    if results.iter().any(|t| t.is_err()) {
+        results.into_iter().find_map(|t| match t {
+            Ok(_) => None,
+            Err(error) => Some(Err(error))
+        }).unwrap()
+    }
+    else {
+        Ok(results.into_iter().flat_map(|c| c).collect())
+    }
 }
 
 #[macro_export]

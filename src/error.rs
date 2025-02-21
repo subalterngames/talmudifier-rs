@@ -6,6 +6,7 @@ pub enum Error {
     #[error("Error creating PDF: {0}")]
     Pdf(tectonic::Error),
     #[error("Error extracting text from PDF: {0}")]
+    #[cfg(not(target_os = "windows"))]
     Extract(pdf_extract::OutputError),
     #[error("Failed to get the minimum number of lines: {0}")]
     MinNumLines(String),
