@@ -8,8 +8,6 @@ pub enum Position {
     Body,
     /// Left/right marginalia.
     Margin,
-    /// The title on the page.
-    Title,
 }
 
 impl Position {

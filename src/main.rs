@@ -1,6 +1,6 @@
 use std::fs::write;
 
-use column::{tex_column::TexColumn, width::Width, Column};
+use column::{input_column::InputColumn, tex_column::TexColumn, width::Width, Column};
 use cosmic_text::FontSystem;
 use error::Error;
 use font::{cosmic_font::CosmicFont, tex_font::TexFont};
@@ -32,34 +32,76 @@ fn main() {
     write("out.pdf", pdf).unwrap();*/
 }
 
-pub fn talmudify(mut left: Column, mut center: Column, mut right: Column, page: &Page) -> Result<String, Error> {
-    let mut tables = vec![];
+pub fn talmudify(
+    mut left: Column,
+    mut center: Column,
+    mut right: Column,
+    title: Option<String>,
+    page: &Page,
+) -> Result<String, Error> {
     // First four lines.
-    let table = [&mut left, &mut right].iter_mut().map(|c| {
-        c.get_tex_column(4, Width::Half, page)
-    }).collect::<Vec<Result<TexColumn, Error>>>();
-    if table.iter().any(|t| t.is_err()) {
-        return table.into_iter().find_map(|t| match t {
-            Ok(_) => None,
-            Err(error) => Some(Err(error))
-        }).unwrap();
-    }
-    let table = table.into_iter().map(|t| t.unwrap()).collect::<Vec<TexColumn>>();
-    tables.push(table);
-
+    let mut tables = vec![Column::get_tex_table(
+        &mut InputColumn::Text(&mut left),
+        &mut InputColumn::None,
+        &mut InputColumn::Text(&mut right),
+        4,
+        page,
+    )?];
     // Skip.
-    let left_skip = left.get_tex_column(1, Width::Third, page)?;
-    let right_skip = right.get_tex_column(1, Width::Third, page)?;
-    tables.push(vec![left_skip, TexColumn {
-        text: None,
-        width: Width::Third
-    }, right_skip]);
+    tables.push(Column::get_tex_table(
+        &mut InputColumn::Text(&mut left),
+        &mut InputColumn::Empty,
+        &mut InputColumn::Text(&mut right),
+        1,
+        page,
+    )?);
 
     while !left.done() && !center.done() && !right.done() {
+        // Get the columns that are and are not done.
+        let left_optional = get_optional_column(&left);
+        let center_optional = get_optional_column(&center);
+        let right_optional = get_optional_column(&right);
+
+        // Get the minimum number of lines.
+        let num_lines =
+            Column::get_min_num_lines(left_optional, center_optional, right_optional, page)?;
+
+        // Get all available columns.
+        let mut left = get_input_column(&mut left);
+        let mut center = get_input_column(&mut center);
+        let mut right = get_input_column(&mut right);
+
+        // Create the table.
+        tables.push(Column::get_tex_table(
+            &mut left,
+            &mut center,
+            &mut right,
+            num_lines,
+            page,
+        )?);
+
+        // Skip to the next table.
+        left = get_input_column_skip(left);
+        center = get_input_column_skip(center);
+        right = get_input_column_skip(right);
+
+        // Create the table.
+        tables.push(Column::get_tex_table(
+            &mut left,
+            &mut center,
+            &mut right,
+            1,
+            page,
+        )?);
     }
 
     // Build the document.
     let mut tex = page.preamble.clone();
+    // Add the title.
+    if let Some(title) = title {
+        tex.push_str(&tex!("chapter", tex!("daftitle", title)));
+        tex.push('\n');
+    }
     for table in tables.iter() {
         tex.push_str(&TexColumn::get_table(table));
     }
@@ -67,18 +109,36 @@ pub fn talmudify(mut left: Column, mut center: Column, mut right: Column, page: 
     Ok(tex)
 }
 
-fn get_table(columns: &mut [&mut Column], num_lines: usize, page: &Page) -> Result<Vec<TexColumn>, Error> {
-    let results = columns.iter_mut().map(|c| {
-        c.get_tex_column(num_lines, Width::Half, page)
-    }).collect::<Vec<Result<TexColumn, Error>>>();
-    if results.iter().any(|t| t.is_err()) {
-        results.into_iter().find_map(|t| match t {
-            Ok(_) => None,
-            Err(error) => Some(Err(error))
-        }).unwrap()
+fn get_optional_column(column: &Column) -> Option<&Column> {
+    if column.done() {
+        None
+    } else {
+        Some(column)
     }
-    else {
-        Ok(results.into_iter().flat_map(|c| c).collect())
+}
+
+fn get_input_column<'t>(column: &'t mut Column) -> InputColumn<'t> {
+    if column.done() {
+        InputColumn::None
+    } else {
+        InputColumn::Text(column)
+    }
+}
+
+fn get_input_column_skip<'t>(column: InputColumn<'t>) -> InputColumn<'t> {
+    match column {
+        InputColumn::None => InputColumn::None,
+        InputColumn::Empty => InputColumn::Empty,
+        InputColumn::Text(text) => {
+            // Skip.
+            if text.done() {
+                InputColumn::Empty
+            }
+            // Include.
+            else {
+                InputColumn::Text(text)
+            }
+        }
     }
 }
 

@@ -1,7 +1,7 @@
 use cosmic_text::AttrsOwned;
 use markdown::{mdast::Node, to_mdast, Constructs, ParseOptions};
 
-use crate::{error::Error, font::cosmic_font::CosmicFont, tex};
+use crate::{error::Error, font::cosmic_font::CosmicFont};
 
 use position::Position;
 use style::Style;
@@ -34,7 +34,7 @@ impl Word {
                 Self::add_node(&node, &mut words, Style::default(), Position::default());
                 Ok(words)
             }
-            Err(error) => Err(Error::Md(error))
+            Err(error) => Err(Error::Md(error)),
         }
     }
 
@@ -77,75 +77,59 @@ impl Word {
         .clone()
     }
 
-    pub fn to_tex(words: &[Self], font_command: &str) -> (String, bool) {
-        // Try to build a title.
-        let title = words
-            .iter()
-            .filter(|w| w.position == Position::Title)
-            .collect::<Vec<&Word>>();
+    pub fn to_tex(words: &[Self], font_command: &str) -> String {
         // Build a column.
-        if title.is_empty() {
-            let mut text = font_command.to_string();
-            let mut style = Style::default();
-            let mut position = Position::default();
-            for word in words.iter().filter(|w| w.position != Position::Title) {
-                let mut prefixes = vec![];
-                let mut suffixes = vec![];
-                // We changed the style.
-                if style != word.style {
-                    let (prefix, suffix) = style.get_command(&word.style);
-                    if let Some(prefix) = prefix {
-                        prefixes.push(prefix);
-                    }
-                    // Add a suffix to the previous word.
-                    if let Some(suffix) = suffix {
-                        suffixes.push(suffix);
-                    }
-                    style = word.style;
+        let mut text = font_command.to_string();
+        let mut style = Style::default();
+        let mut position = Position::default();
+        for word in words.iter() {
+            let mut prefixes = vec![];
+            let mut suffixes = vec![];
+            // We changed the style.
+            if style != word.style {
+                let (prefix, suffix) = style.get_command(&word.style);
+                if let Some(prefix) = prefix {
+                    prefixes.push(prefix);
                 }
-                // Change the position.
-                if position != word.position {
-                    let command = position.get_command(&word.position);
-                    if let Some(prefix) = command.prefix {
-                        prefixes.push(prefix);
-                    }
-                    // Add a suffix to the previous word.
-                    if let Some(suffix) = command.suffix {
-                        suffixes.push(suffix);
-                    }
-
-                    position = word.position;
+                // Add a suffix to the previous word.
+                if let Some(suffix) = suffix {
+                    suffixes.push(suffix);
                 }
-                // Add the suffixes.
-                suffixes.iter().for_each(|s| text.push_str(s));
-                // Add a space.
-                text.push(' ');
-                // Add the prefixes.
-                prefixes.iter().for_each(|p| text.push_str(p));
-                // Add the word.
-                text.push_str(&word.word);
+                style = word.style;
             }
+            // Change the position.
+            if position != word.position {
+                let command = position.get_command(&word.position);
+                if let Some(prefix) = command.prefix {
+                    prefixes.push(prefix);
+                }
+                // Add a suffix to the previous word.
+                if let Some(suffix) = command.suffix {
+                    suffixes.push(suffix);
+                }
 
-            // Close off the styles and citations.
-            match style {
-                Style::Regular => (),
-                Style::Bold | Style::Italic => text.push('}'),
-                Style::BoldItalic => text.push_str("}}"),
+                position = word.position;
             }
-            if let Position::Margin = position {
-                text.push('}');
-            }
-            (text, false)
+            // Add the suffixes.
+            suffixes.iter().for_each(|s| text.push_str(s));
+            // Add a space.
+            text.push(' ');
+            // Add the prefixes.
+            prefixes.iter().for_each(|p| text.push_str(p));
+            // Add the word.
+            text.push_str(&word.word);
         }
-        // Build a title.
-        else {
-            let title = title
-                .iter()
-                .map(|w| w.word.to_string())
-                .collect::<Vec<String>>()
-                .join(" ");
-            (tex!("chapter", tex!("daftitle", title)), true)
+
+        // Close off the styles and citations.
+        match style {
+            Style::Regular => (),
+            Style::Bold | Style::Italic => text.push('}'),
+            Style::BoldItalic => text.push_str("}}"),
         }
+        if let Position::Margin = position {
+            text.push('}');
+        }
+        text
     }
 
     /// A words from a node.
@@ -177,10 +161,6 @@ impl Word {
                     .for_each(|child| Self::add_node(child, words, style, position));
             }
             Node::Text(text) => Self::add_words(&text.value, words, style, position),
-            Node::Heading(node) => node
-                .children
-                .iter()
-                .for_each(|child| Self::add_node(child, words, style, Position::Title)),
             Node::Paragraph(node) => node
                 .children
                 .iter()
@@ -253,8 +233,7 @@ mod tests {
     fn test_textit() {
         let md = "*This is italic* and this is regular.";
         let words = Word::from_md(md).unwrap();
-        let (tex, title) = Word::to_tex(&words, "\\font");
-        assert!(!title);
+        let tex = Word::to_tex(&words, "\\font");
         assert_eq!(tex, "\\font \\textit{This is italic} and this is regular.")
     }
 
@@ -262,7 +241,7 @@ mod tests {
     fn test_bold_italic() {
         let md = "**bold** *italic* ***bold and italic*** **bold**";
         let words = Word::from_md(md).unwrap();
-        let (tex, _) = Word::to_tex(&words, "\\font");
+        let tex = Word::to_tex(&words, "\\font");
         assert_eq!(
             tex,
             "\\font \\textbf{bold} \\textit{italic \\textbf{bold and italic}} \\textbf{bold}"
@@ -273,28 +252,10 @@ mod tests {
     fn test_marginnote() {
         let md = "A `footnote` *here*";
         let words = Word::from_md(md).unwrap();
-        let (tex, _) = Word::to_tex(&words, "\\font");
+        let tex = Word::to_tex(&words, "\\font");
         assert_eq!(
             tex,
             "\\font A \\\\marginnote{\\\\noindent\\\\justifying\\\\tiny footnote} \\textit{here}"
         );
-    }
-
-    #[test]
-    fn test_title() {
-        let md = "# This is a title\n\nand this is not.";
-        let words = Word::from_md(md).unwrap();
-        for word in &words[0..4] {
-            assert_eq!(word.style, Style::Regular);
-            assert_eq!(word.position, Position::Title);
-        }
-        for word in &words[4..] {
-            assert_eq!(word.style, Style::Regular);
-            assert_eq!(word.position, Position::Body);
-        }
-        let words = Word::from_md(md).unwrap();
-        let (tex, title) = Word::to_tex(&words, "\\font");
-        assert!(title);
-        assert_eq!(tex, "\\chapter{\\daftitle{This is a title}}");
     }
 }

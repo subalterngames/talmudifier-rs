@@ -1,6 +1,7 @@
 use crate::{error::Error, font::cosmic_font::CosmicFont, page::Page, word::Word};
 
 use cosmic_text::{Buffer, FontSystem, Shaping};
+use input_column::InputColumn;
 #[cfg(not(target_os = "windows"))]
 use pdf_extract::extract_text_from_mem;
 use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
@@ -9,6 +10,7 @@ use tectonic::latex_to_pdf;
 use tex_column::TexColumn;
 use width::Width;
 
+pub mod input_column;
 pub mod position;
 pub mod tex_column;
 pub mod width;
@@ -39,6 +41,45 @@ impl Column {
             cosmic_font,
             tex_font: tex_font.to_string(),
             font_system,
+        }
+    }
+
+    pub fn get_tex_table<'t>(
+        left: &mut InputColumn<'t>,
+        center: &mut InputColumn<'t>,
+        right: &mut InputColumn<'t>,
+        num_lines: usize,
+        page: &Page,
+    ) -> Result<Vec<TexColumn>, Error> {
+        // Get the width of each column.
+        let widths = Self::get_widths(left.is_column(), center.is_column(), right.is_column());
+
+        // Get a tex string per column.
+        let results = [left, center, right]
+            .iter_mut()
+            .zip(widths)
+            .filter_map(|(column, width)| match column {
+                // This is not a column.
+                InputColumn::None => None,
+                // This is an empty column.
+                InputColumn::Empty => Some(Ok(TexColumn { text: None, width })),
+                // This is a column with text.
+                InputColumn::Text(column) => Some(column.get_tex_column(num_lines, width, page)),
+            })
+            .collect::<Vec<Result<TexColumn, Error>>>();
+
+        // Return the first error.
+        if results.iter().any(|t| t.is_err()) {
+            results
+                .into_iter()
+                .find_map(|t| match t {
+                    Ok(_) => None,
+                    Err(error) => Some(Err(error)),
+                })
+                .unwrap()
+        } else {
+            // Return the columns.
+            Ok(results.into_iter().flat_map(|c| c).collect())
         }
     }
 
@@ -109,9 +150,9 @@ impl Column {
             Some(end) => end,
             None => self.words.len(),
         };
-        let (column, title) = Word::to_tex(&self.words[self.start..end], &self.tex_font);
+        let column = Word::to_tex(&self.words[self.start..end], &self.tex_font);
 
-        if title || column.is_empty() {
+        if column.is_empty() {
             Ok(0)
         } else {
             // Get the preamble.
@@ -148,10 +189,7 @@ impl Column {
         page: &Page,
     ) -> Result<TexColumn, Error> {
         if self.start == self.words.len() {
-            Ok(TexColumn{
-                text: None,
-                width
-            })
+            Ok(TexColumn { text: None, width })
         } else {
             let mut end = cosmic_index;
 
@@ -168,10 +206,7 @@ impl Column {
             }
 
             Ok(if end == 0 {
-                TexColumn{
-                    text: None,
-                    width
-                }
+                TexColumn { text: None, width }
             } else {
                 let start = self.start;
                 self.start = if end > self.words.len() {
@@ -181,10 +216,10 @@ impl Column {
                 } else {
                     end - 1
                 };
-                let (text, _) = Word::to_tex(&self.words[start..self.start], &self.tex_font);
-                TexColumn{
+                let text = Word::to_tex(&self.words[start..self.start], &self.tex_font);
+                TexColumn {
                     text: Some(text),
-                    width
+                    width,
                 }
             })
         }
