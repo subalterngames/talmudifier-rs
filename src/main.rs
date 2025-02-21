@@ -1,19 +1,44 @@
-use std::fs::write;
+use std::{fs::write, path::PathBuf};
 
+use clap::{Arg, Command};
 use column::{input_column::InputColumn, tex_column::TexColumn, width::Width, Column};
 use cosmic_text::FontSystem;
 use error::Error;
-use font::{cosmic_font::CosmicFont, tex_font::TexFont};
+use font::{cosmic_font::CosmicFont, tex_font::TexFont, tex_fonts::TexFonts};
 use page::Page;
 use word::Word;
 
 mod column;
+mod config;
 pub(crate) mod error;
 pub(crate) mod font;
 pub(crate) mod page;
 pub(crate) mod word;
 
 fn main() {
+    let args = Command::new("talmudifier")
+        .author(env!("CARGO_PKG_AUTHORS"))
+        .about(env!("CARGO_PKG_DESCRIPTION"))
+        .args([
+            Arg::new("-config")
+            .short('c')
+            .required(false)
+            .help("The absolute path to a config json file. If this arg is not included, and if the default-fonts feature is enabled, then default values will be used."),
+            Arg::new("output-path")
+                .short('o')
+                .default_value("out.pdf")
+                .help("The absolute path to the output file."),
+        ]).get_matches();
+    // Get the fonts.
+    let tex_fonts = match args.get_one::<PathBuf>("config") {
+        Some(path) => {
+
+        }
+        None => {
+
+        }
+    };
+
     /*
     let mut tex = Tex {
         preamble: &preamble,
@@ -152,6 +177,16 @@ macro_rules! tex {
             )+
             t
         }
+    };
+}
+
+#[macro_export]
+macro_rules! text_arg {
+    ($column:expr) => {
+        Arg::new(concat!($column, "-text")).help(format!(
+            "The absolute file path to the {} markdown text.",
+            $column
+        ))
     };
 }
 
