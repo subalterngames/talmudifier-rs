@@ -19,18 +19,16 @@ impl TexColumn {
                 .collect::<Vec<String>>()
                 .join(",")
         );
-        table.push('\n');
         table.push_str(&tex!("begin", "paracol", columns.len()));
         table.push('\n');
         // Add the text.
+        let mut tex_strings = vec![];
         for column in columns.iter() {
-            // Add some text.
             if let Some(text) = &column.text {
-                table.push_str(text);
+                tex_strings.push(text.clone());
             }
-            // Switch columns.
-            table.push_str("\\switchcolumn ");
         }
+        table.push_str(&tex_strings.join("\\switchcolumn "));
         // End the table.
         table.push_str("\n\n\\end{paracol}");
         table

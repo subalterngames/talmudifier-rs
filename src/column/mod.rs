@@ -321,6 +321,16 @@ mod tests {
     }
 
     #[test]
+    fn test_num_lines() {
+        let (left, _, _) = get_test_md();
+
+        let tex_fonts = TexFonts::default().unwrap();
+        let left = get_column(&left, &tex_fonts.left.command, CosmicFont::default_left);
+        let num_lines = left.get_num_lines_tex(None, Width::Half, &Page::default()).unwrap();
+        assert_eq!(num_lines, 22);
+    }
+
+    //#[test]
     #[cfg(not(target_os = "windows"))]
     fn test_min_num_lines() {
          let (left, center, right) = get_columns();

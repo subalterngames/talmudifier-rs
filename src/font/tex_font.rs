@@ -30,7 +30,7 @@ impl TexFont {
 
         // The font family declaration.
         let mut font_family = format!(
-            "\\newfontfamily\\{}font[Path={}, Ligatures=TeX",
+            "\\newfontfamily\\{}font[Path={}/, Ligatures=TeX",
             &name,
             &path.as_ref().to_str().unwrap().replace("\\", "/")
         );
@@ -39,7 +39,7 @@ impl TexFont {
         let styles = [bold, italic, bold_italic]
             .iter()
             .zip(STYLES)
-            .filter_map(|(f, s)| f.as_ref().map(|f| format!("{}={}", s, f)))
+            .filter_map(|(f, s)| f.as_ref().map(|f| format!("{}={}.ttf", s, f)))
             .collect::<Vec<String>>()
             .join(", ");
         if !styles.is_empty() {
@@ -48,7 +48,7 @@ impl TexFont {
         }
 
         // Add the regular style.
-        font_family.push_str(&format!("]{{{}}}", regular));
+        font_family.push_str(&format!("]{{{}.ttf}}", regular));
 
         // This is the font size plus the font command.
         let command = format!(
