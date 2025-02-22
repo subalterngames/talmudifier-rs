@@ -4,7 +4,7 @@ use cosmic_text::{fontdb::Source, Attrs, AttrsOwned, Family, FontSystem, Metrics
 
 #[cfg(feature = "default-fonts")]
 use super::default_fonts::*;
-use super::font_paths::FontPaths;
+use super::{font_metrics::FontMetrics, font_paths::FontPaths};
 
 pub struct CosmicFont {
     pub regular: AttrsOwned,
@@ -18,8 +18,7 @@ pub struct CosmicFont {
 impl CosmicFont {
     pub fn new(
         paths: &FontPaths,
-        size: f32,
-        skip: f32,
+        metrics: &FontMetrics,
         font_system: FontSystem,
     ) -> Result<Self, io::Error> {
         let regular = read(&paths.regular)?;
@@ -31,8 +30,7 @@ impl CosmicFont {
             italic,
             bold,
             bold_italic,
-            size,
-            skip,
+            metrics,
             font_system,
         ))
     }
@@ -42,21 +40,19 @@ impl CosmicFont {
         italic: Vec<u8>,
         bold: Vec<u8>,
         bold_italic: Vec<u8>,
-        size: f32,
-        skip: f32,
+        metrics: &FontMetrics,
         mut font_system: FontSystem,
     ) -> Self {
         let regular = Self::get_font(regular, &mut font_system);
         let italic = Self::get_font(italic, &mut font_system);
         let bold = Self::get_font(bold, &mut font_system);
         let bold_italic = Self::get_font(bold_italic, &mut font_system);
-        let metrics = Metrics::new(size, skip);
         Self {
             regular,
             italic,
             bold,
             bold_italic,
-            metrics,
+            metrics: metrics.into(),
             font_system,
         }
     }
@@ -66,7 +62,7 @@ impl CosmicFont {
             .db_mut()
             .load_font_source(Source::Binary(Arc::new(font)))[0];
         let family_name = &font_system.db().face(font_id).unwrap().families[0].0;
-        AttrsOwned::new(Attrs::new().family(Family::Name(&family_name)).into())
+        AttrsOwned::new(Attrs::new().family(Family::Name(family_name)))
     }
 
     #[cfg(feature = "default-fonts")]
@@ -76,8 +72,7 @@ impl CosmicFont {
             include_bytes!("../fonts/IM_Fell_French_Canon/FeFCit2.ttf").to_vec(),
             include_bytes!("../fonts/IM_Fell_French_Canon/FeFCsc2.ttf").to_vec(),
             include_bytes!("../fonts/IM_Fell_French_Canon/FeFCsc2.ttf").to_vec(),
-            11.,
-            13.,
+            &FontMetrics::default(),
             FontSystem::new(),
         )
     }
@@ -89,8 +84,7 @@ impl CosmicFont {
             IM_FELL_ITALIC.to_vec(),
             IM_FELL_BOLD.to_vec(),
             IM_FELL_BOLD.to_vec(),
-            11.,
-            13.,
+            &FontMetrics::default(),
             FontSystem::new(),
         )
     }
@@ -102,8 +96,7 @@ impl CosmicFont {
             EB_GARAMOND_ITALIC.to_vec(),
             EB_GARAMOND_BOLD.to_vec(),
             EB_GARAMOND_BOLD_ITALIC.to_vec(),
-            11.,
-            13.,
+            &FontMetrics::default(),
             FontSystem::new(),
         )
     }

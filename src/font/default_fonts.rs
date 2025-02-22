@@ -17,6 +17,3 @@ pub static AVERIA_BOLD: &[u8] =
     include_bytes!("../fonts/Averia_Serif_Libre/AveriaSerifLibre-Bold.ttf");
 pub static AVERIA_BOLD_ITALIC: &[u8] =
     include_bytes!("../fonts/Averia_Serif_Libre/AveriaSerifLibre-BoldItalic.ttf");
-
-pub const DEFAULT_SIZE: f32 = 11.;
-pub const DEFAULT_SKIP: f32 = 13.;

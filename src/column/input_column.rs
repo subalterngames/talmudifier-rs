@@ -11,9 +11,6 @@ pub enum InputColumn<'t> {
 
 impl InputColumn<'_> {
     pub fn is_column(&self) -> bool {
-        match self {
-            Self::None => false,
-            _ => true,
-        }
+        !matches!(self, Self::None)
     }
 }

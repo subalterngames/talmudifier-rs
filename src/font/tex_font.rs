@@ -5,6 +5,7 @@ use tempdir::TempDir;
 
 #[cfg(feature = "default-fonts")]
 use super::default_fonts::*;
+use super::font_metrics::FontMetrics;
 
 pub struct TexFont {
     /// The font family declaration.
@@ -23,8 +24,7 @@ impl TexFont {
         italic: &Option<String>,
         bold: &Option<String>,
         bold_italic: &Option<String>,
-        size: f32,
-        skip: f32,
+        metrics: &FontMetrics,
     ) -> Self {
         const STYLES: [&str; 3] = ["ItalicFont", "BoldFont", "BoldItalicFont"];
 
@@ -51,7 +51,11 @@ impl TexFont {
         font_family.push_str(&format!("]{{{}}}", regular));
 
         // This is the font size plus the font command.
-        let command = format!("{}\\{}", crate::tex!("fontsize", size, skip), name);
+        let command = format!(
+            "{}\\{}",
+            crate::tex!("fontsize", metrics.size, metrics.skip),
+            name
+        );
         Self {
             command,
             font_family,
@@ -80,8 +84,7 @@ impl TexFont {
             &Some(Self::ITALIC.to_string()),
             &Some(Self::BOLD.to_string()),
             &None,
-            DEFAULT_SIZE,
-            DEFAULT_SKIP,
+            &FontMetrics::default(),
         );
         tex_font.temp_directory = Some(directory);
 
@@ -102,8 +105,7 @@ impl TexFont {
             &Some(Self::ITALIC.to_string()),
             &Some(Self::BOLD.to_string()),
             &None,
-            DEFAULT_SIZE,
-            DEFAULT_SKIP,
+            &FontMetrics::default(),
         );
         tex_font.temp_directory = Some(directory);
 
@@ -124,8 +126,7 @@ impl TexFont {
             &Some(Self::ITALIC.to_string()),
             &Some(Self::BOLD.to_string()),
             &None,
-            DEFAULT_SIZE,
-            DEFAULT_SKIP,
+            &FontMetrics::default(),
         );
         tex_font.temp_directory = Some(directory);
 

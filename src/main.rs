@@ -4,14 +4,9 @@ use std::{
 };
 
 use clap::{Arg, Command};
-use column::{input_column::InputColumn, tex_column::TexColumn, width::Width, Column};
 use config::Config;
-use cosmic_text::FontSystem;
 use error::Error;
-use font::{cosmic_font::CosmicFont, tex_font::TexFont, tex_fonts::TexFonts};
-use page::Page;
 use talmudifier::Talmudifier;
-use word::Word;
 
 mod column;
 mod config;
@@ -50,7 +45,7 @@ fn main() {
     let daf = talmudifier.talmudify().unwrap();
 
     // Write.
-    write(&output_path, daf).unwrap();
+    write(output_path, daf).unwrap();
 }
 
 #[macro_export]

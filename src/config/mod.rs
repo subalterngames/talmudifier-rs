@@ -1,13 +1,11 @@
 use std::{fs::read, path::Path};
 
-use cosmic_text::FontSystem;
 use fonts::Fonts;
 use serde::Deserialize;
 use serde_json::from_slice;
 use text_paths::TextPaths;
 
 use crate::{
-    column::Column,
     error::Error,
     font::{cosmic_font::CosmicFont, tex_fonts::TexFonts},
     page::Page,

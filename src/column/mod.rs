@@ -1,6 +1,8 @@
+use std::cmp::Ordering;
+
 use crate::{error::Error, font::cosmic_font::CosmicFont, page::Page, word::Word};
 
-use cosmic_text::{Buffer, FontSystem, Shaping};
+use cosmic_text::{Buffer, Shaping};
 use input_column::InputColumn;
 #[cfg(not(target_os = "windows"))]
 use pdf_extract::extract_text_from_mem;
@@ -11,7 +13,6 @@ use tex_column::TexColumn;
 use width::Width;
 
 pub mod input_column;
-pub mod position;
 pub mod tex_column;
 pub mod width;
 
@@ -71,12 +72,12 @@ impl Column {
                 .unwrap()
         } else {
             // Return the columns.
-            Ok(results.into_iter().flat_map(|c| c).collect())
+            Ok(results.into_iter().flatten().collect())
         }
     }
 
-    pub fn get_tex_column<'t>(
-        &'t mut self,
+    pub fn get_tex_column(
+        &mut self,
         num_lines: usize,
         width: Width,
         page: &Page,
@@ -110,7 +111,7 @@ impl Column {
         Ok(None)
     }
 
-    fn get_num_lines_cosmic<'t>(&'t mut self, end: usize, width: Width, page: &Page) -> usize {
+    fn get_num_lines_cosmic(&mut self, end: usize, width: Width, page: &Page) -> usize {
         // Get the width of the column in pts.
         let column_width = page.table_width * width.column_ratio();
         // Prepare the Cosmic buffer.
@@ -173,8 +174,8 @@ impl Column {
         }
     }
 
-    fn get_tex_words<'t>(
-        &'t mut self,
+    fn get_tex_words(
+        &mut self,
         width: Width,
         cosmic_index: usize,
         num_lines: usize,
@@ -201,12 +202,10 @@ impl Column {
                 TexColumn { text: None, width }
             } else {
                 let start = self.start;
-                self.start = if end > self.words.len() {
-                    self.words.len()
-                } else if end == self.words.len() {
-                    end
-                } else {
-                    end - 1
+                self.start = match end.cmp(&self.words.len()) {
+                    Ordering::Greater => self.words.len(),
+                    Ordering::Equal => end,
+                    Ordering::Less => end - 1,
                 };
                 let text = Word::to_tex(&self.words[start..self.start], &self.tex_font);
                 TexColumn {
@@ -239,7 +238,7 @@ impl Column {
         let widths = Self::get_widths(left.is_some(), center.is_some(), right.is_some());
         let columns = [left, center, right]
             .into_iter()
-            .flat_map(|c| c)
+            .flatten()
             .collect::<Vec<&Self>>();
         let has_words = columns
             .iter()

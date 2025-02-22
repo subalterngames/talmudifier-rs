@@ -5,7 +5,10 @@ use serde::Deserialize;
 
 use crate::{
     error::Error,
-    font::{cosmic_font::CosmicFont, font_paths::FontPaths, tex_font::TexFont},
+    font::{
+        cosmic_font::CosmicFont, font_metrics::FontMetrics, font_paths::FontPaths,
+        tex_font::TexFont,
+    },
 };
 
 #[derive(Deserialize)]
@@ -15,14 +18,13 @@ pub struct Font {
     pub italic: Option<String>,
     pub bold: Option<String>,
     pub bold_italic: Option<String>,
-    pub size: f32,
-    pub skip: f32,
+    pub metrics: FontMetrics,
 }
 
 impl Font {
     pub fn to_cosmic(&self) -> Result<CosmicFont, Error> {
-        let font_paths = self.into_font_paths()?;
-        match CosmicFont::new(&font_paths, self.size, self.skip, FontSystem::new()) {
+        let font_paths = self.font_paths()?;
+        match CosmicFont::new(&font_paths, &self.metrics, FontSystem::new()) {
             Ok(c) => Ok(c),
             Err(error) => Err(Error::CosmicFont(error)),
         }
@@ -36,12 +38,11 @@ impl Font {
             &self.italic,
             &self.bold,
             &self.bold_italic,
-            self.size,
-            self.skip,
+            &self.metrics,
         )
     }
 
-    fn into_font_paths(&self) -> Result<FontPaths, Error> {
+    fn font_paths(&self) -> Result<FontPaths, Error> {
         let regular = self.get_font(&self.regular)?;
         let italic = self.get_optional_font(&self.italic, &regular)?;
         let bold = self.get_optional_font(&self.bold, &italic)?;

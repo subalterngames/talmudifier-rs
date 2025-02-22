@@ -98,7 +98,7 @@ impl Talmudifier {
         }
     }
 
-    fn get_input_column<'t>(column: &'t mut Column) -> InputColumn<'t> {
+    fn get_input_column(column: &mut Column) -> InputColumn<'_> {
         if column.done() {
             InputColumn::None
         } else {
@@ -106,7 +106,7 @@ impl Talmudifier {
         }
     }
 
-    fn get_input_column_skip<'t>(column: InputColumn<'t>) -> InputColumn<'t> {
+    fn get_input_column_skip(column: InputColumn<'_>) -> InputColumn<'_> {
         match column {
             InputColumn::None => InputColumn::None,
             InputColumn::Empty => InputColumn::Empty,
