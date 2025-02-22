@@ -320,6 +320,14 @@ mod tests {
         assert!(widths.iter().all(|w| *w == Width::One));
     }
 
+    #[test]
+    #[cfg(not(target_os = "windows"))]
+    fn test_min_num_lines() {
+         let (left, center, right) = get_columns();
+         let min_num_lines = Column::get_min_num_lines(Some(&left), Some(&center), Some(&right), &Page::default()).unwrap();
+         assert_eq!(min_num_lines, 4);
+    }
+
     fn get_columns() -> (Column, Column, Column) {
         let (left, center, right) = get_test_md();
 

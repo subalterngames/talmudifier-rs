@@ -1,5 +1,6 @@
 use super::Column;
 
+/// A maybe-column containing maybe-text.
 pub enum InputColumn<'t> {
     /// A column with text.
     Text(&'t mut Column),
