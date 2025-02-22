@@ -1,0 +1,60 @@
+{
+  "page": {
+    "paper_size": "Letter",
+    "margins": {
+      "left": {
+        "length": 1.0,
+        "unit": "In"
+      },
+      "right": {
+        "length": 1.0,
+        "unit": "In"
+      },
+      "top": {
+        "length": 0.5,
+        "unit": "In"
+      },
+      "bottom": {
+        "length": 0.5,
+        "unit": "In"
+      },
+      "foot_skip": {
+        "length": 0.25,
+        "unit": "In"
+      },
+      "margin_paragraph_width": {
+        "length": 5.0,
+        "unit": "Em"
+      },
+      "binding_offset": {
+        "length": 0.21,
+        "unit": "In"
+      }
+    },
+    "tables": {
+      "paragraph_indent": {
+        "length": 0.0,
+        "unit": "Pt"
+      },
+      "column_separation": {
+        "length": 1.25,
+        "unit": "Em"
+      },
+      "paragraph_fill_skip": {
+        "length": 0.0,
+        "unit": "Pt"
+      },
+      "tabular_column_separation": {
+        "length": 1.0,
+        "unit": "Em"
+      }
+    }
+  },
+  "fonts": null,
+  "text_paths": {
+    "left": "left.md",
+    "center": "center.md",
+    "right": "right.md"
+  },
+  "title": "The Title"
+}

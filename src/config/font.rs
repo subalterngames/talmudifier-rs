@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use cosmic_text::FontSystem;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     error::Error,
@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct Font {
     pub directory: PathBuf,
     pub regular: String,

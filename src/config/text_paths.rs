@@ -1,12 +1,12 @@
-use std::{fs::read_to_string, io, path::PathBuf};
+use std::{fs::read_to_string, io, path::PathBuf, str::FromStr};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::error::Error;
 
 use super::raw_text::RawText;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct TextPaths {
     pub left: PathBuf,
     pub center: PathBuf,
@@ -30,5 +30,15 @@ impl TextPaths {
             center,
             right,
         })
+    }
+}
+
+impl Default for TextPaths {
+    fn default() -> Self {
+        Self {
+            left: PathBuf::from_str("left.md").unwrap(),
+            center: PathBuf::from_str("center.md").unwrap(),
+            right: PathBuf::from_str("right.md").unwrap(),
+        }
     }
 }

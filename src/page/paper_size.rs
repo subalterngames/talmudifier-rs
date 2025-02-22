@@ -1,8 +1,8 @@
 use std::fmt;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Default, Clone, Deserialize)]
+#[derive(Default, Clone, Deserialize, Serialize)]
 pub enum PaperSize {
     #[default]
     Letter,

@@ -9,13 +9,14 @@ use error::Error;
 use talmudifier::Talmudifier;
 
 mod column;
-mod config;
+pub mod config;
 pub(crate) mod error;
 pub(crate) mod font;
 pub(crate) mod page;
 mod talmudifier;
 pub(crate) mod word;
 
+#[cfg(not(feature = "example-config"))]
 fn main() {
     let args = Command::new("talmudifier")
         .author(env!("CARGO_PKG_AUTHORS"))
@@ -46,6 +47,13 @@ fn main() {
 
     // Write.
     write(output_path, daf).unwrap();
+}
+
+#[cfg(feature = "example-config")]
+fn main() {
+    let config = Config::default();
+    let s = serde_json::to_string_pretty(&config).unwrap();
+    write("example_config.json", s).unwrap();
 }
 
 #[macro_export]

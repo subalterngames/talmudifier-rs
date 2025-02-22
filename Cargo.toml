@@ -9,6 +9,7 @@ description = "Convert markdown text into Talmud-like PDFs"
 default = ["default-fonts", "ffi"]
 ffi = []
 default-fonts = []
+example-config = []
 
 [dependencies]
 clap = "4.5.30"

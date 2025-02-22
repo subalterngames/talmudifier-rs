@@ -1,18 +1,15 @@
 use std::fmt;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// LaTeX units.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum Unit {
     Pt,
     Mm,
     Cm,
     In,
-    Ex,
     Em,
-    Mu,
-    Sp,
 }
 
 impl fmt::Display for Unit {
@@ -25,10 +22,7 @@ impl fmt::Display for Unit {
                 Self::Mm => "mm",
                 Self::Cm => "cm",
                 Self::In => "in",
-                Self::Ex => "ex",
                 Self::Em => "em",
-                Self::Mu => "mu",
-                Self::Sp => "sp",
             }
         )
     }

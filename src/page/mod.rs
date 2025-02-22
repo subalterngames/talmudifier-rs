@@ -3,7 +3,7 @@ use crate::font::tex_fonts::TexFonts;
 use length::Length;
 use margins::Margins;
 use paper_size::PaperSize;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tables::Tables;
 
 mod length;
@@ -13,7 +13,7 @@ mod tables;
 mod unit;
 
 /// Page layout parameters.
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Page {
     pub paper_size: PaperSize,
     pub margins: Margins,

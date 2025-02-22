@@ -1,8 +1,8 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use super::font::Font;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct Fonts {
     pub left: Font,
     pub center: Font,

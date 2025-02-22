@@ -1,7 +1,7 @@
 use cosmic_text::Metrics;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct FontMetrics {
     pub size: f32,
     pub skip: f32,
