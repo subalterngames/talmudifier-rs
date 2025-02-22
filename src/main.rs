@@ -11,10 +11,10 @@ use word::Word;
 
 mod column;
 mod config;
-mod daf;
 pub(crate) mod error;
 pub(crate) mod font;
 pub(crate) mod page;
+mod talmudifier;
 pub(crate) mod word;
 
 fn main() {

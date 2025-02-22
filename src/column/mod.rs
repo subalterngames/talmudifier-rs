@@ -24,23 +24,15 @@ pub struct Column {
     cosmic_font: CosmicFont,
     /// The command to set the TeX font.
     tex_font: String,
-    /// The Cosmic font system.
-    font_system: FontSystem,
 }
 
 impl Column {
-    pub fn new(
-        words: Vec<Word>,
-        cosmic_font: CosmicFont,
-        tex_font: &str,
-        font_system: FontSystem,
-    ) -> Self {
+    pub fn new(words: Vec<Word>, cosmic_font: CosmicFont, tex_font: &str) -> Self {
         Self {
             words,
             start: 0,
             cosmic_font,
             tex_font: tex_font.to_string(),
-            font_system,
         }
     }
 
@@ -122,20 +114,20 @@ impl Column {
         // Get the width of the column in pts.
         let column_width = page.table_width * width.column_ratio();
         // Prepare the Cosmic buffer.
-        let mut buffer = Buffer::new(&mut self.font_system, self.cosmic_font.metrics);
+        let mut buffer = Buffer::new(&mut self.cosmic_font.font_system, self.cosmic_font.metrics);
         // Set the width.
-        buffer.set_size(&mut self.font_system, Some(column_width), None);
+        buffer.set_size(&mut self.cosmic_font.font_system, Some(column_width), None);
         // Get the Cosmic spans.
         let spans = Word::to_cosmic(&self.words[self.start..end], &self.cosmic_font);
         // Set the text.
         buffer.set_rich_text(
-            &mut self.font_system,
+            &mut self.cosmic_font.font_system,
             spans.iter().map(|(s, a)| (s.as_str(), a.as_attrs())),
             self.cosmic_font.regular.as_attrs(),
             Shaping::Advanced,
         );
         // Create lines.
-        buffer.shape_until_scroll(&mut self.font_system, true);
+        buffer.shape_until_scroll(&mut self.cosmic_font.font_system, true);
         // Return the number of lines.
         buffer.layout_runs().count()
     }
@@ -288,8 +280,6 @@ impl Column {
 
 #[cfg(test)]
 mod tests {
-    use cosmic_text::FontSystem;
-
     use crate::{
         column::width::Width,
         font::{cosmic_font::CosmicFont, tex_fonts::TexFonts},
@@ -305,10 +295,9 @@ mod tests {
         let lorem = include_str!("../../test_text/lorem.txt");
         let words = Word::from_md(lorem).unwrap();
         assert_eq!(words.len(), 402);
-        let mut font_system = FontSystem::new();
-        let cosmic_font = CosmicFont::default_left(&mut font_system);
+        let cosmic_font = CosmicFont::default_left();
         let tex_fonts = TexFonts::default().unwrap();
-        let mut column = Column::new(words, cosmic_font, &tex_fonts.left.command, font_system);
+        let mut column = Column::new(words, cosmic_font, &tex_fonts.left.command);
         let page = Page::default();
         let cosmic_index = column
             .get_cosmic_index(4, Width::Half, &page)
@@ -342,10 +331,9 @@ mod tests {
         (left, center, right)
     }
 
-    fn get_column(md: &str, tex_font: &str, f: impl Fn(&mut FontSystem) -> CosmicFont) -> Column {
+    fn get_column(md: &str, tex_font: &str, f: impl Fn() -> CosmicFont) -> Column {
         let words = Word::from_md(&md).unwrap();
-        let mut font_system = FontSystem::new();
-        let cosmic_font = f(&mut font_system);
-        Column::new(words, cosmic_font, tex_font, font_system)
+        let cosmic_font = f();
+        Column::new(words, cosmic_font, tex_font)
     }
 }

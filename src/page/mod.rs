@@ -15,7 +15,7 @@ mod tables;
 mod unit;
 
 /// Page layout parameters.
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct Page {
     pub paper_size: PaperSize,
     pub margins: Margins,
@@ -28,6 +28,10 @@ pub struct Page {
 
 impl Page {
     pub const END_DOCUMENT: &str = "\n\\end{sloppypar}\\end{document}";
+
+    pub fn set_preamble(&mut self, fonts: &TexFonts) {
+        self.preamble = Self::get_preamble(fonts, &self.paper_size, &self.margins, &self.tables);
+    }
 
     fn get_preamble(
         fonts: &TexFonts,

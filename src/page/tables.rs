@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 use super::length::Length;
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct Tables {
     pub paragraph_indent: Length,
     pub column_separation: Length,

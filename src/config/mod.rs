@@ -3,17 +3,22 @@ use std::{fs::read, path::Path};
 use cosmic_text::FontSystem;
 use fonts::Fonts;
 use serde::Deserialize;
-use serde_json::{from_slice, from_str};
+use serde_json::from_slice;
 use text_paths::TextPaths;
 
 use crate::{
-    column::Column, daf::Daf, error::Error, font::{cosmic_font::CosmicFont, cosmic_fonts::CosmicFonts, tex_fonts::TexFonts}, page::Page, word::Word
+    column::Column,
+    error::Error,
+    font::{cosmic_font::CosmicFont, tex_fonts::TexFonts},
+    page::Page,
 };
 
 mod font;
 mod fonts;
 mod raw_text;
 mod text_paths;
+
+type CosmicFonts = Result<(CosmicFont, CosmicFont, CosmicFont), Error>;
 
 #[derive(Deserialize)]
 pub struct Config {
@@ -23,7 +28,7 @@ pub struct Config {
     #[cfg(not(feature = "default-fonts"))]
     pub fonts: Option<Fonts>,
     pub text_paths: TextPaths,
-    pub title: Option<String>
+    pub title: Option<String>,
 }
 
 impl Config {
@@ -37,44 +42,11 @@ impl Config {
         }
     }
 
-    pub fn to_daf(self, font_system: &mut FontSystem) -> Result<Daf, Error> {
-        // Get the raw text.
-        let raw_text = self.text_paths.read()?;
-
-        // Get the words.
-        let left_words = Word::from_md(&raw_text.left)?;
-        let center_words = Word::from_md(&raw_text.center)?;
-        let right_words = Word::from_md(&raw_text.right)?;
-
-        // Get the fonts.
-        let mut font_system = FontSystem::new();
-        let cosmic_fonts = self.get_cosmic_fonts(&mut font_system)?;
-        let tex_fonts = self.get_tex_fonts()?;
-
-        let left = Column::new(left_words, cosmic_fonts.left, &tex_fonts.left.command, font_system);
-        let center = Column::new(center_words, cosmic_fonts.center, &tex_fonts.center.command, font_system);
-        let right = Column::new(right_words, cosmic_fonts.right, &tex_fonts.right.command, font_system);
-        Ok(Daf {
-            left,
-            center,
-            right,
-            page: self.page,
-            title: self.title
-        })
-    }
-
-    fn get_cosmic_fonts_internal(
-        fonts: &Fonts,
-        font_system: &mut FontSystem,
-    ) -> Result<CosmicFonts, Error> {
-        let left = fonts.left.to_cosmic(font_system)?;
-        let center = fonts.center.to_cosmic(font_system)?;
-        let right = fonts.right.to_cosmic(font_system)?;
-        Ok(CosmicFonts {
-            left,
-            center,
-            right,
-        })
+    fn get_cosmic_fonts_internal(fonts: &Fonts) -> CosmicFonts {
+        let left = fonts.left.to_cosmic()?;
+        let center = fonts.center.to_cosmic()?;
+        let right = fonts.right.to_cosmic()?;
+        Ok((left, center, right))
     }
 
     fn get_tex_fonts_internal(fonts: &Fonts) -> TexFonts {
@@ -91,10 +63,14 @@ impl Config {
 
 #[cfg(feature = "default-fonts")]
 impl Config {
-    pub fn get_cosmic_fonts(&self, font_system: &mut FontSystem) -> Result<CosmicFonts, Error> {
+    pub fn get_cosmic_fonts(&self) -> CosmicFonts {
         match &self.fonts {
-            Some(fonts) => Self::get_cosmic_fonts_internal(fonts, font_system),
-            None => Ok(CosmicFonts::default(font_system)),
+            Some(fonts) => Self::get_cosmic_fonts_internal(fonts),
+            None => Ok((
+                CosmicFont::default_left(),
+                CosmicFont::default_center(),
+                CosmicFont::default_right(),
+            )),
         }
     }
 
@@ -111,8 +87,8 @@ impl Config {
 
 #[cfg(not(feature = "default-fonts"))]
 impl Config {
-    pub fn get_cosmic_fonts(&self, font_system: &mut FontSystem) -> Result<CosmicFonts, Error> {
-        Self::get_cosmic_fonts_internal(&self.fonts, font_system)
+    pub fn get_cosmic_fonts(&self) -> CosmicFonts {
+        Self::get_cosmic_fonts_internal(&self.fonts)
     }
 
     pub fn get_tex_fonts(&self) -> Result<TexFonts, Error> {

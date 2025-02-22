@@ -5,7 +5,7 @@ use serde::Deserialize;
 use super::unit::Unit;
 
 /// A length, in a given unit.
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct Length {
     pub length: f32,
     pub unit: Unit,

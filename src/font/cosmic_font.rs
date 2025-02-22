@@ -12,6 +12,7 @@ pub struct CosmicFont {
     pub bold: AttrsOwned,
     pub bold_italic: AttrsOwned,
     pub metrics: Metrics,
+    pub font_system: FontSystem,
 }
 
 impl CosmicFont {
@@ -19,7 +20,7 @@ impl CosmicFont {
         paths: &FontPaths,
         size: f32,
         skip: f32,
-        font_system: &mut FontSystem,
+        font_system: FontSystem,
     ) -> Result<Self, io::Error> {
         let regular = read(&paths.regular)?;
         let italic = read(&paths.italic)?;
@@ -43,12 +44,12 @@ impl CosmicFont {
         bold_italic: Vec<u8>,
         size: f32,
         skip: f32,
-        font_system: &mut FontSystem,
+        mut font_system: FontSystem,
     ) -> Self {
-        let regular = Self::get_font(regular, font_system);
-        let italic = Self::get_font(italic, font_system);
-        let bold = Self::get_font(bold, font_system);
-        let bold_italic = Self::get_font(bold_italic, font_system);
+        let regular = Self::get_font(regular, &mut font_system);
+        let italic = Self::get_font(italic, &mut font_system);
+        let bold = Self::get_font(bold, &mut font_system);
+        let bold_italic = Self::get_font(bold_italic, &mut font_system);
         let metrics = Metrics::new(size, skip);
         Self {
             regular,
@@ -56,6 +57,7 @@ impl CosmicFont {
             bold,
             bold_italic,
             metrics,
+            font_system,
         }
     }
 
@@ -68,7 +70,7 @@ impl CosmicFont {
     }
 
     #[cfg(feature = "default-fonts")]
-    pub fn default_left(font_system: &mut FontSystem) -> Self {
+    pub fn default_left() -> Self {
         Self::new_from_bytes(
             include_bytes!("../fonts/IM_Fell_French_Canon/FeFCrm2.ttf").to_vec(),
             include_bytes!("../fonts/IM_Fell_French_Canon/FeFCit2.ttf").to_vec(),
@@ -76,12 +78,12 @@ impl CosmicFont {
             include_bytes!("../fonts/IM_Fell_French_Canon/FeFCsc2.ttf").to_vec(),
             11.,
             13.,
-            font_system,
+            FontSystem::new(),
         )
     }
 
     #[cfg(feature = "default-fonts")]
-    pub fn default_center(font_system: &mut FontSystem) -> Self {
+    pub fn default_center() -> Self {
         Self::new_from_bytes(
             IM_FELL_REGULAR.to_vec(),
             IM_FELL_ITALIC.to_vec(),
@@ -89,12 +91,12 @@ impl CosmicFont {
             IM_FELL_BOLD.to_vec(),
             11.,
             13.,
-            font_system,
+            FontSystem::new(),
         )
     }
 
     #[cfg(feature = "default-fonts")]
-    pub fn default_right(font_system: &mut FontSystem) -> Self {
+    pub fn default_right() -> Self {
         Self::new_from_bytes(
             EB_GARAMOND_REGULAR.to_vec(),
             EB_GARAMOND_ITALIC.to_vec(),
@@ -102,7 +104,7 @@ impl CosmicFont {
             EB_GARAMOND_BOLD_ITALIC.to_vec(),
             11.,
             13.,
-            font_system,
+            FontSystem::new(),
         )
     }
 }

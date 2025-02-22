@@ -3,7 +3,7 @@ use std::fmt;
 use serde::Deserialize;
 
 /// LaTeX units.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub enum Unit {
     Pt,
     Mm,

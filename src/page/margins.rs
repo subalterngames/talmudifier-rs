@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 use super::length::Length;
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct Margins {
     pub left: Length,
     pub right: Length,

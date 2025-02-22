@@ -20,9 +20,9 @@ pub struct Font {
 }
 
 impl Font {
-    pub fn to_cosmic(&self, font_system: &mut FontSystem) -> Result<CosmicFont, Error> {
+    pub fn to_cosmic(&self) -> Result<CosmicFont, Error> {
         let font_paths = self.into_font_paths()?;
-        match CosmicFont::new(&font_paths, self.size, self.skip, font_system) {
+        match CosmicFont::new(&font_paths, self.size, self.skip, FontSystem::new()) {
             Ok(c) => Ok(c),
             Err(error) => Err(Error::CosmicFont(error)),
         }
