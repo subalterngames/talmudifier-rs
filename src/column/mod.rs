@@ -6,7 +6,9 @@ use cosmic_text::{Buffer, Shaping};
 use input_column::InputColumn;
 #[cfg(not(target_os = "windows"))]
 use pdf_extract::extract_text_from_mem;
-use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
+use rayon::iter::{
+    IndexedParallelIterator, IntoParallelIterator, IntoParallelRefMutIterator, ParallelIterator,
+};
 #[cfg(not(target_os = "windows"))]
 use tectonic::latex_to_pdf;
 use tex_column::TexColumn;
@@ -16,6 +18,13 @@ pub mod input_column;
 pub mod tex_column;
 pub mod width;
 
+/// A column of text that can be typeset.
+/// Columns try to fill a target number of lines with words.
+/// Cosmic is used to get an initial guess at the number of words.
+/// Then, Tectonic is used to fill the column.
+///
+/// `Column` has a `Vec<Word>` and a `start` index that are continuously re-sliced for typesetting.
+/// Every time `get_tex_table(left, center, right, num_lines, page)`  is called, `start` is incremented.
 pub struct Column {
     /// All of the words in the column.
     words: Vec<Word>,
@@ -37,6 +46,9 @@ impl Column {
         }
     }
 
+    /// Given 1-3 columns and a target `num_lines`, create a TeX table.
+    ///
+    /// `left`, `center`, and `right` are the columns. At least one of them must be `Empty` or `Text`.
     pub fn get_tex_table<'t>(
         left: &mut InputColumn<'t>,
         center: &mut InputColumn<'t>,
@@ -44,39 +56,39 @@ impl Column {
         num_lines: usize,
         page: &Page,
     ) -> Result<Vec<TexColumn>, Error> {
-        // Get the width of each column.
-        let widths = Self::get_widths(left.is_column(), center.is_column(), right.is_column());
+        if !left.is_column() && !center.is_column() && !right.is_column() {
+            return Err(Error::NoColumns);
+        }
+        // Get the width of each column and convert them into empty TexColumns.
+        let mut tex_columns =
+            Self::get_widths(left.is_column(), center.is_column(), right.is_column())
+                .into_iter()
+                .map(|width| TexColumn { width, text: None })
+                .collect::<Vec<TexColumn>>();
 
         // Get a tex string per column.
-        let results = [left, center, right]
-            .iter_mut()
-            .zip(widths)
-            .filter_map(|(column, width)| match column {
+        [left, center, right]
+            .par_iter_mut()
+            .zip(tex_columns.par_iter_mut())
+            .try_for_each(|(input_column, tex_column)| match input_column {
                 // This is not a column.
-                InputColumn::None => None,
+                InputColumn::None => unreachable!(),
                 // This is an empty column.
-                InputColumn::Empty => Some(Ok(TexColumn { text: None, width })),
+                InputColumn::Empty => Ok(()),
                 // This is a column with text.
-                InputColumn::Text(column) => Some(column.get_tex_column(num_lines, width, page)),
-            })
-            .collect::<Vec<Result<TexColumn, Error>>>();
-
-        // Return the first error.
-        if results.iter().any(|t| t.is_err()) {
-            results
-                .into_iter()
-                .find_map(|t| match t {
-                    Ok(_) => None,
-                    Err(error) => Some(Err(error)),
-                })
-                .unwrap()
-        } else {
-            // Return the columns.
-            Ok(results.into_iter().flatten().collect())
-        }
+                InputColumn::Text(input_column) => {
+                    // Fill the column with text.
+                    *tex_column = input_column.get_tex_column(num_lines, tex_column.width, page)?;
+                    Ok(())
+                }
+            })?;
+        Ok(tex_columns)
     }
 
-    pub fn get_tex_column(
+    /// Fill a column of `num_lines` with a TeX string.
+    /// Estimate an end index for `self.words` with Cosmic Text.
+    /// Use that estimate to typeset with Tectonic.
+    fn get_tex_column(
         &mut self,
         num_lines: usize,
         width: Width,
@@ -93,6 +105,8 @@ impl Column {
         self.start >= self.words.len()
     }
 
+    /// Given a target number of lines, typeset using Cosmic.
+    /// Returns the end index of the words that fit in the column.
     fn get_cosmic_index(
         &mut self,
         num_lines: usize,
@@ -111,6 +125,11 @@ impl Column {
         Ok(None)
     }
 
+    /// Get the number of lines in a column with Cosmic Text.
+    ///
+    /// - `end` is an optional end index for `self.words`. If `None`, the words are from `self.start..self.words.len()`.
+    /// - `width` is the width of the column, as calculated elsewhere.
+    /// - `page` is used because we need width of the table.
     fn get_num_lines_cosmic(&mut self, end: usize, width: Width, page: &Page) -> usize {
         // Get the width of the column in pts.
         let column_width = page.table_width * width.column_ratio();
@@ -133,6 +152,11 @@ impl Column {
         buffer.layout_runs().count()
     }
 
+    /// Get the number of lines in a column using Tectonic.
+    ///
+    /// - `end` is an optional end index for `self.words`. If `None`, the words are from `self.start..self.words.len()`.
+    /// - `width` is the width of the column, as calculated elsewhere.
+    /// - `page` is used because we need the preamble.
     fn get_num_lines_tex(
         &self,
         end: Option<usize>,
@@ -170,10 +194,12 @@ impl Column {
             }
 
             #[cfg(target_os = "windows")]
-            panic!("Cannot render PDFs on Windows");
+            Err(Error::Pdf)
         }
     }
 
+    /// Typeset using Tectonic to fill a column with `num_lines` of a TeX string.
+    /// `cosmic_index` is the best-first-guess of the end index.
     fn get_tex_words(
         &mut self,
         width: Width,
@@ -203,10 +229,14 @@ impl Column {
             } else {
                 let start = self.start;
                 self.start = match end.cmp(&self.words.len()) {
+                    // If we overshot the number of words, use words.len()
                     Ordering::Greater => self.words.len(),
+                    // Use the end index
                     Ordering::Equal => end,
+                    // This will happen if we needed to increment.
                     Ordering::Less => end - 1,
                 };
+                // Convert words to a TeX string.
                 let text = Word::to_tex(&self.words[start..self.start], &self.tex_font);
                 TexColumn {
                     text: Some(text),
@@ -229,50 +259,59 @@ impl Column {
         }
     }
 
+    /// Given 1-3 columns:
+    ///
+    /// 1. Get the width of each column.
+    ///    This is derived from the position of each column e.g. `left` and `center` is always (one third, two thirds).
+    /// 2. Get the number of lines per column, using all words that have yet to be typeset.
+    /// 3. Return the least number of lines. This will be used as a target for all columns to reach.
     pub fn get_min_num_lines(
         left: Option<&Self>,
         center: Option<&Self>,
         right: Option<&Self>,
         page: &Page,
     ) -> Result<usize, Error> {
+        if left.is_none() && center.is_none() && right.is_none() {
+            return Err(Error::MinNumLines("All columns are None".to_string()));
+        }
+
+        // Get the width of each line.
         let widths = Self::get_widths(left.is_some(), center.is_some(), right.is_some());
+
+        // Get all non-None columns.
         let columns = [left, center, right]
             .into_iter()
             .flatten()
             .collect::<Vec<&Self>>();
-        let has_words = columns
-            .iter()
-            .map(|c| !c.words[c.start..].is_empty())
-            .collect::<Vec<bool>>();
+
+        // Get the columns that still have words that need to be typeset.
+        let has_words = columns.iter().map(|c| !c.done()).collect::<Vec<bool>>();
+
         // Get the column with the least words.
-        let num_lines = columns
+        let mut num_lines = vec![0; columns.len()];
+        columns
             .into_par_iter()
-            .zip(has_words.into_par_iter().zip(widths.into_par_iter()))
-            .filter_map(|(column, (has_words, width))| {
-                if !has_words {
-                    None
+            .zip(
+                has_words
+                    .into_par_iter()
+                    .zip(widths.into_par_iter().zip(num_lines.par_iter_mut())),
+            )
+            .try_for_each(|(column, (has_words, (width, num_lines)))| {
+                if has_words {
+                    match column.get_num_lines_tex(None, width, page) {
+                        Ok(n) => {
+                            *num_lines = n;
+                            Ok(())
+                        }
+                        Err(error) => Err(error),
+                    }
                 } else {
-                    Some(column.get_num_lines_tex(None, width, page))
+                    Ok(())
                 }
-            })
-            .collect::<Vec<Result<usize, Error>>>();
-        if let Some(error) = num_lines.iter().find_map(|n| match n {
-            Ok(_) => None,
-            Err(error) => Some(error),
-        }) {
-            Err(Error::MinNumLines(error.to_string()))
-        } else {
-            match num_lines
-                .iter()
-                .filter_map(|n| match n {
-                    Ok(n) => Some(n),
-                    Err(_) => None,
-                })
-                .min()
-            {
-                Some(min) => Ok(*min),
-                None => Err(Error::NoMinNumLines),
-            }
+            })?;
+        match num_lines.iter().min() {
+            Some(min) => Ok(*min),
+            None => Err(Error::MinNumLines("Called min() but got None".to_string())),
         }
     }
 }
@@ -298,11 +337,18 @@ mod tests {
         let tex_fonts = TexFonts::default().unwrap();
         let mut column = Column::new(words, cosmic_font, &tex_fonts.left.command);
         let page = Page::default();
+
         let cosmic_index = column
             .get_cosmic_index(4, Width::Half, &page)
             .unwrap()
             .unwrap();
         assert_eq!(cosmic_index, 22);
+
+        let cosmic_index = column
+            .get_cosmic_index(4, Width::One, &page)
+            .unwrap()
+            .unwrap();
+        assert_eq!(cosmic_index, 46);
     }
 
     #[test]
@@ -321,21 +367,26 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(target_os = "windows"))]
     fn test_num_lines() {
         let (left, _, _) = get_test_md();
 
         let tex_fonts = TexFonts::default().unwrap();
         let left = get_column(&left, &tex_fonts.left.command, CosmicFont::default_left);
-        let num_lines = left.get_num_lines_tex(None, Width::Half, &Page::default()).unwrap();
+        let num_lines = left
+            .get_num_lines_tex(None, Width::Half, &Page::default())
+            .unwrap();
         assert_eq!(num_lines, 22);
     }
 
     //#[test]
     #[cfg(not(target_os = "windows"))]
     fn test_min_num_lines() {
-         let (left, center, right) = get_columns();
-         let min_num_lines = Column::get_min_num_lines(Some(&left), Some(&center), Some(&right), &Page::default()).unwrap();
-         assert_eq!(min_num_lines, 4);
+        let (left, center, right) = get_columns();
+        let min_num_lines =
+            Column::get_min_num_lines(Some(&left), Some(&center), Some(&right), &Page::default())
+                .unwrap();
+        assert_eq!(min_num_lines, 4);
     }
 
     fn get_columns() -> (Column, Column, Column) {

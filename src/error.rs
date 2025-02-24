@@ -4,6 +4,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Error {
+    #[cfg(target_os = "windows")]
+    #[error("Failed to create a PDF. Talmudifier cannot create PDFs on Windows.")]
+    Pdf,
     #[cfg(not(target_os = "windows"))]
     #[error("Error creating PDF: {0}")]
     Pdf(tectonic::Error),
@@ -12,8 +15,6 @@ pub enum Error {
     Extract(pdf_extract::OutputError),
     #[error("Failed to get the minimum number of lines: {0}")]
     MinNumLines(String),
-    #[error("Failed to get the minimum number of lines")]
-    NoMinNumLines,
     #[error("Markdown parsing error: {0}")]
     Md(markdown::message::Message),
     #[error("Tried to create a table but there are no words.")]
@@ -32,4 +33,6 @@ pub enum Error {
     ConfigSerde(serde_json::Error),
     #[error("Error reading raw text: {0}")]
     RawText(io::Error),
+    #[error("Tried to create a table with no columns")]
+    NoColumns,
 }

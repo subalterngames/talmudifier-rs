@@ -1,3 +1,4 @@
+/// The width of a column with respect to the width of the table.
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub enum Width {
     One,
