@@ -6,9 +6,6 @@ use cosmic_text::{Buffer, Shaping};
 use input_column::InputColumn;
 #[cfg(not(target_os = "windows"))]
 use pdf_extract::extract_text_from_mem;
-use rayon::iter::{
-    IndexedParallelIterator, IntoParallelIterator, IntoParallelRefMutIterator, ParallelIterator,
-};
 #[cfg(not(target_os = "windows"))]
 use tectonic::latex_to_pdf;
 use tex_column::TexColumn;
@@ -68,8 +65,8 @@ impl Column {
 
         // Get a tex string per column.
         [left, center, right]
-            .par_iter_mut()
-            .zip(tex_columns.par_iter_mut())
+            .iter_mut()
+            .zip(tex_columns.iter_mut())
             .try_for_each(|(input_column, tex_column)| match input_column {
                 // This is not a column.
                 InputColumn::None => unreachable!(),
@@ -290,11 +287,11 @@ impl Column {
         // Get the column with the least words.
         let mut num_lines = vec![0; columns.len()];
         columns
-            .into_par_iter()
+            .iter()
             .zip(
                 has_words
-                    .into_par_iter()
-                    .zip(widths.into_par_iter().zip(num_lines.par_iter_mut())),
+                    .into_iter()
+                    .zip(widths.into_iter().zip(num_lines.iter_mut())),
             )
             .try_for_each(|(column, (has_words, (width, num_lines)))| {
                 if has_words {

@@ -3088,7 +3088,6 @@ dependencies = [
  "cosmic-text",
  "markdown",
  "pdf-extract",
- "rayon",
  "serde",
  "serde_json",
  "tectonic",
