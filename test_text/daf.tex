@@ -12,6 +12,8 @@
 \setlength{\columnsep}{1.25em}
 \setlength{\parfillskip}{0pt}
 \setlength{\tabcolsep}{1em}
+\newfontfamily\leftfont[Path=default_fonts/EB_Garamond/, Ligatures=TeX, ItalicFont=EBGaramond-Italic.ttf, BoldFont=EBGaramond-Bold.ttf]{EBGaramond-Regular.ttf}
+\newcommand{\daftitle}[1]{\centerfont{\huge{#1}}}
 
 
 \raggedbottom
@@ -20,7 +22,7 @@
 
 \columnratio{0.5}
 \begin{paracol}{1}
-\fontsize{11}{13} Quisque at nisi magna. Duis nec \textbf{lacus arcu. Morbi vel} fermentum leo. \textit{Pellentesque hendrerit sagittis vulputate.} \textbf{Fusce laoreet malesuada \textit{odio}} \textbf{, sit amet fringilla lectus ultrices porta} . Aliquam feugiat finibus turpis id malesuada. Suspendisse hendrerit eros sit amet tempor pulvinar. Duis velit mauris, facilisis ut tincidunt sed, pharetra eu libero. Aenean lobortis tincidunt nisi. \textbf{Praesent metus lacus, tristique} sed \textbf{porta non} , tempus id quam.\switchcolumn 
+\fontsize{11}{13}\leftfont Quisque at nisi magna. Duis nec \textbf{lacus arcu. Morbi vel} fermentum leo. \textit{Pellentesque hendrerit sagittis vulputate.} \textbf{Fusce laoreet malesuada \textit{odio}} \textbf{, sit amet fringilla lectus ultrices porta} . Aliquam feugiat finibus turpis id malesuada. Suspendisse hendrerit eros sit amet tempor pulvinar. Duis velit mauris, facilisis ut tincidunt sed, pharetra eu libero. Aenean lobortis tincidunt nisi. \textbf{Praesent metus lacus, tristique} sed \textbf{porta non} , tempus id quam.\switchcolumn 
 
 \end{paracol}
 \end{sloppypar}\end{document}

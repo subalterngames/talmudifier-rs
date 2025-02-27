@@ -113,7 +113,7 @@ impl TexFont {
     }
 
     pub fn default_right() -> Result<Self, io::Error> {
-        let directory = TempDir::new("talmudifier_font_center")?;
+        let directory = TempDir::new("talmudifier_font_right")?;
         Self::dump_font(AVERIA_REGULAR, Self::REGULAR, &directory)?;
         Self::dump_font(AVERIA_ITALIC, Self::ITALIC, &directory)?;
         Self::dump_font(AVERIA_BOLD, Self::BOLD, &directory)?;
@@ -148,6 +148,8 @@ mod tests {
         let font = TexFont::default_left().unwrap();
         let temp_dir = font.temp_directory.unwrap();
         assert!(&temp_dir.path().exists());
-        assert!(temp_dir.path().join("regular.ttf").exists())
+        assert!(temp_dir.path().join("regular.ttf").exists());
+        assert!(temp_dir.path().join("italic.ttf").exists());
+        assert!(temp_dir.path().join("bold.ttf").exists());
     }
 }
