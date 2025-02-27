@@ -55,6 +55,7 @@ impl Config {
             left,
             center,
             right,
+            _default_tex_fonts: None,
         }
     }
 }

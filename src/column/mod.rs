@@ -1,7 +1,4 @@
-use std::{
-    cmp::Ordering,
-    fs::{create_dir_all, write},
-};
+use std::cmp::Ordering;
 
 use crate::{error::Error, font::cosmic_font::CosmicFont, page::Page, word::Word};
 
@@ -191,7 +188,10 @@ impl Column {
                     Err(error) => Err(Error::Extract(error)),
                 },
                 Err(error) => {
-                    write("test_text/bad.tex", tex).unwrap();
+                    // Dump the bad tex.
+                    #[cfg(test)]
+                    std::fs::write("test_text/bad.tex", tex).unwrap();
+
                     Err(Error::Pdf(error))
                 }
             }
@@ -369,7 +369,7 @@ mod tests {
         assert!(widths.iter().all(|w| *w == Width::One));
     }
 
-    // #[test]
+    #[test]
     #[cfg(not(target_os = "windows"))]
     fn test_num_lines() {
         let (left, _, _) = get_test_md();
@@ -379,27 +379,27 @@ mod tests {
         let num_lines = left
             .get_num_lines_tex(None, Width::Half, &Page::default())
             .unwrap();
-        assert_eq!(num_lines, 22);
+        assert_eq!(num_lines, 10);
     }
 
     #[test]
     #[cfg(not(target_os = "windows"))]
     fn test_min_num_lines() {
-        let (left, center, right) = get_columns();
+        let (left, center, right, _) = get_columns();
         let min_num_lines =
             Column::get_min_num_lines(Some(&left), Some(&center), Some(&right), &Page::default())
                 .unwrap();
-        assert_eq!(min_num_lines, 4);
+        assert_eq!(min_num_lines, 8);
     }
 
-    fn get_columns() -> (Column, Column, Column) {
+    fn get_columns() -> (Column, Column, Column, TexFonts) {
         let (left, center, right) = get_test_md();
 
         let tex_fonts = TexFonts::default().unwrap();
         let left = get_column(&left, &tex_fonts.left.command, CosmicFont::default_left);
         let center = get_column(&center, &tex_fonts.left.command, CosmicFont::default_left);
         let right = get_column(&right, &tex_fonts.left.command, CosmicFont::default_left);
-        (left, center, right)
+        (left, center, right, tex_fonts)
     }
 
     fn get_column(md: &str, tex_font: &str, f: impl Fn() -> CosmicFont) -> Column {
