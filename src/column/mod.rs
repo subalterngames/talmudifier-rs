@@ -382,7 +382,7 @@ mod tests {
         assert_eq!(num_lines, 22);
     }
 
-    //#[test]
+    #[test]
     #[cfg(not(target_os = "windows"))]
     fn test_min_num_lines() {
         let (left, center, right) = get_columns();

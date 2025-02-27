@@ -30,7 +30,7 @@ impl TexFont {
 
         // The font family declaration.
         let mut font_family = format!(
-            "\\newfontfamily\\{}font[Path={}/, Ligatures=TeX",
+            "\\newfontfamily\\{}[Path={}/, Ligatures=TeX",
             &name,
             &path.as_ref().to_str().unwrap().replace("\\", "/")
         );
@@ -104,7 +104,7 @@ impl TexFont {
             Self::REGULAR,
             &Some(Self::ITALIC.to_string()),
             &Some(Self::BOLD.to_string()),
-            &None,
+            &Some(Self::BOLD_ITALIC.to_string()),
             &FontMetrics::default(),
         );
         tex_font.temp_directory = Some(directory);
@@ -125,7 +125,7 @@ impl TexFont {
             Self::REGULAR,
             &Some(Self::ITALIC.to_string()),
             &Some(Self::BOLD.to_string()),
-            &None,
+            &Some(Self::BOLD_ITALIC.to_string()),
             &FontMetrics::default(),
         );
         tex_font.temp_directory = Some(directory);
@@ -135,5 +135,19 @@ impl TexFont {
 
     fn dump_font(font: &[u8], filename: &str, dir: &TempDir) -> Result<(), io::Error> {
         write(dir.path().join(format!("{}.ttf", filename)), font)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::TexFont;
+
+    #[cfg(feature = "default-fonts")]
+    #[test]
+    fn test_default_font() {
+        let font = TexFont::default_left().unwrap();
+        let temp_dir = font.temp_directory.unwrap();
+        assert!(&temp_dir.path().exists());
+        assert!(temp_dir.path().join("regular.ttf").exists())
     }
 }

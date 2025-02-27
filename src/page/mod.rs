@@ -59,11 +59,12 @@ impl Page {
         ]) {
             preamble += &Self::set_length(keyword, length)
         }
-        preamble += "\n\\newcommand{\\daftitle}[1]{\\centerfont{\\huge{#1}}}\n";
+        preamble.push('\n');
         for font in [&fonts.left, &fonts.center, &fonts.right].iter() {
             preamble.push_str(&font.font_family);
             preamble.push('\n');
         }
+        preamble += "\\newcommand{\\daftitle}[1]{\\centerfont{\\huge{#1}}}\n";
         preamble + "\n\n\\raggedbottom\n\n\\begin{document}\\begin{sloppypar}\n\n"
     }
 
