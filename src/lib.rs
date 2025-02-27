@@ -1,10 +1,15 @@
-use crate::{
-    column::{input_column::InputColumn, tex_column::TexColumn, Column},
-    config::Config,
-    error::Error,
-    page::Page,
-    word::Word,
-};
+use column::{input_column::InputColumn, tex_column::TexColumn, Column};
+use config::Config;
+use error::Error;
+use page::Page;
+use word::Word;
+
+mod column;
+pub mod config;
+pub(crate) mod error;
+pub(crate) mod font;
+pub(crate) mod page;
+pub(crate) mod word;
 
 pub struct Talmudifier {
     pub left: Column,
@@ -155,5 +160,58 @@ impl From<Config> for Result<Talmudifier, Error> {
             page,
             title: value.title,
         })
+    }
+}
+
+#[macro_export]
+macro_rules! tex {
+    ($command:expr, $($value:expr),+) => {
+        {
+            let mut t = format!("\\{}", &$command);
+            $(
+                t.push_str(&format!("{{{}}}", &$value));
+            )+
+            t
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! text_arg {
+    ($column:expr) => {
+        Arg::new(concat!($column, "-text")).help(format!(
+            "The absolute file path to the {} markdown text.",
+            $column
+        ))
+    };
+}
+
+#[cfg(test)]
+mod tests {
+    use tectonic::latex_to_pdf;
+
+    pub(crate) fn get_test_md() -> (String, String, String) {
+        let raw = include_str!("../test_text/test.md")
+            .split("\n\n")
+            .collect::<Vec<&str>>();
+        assert_eq!(raw.len(), 3);
+        (raw[0].to_string(), raw[1].to_string(), raw[2].to_string())
+    }
+
+    #[test]
+    fn test_tex() {
+        for (tex, path) in [
+            include_str!("../test_text/hello_world.tex"),
+            include_str!("../test_text/minimal_daf.tex"),
+            include_str!("../test_text/paracol.tex"),
+            include_str!("../test_text/daf.tex"),
+        ]
+        .iter()
+        .zip(["hello_world", "minimal_daf", "paracol", "daf"])
+        {
+            if let Err(error) = latex_to_pdf(tex.replace("\r", "")) {
+                panic!("Tex error: {} {}", error, path)
+            }
+        }
     }
 }
