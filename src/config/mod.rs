@@ -24,7 +24,7 @@ pub struct Config {
     #[cfg(feature = "default-fonts")]
     pub fonts: Option<Fonts>,
     #[cfg(not(feature = "default-fonts"))]
-    pub fonts: Option<Fonts>,
+    pub fonts: Fonts,
     pub text_paths: TextPaths,
     pub title: Option<String>,
 }
