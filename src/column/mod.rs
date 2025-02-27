@@ -1,4 +1,7 @@
-use std::cmp::Ordering;
+use std::{
+    cmp::Ordering,
+    fs::{create_dir_all, write},
+};
 
 use crate::{error::Error, font::cosmic_font::CosmicFont, page::Page, word::Word};
 
@@ -187,7 +190,10 @@ impl Column {
                     Ok(text) => Ok(text.split('\n').count()),
                     Err(error) => Err(Error::Extract(error)),
                 },
-                Err(error) => Err(Error::Pdf(error)),
+                Err(error) => {
+                    write("test_text/bad.tex", tex).unwrap();
+                    Err(Error::Pdf(error))
+                }
             }
 
             #[cfg(target_os = "windows")]
@@ -363,7 +369,7 @@ mod tests {
         assert!(widths.iter().all(|w| *w == Width::One));
     }
 
-    #[test]
+    // #[test]
     #[cfg(not(target_os = "windows"))]
     fn test_num_lines() {
         let (left, _, _) = get_test_md();

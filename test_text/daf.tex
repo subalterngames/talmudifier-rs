@@ -1,0 +1,26 @@
+\documentclass[11pt, letterpaper, openany]{scrbook}
+\usepackage[letterpaper, left=1in, right=1in, top=0.5in, bottom=0.5in, footskip=0.25in, marginparwidth=5em, bindingoffset=0.21in]{geometry}
+
+\usepackage{marginnote}
+\usepackage{sectsty}
+\usepackage{ragged2e}
+\usepackage{paracol}
+\usepackage{fontspec}
+
+\allsectionsfont{\centering}
+\setlength\parindent{0pt}
+\setlength{\columnsep}{1.25em}
+\setlength{\parfillskip}{0pt}
+\setlength{\tabcolsep}{1em}
+
+
+\raggedbottom
+
+\begin{document}\begin{sloppypar}
+
+\columnratio{0.5}
+\begin{paracol}{1}
+\fontsize{11}{13} Quisque at nisi magna. Duis nec \textbf{lacus arcu. Morbi vel} fermentum leo. \textit{Pellentesque hendrerit sagittis vulputate.} \textbf{Fusce laoreet malesuada \textit{odio}} \textbf{, sit amet fringilla lectus ultrices porta} . Aliquam feugiat finibus turpis id malesuada. Suspendisse hendrerit eros sit amet tempor pulvinar. Duis velit mauris, facilisis ut tincidunt sed, pharetra eu libero. Aenean lobortis tincidunt nisi. \textbf{Praesent metus lacus, tristique} sed \textbf{porta non} , tempus id quam.\switchcolumn 
+
+\end{paracol}
+\end{sloppypar}\end{document}

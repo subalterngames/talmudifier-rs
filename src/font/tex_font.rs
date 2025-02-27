@@ -36,7 +36,7 @@ impl TexFont {
         );
 
         // Try to add styles to the font declaration.
-        let styles = [bold, italic, bold_italic]
+        let styles = [italic, bold, bold_italic]
             .iter()
             .zip(STYLES)
             .filter_map(|(f, s)| f.as_ref().map(|f| format!("{}={}.ttf", s, f)))

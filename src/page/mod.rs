@@ -37,7 +37,7 @@ impl Page {
         margins: &Margins,
         tables: &Tables,
     ) -> String {
-        let mut preamble = format!("\\documentclass[11pt, {}, openany]{{srcbook}}", paper_size);
+        let mut preamble = format!("\\documentclass[11pt, {}, openany]{{scrbook}}", paper_size);
         preamble += &format!(
             "\n\\usepackage[{}, {}]{{geometry}}\n\n",
             paper_size, margins
@@ -48,17 +48,15 @@ impl Page {
             .collect::<Vec<String>>()
             .join("\n");
 
-        preamble += "\n\n\\allsectionsfont{\\centering}\n";
+        preamble += "\n\n\\allsectionsfont{\\centering}\n\\setlength\\parindent{";
+        preamble.push_str(&tables.paragraph_indent.to_string());
+        preamble.push('}');
 
-        for (keyword, length) in ["\\parindent", "\\columnsep", "\\parfillskip", "\\tabcolsep"]
-            .iter()
-            .zip([
-                &tables.paragraph_indent,
-                &tables.column_separation,
-                &tables.paragraph_fill_skip,
-                &tables.tabular_column_separation,
-            ])
-        {
+        for (keyword, length) in ["\\columnsep", "\\parfillskip", "\\tabcolsep"].iter().zip([
+            &tables.column_separation,
+            &tables.paragraph_fill_skip,
+            &tables.tabular_column_separation,
+        ]) {
             preamble += &Self::set_length(keyword, length)
         }
         preamble += "\n\\newcommand{\\daftitle}[1]{\\centerfont{\\huge{#1}}}\n";

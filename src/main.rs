@@ -92,14 +92,19 @@ mod tests {
     }
 
     #[test]
-    fn test_hello_world_tex() {
-        let tex = include_str!("../test_text/hello_world.tex");
-        latex_to_pdf(tex).unwrap();
-    }
-
-    #[test]
-    fn test_minimal_talmudifier_tex() {
-        let tex = include_str!("../test_text/daf.tex");
-        latex_to_pdf(tex).unwrap();
+    fn test_tex() {
+        for (tex, path) in [
+            include_str!("../test_text/hello_world.tex"),
+            include_str!("../test_text/minimal_daf.tex"),
+            include_str!("../test_text/paracol.tex"),
+            include_str!("../test_text/daf.tex"),
+        ]
+        .iter()
+        .zip(["hello_world", "minimal_daf", "paracol", "daf"])
+        {
+            if let Err(error) = latex_to_pdf(tex.replace("\r", "")) {
+                panic!("Tex error: {} {}", error, path)
+            }
+        }
     }
 }
