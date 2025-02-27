@@ -68,18 +68,6 @@ impl CosmicFont {
     #[cfg(feature = "default-fonts")]
     pub fn default_left() -> Self {
         Self::new_from_bytes(
-            include_bytes!("../fonts/IM_Fell_French_Canon/FeFCrm2.ttf").to_vec(),
-            include_bytes!("../fonts/IM_Fell_French_Canon/FeFCit2.ttf").to_vec(),
-            include_bytes!("../fonts/IM_Fell_French_Canon/FeFCsc2.ttf").to_vec(),
-            include_bytes!("../fonts/IM_Fell_French_Canon/FeFCsc2.ttf").to_vec(),
-            &FontMetrics::default(),
-            FontSystem::new(),
-        )
-    }
-
-    #[cfg(feature = "default-fonts")]
-    pub fn default_center() -> Self {
-        Self::new_from_bytes(
             IM_FELL_REGULAR.to_vec(),
             IM_FELL_ITALIC.to_vec(),
             IM_FELL_BOLD.to_vec(),
@@ -90,12 +78,24 @@ impl CosmicFont {
     }
 
     #[cfg(feature = "default-fonts")]
-    pub fn default_right() -> Self {
+    pub fn default_center() -> Self {
         Self::new_from_bytes(
             EB_GARAMOND_REGULAR.to_vec(),
             EB_GARAMOND_ITALIC.to_vec(),
             EB_GARAMOND_BOLD.to_vec(),
             EB_GARAMOND_BOLD_ITALIC.to_vec(),
+            &FontMetrics::default(),
+            FontSystem::new(),
+        )
+    }
+
+    #[cfg(feature = "default-fonts")]
+    pub fn default_right() -> Self {
+        Self::new_from_bytes(
+            AVERIA_REGULAR.to_vec(),
+            AVERIA_ITALIC.to_vec(),
+            AVERIA_BOLD.to_vec(),
+            AVERIA_BOLD_ITALIC.to_vec(),
             &FontMetrics::default(),
             FontSystem::new(),
         )
