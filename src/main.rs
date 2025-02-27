@@ -81,11 +81,25 @@ macro_rules! text_arg {
 
 #[cfg(test)]
 mod tests {
+    use tectonic::latex_to_pdf;
+
     pub(crate) fn get_test_md() -> (String, String, String) {
         let raw = include_str!("../test_text/test.md")
             .split("\n\n")
             .collect::<Vec<&str>>();
         assert_eq!(raw.len(), 3);
         (raw[0].to_string(), raw[1].to_string(), raw[2].to_string())
+    }
+
+    #[test]
+    fn test_hello_world_tex() {
+        let tex = include_str!("../test_text/hello_world.tex");
+        latex_to_pdf(tex).unwrap();
+    }
+
+    #[test]
+    fn test_minimal_talmudifier_tex() {
+        let tex = include_str!("../test_text/daf.tex");
+        latex_to_pdf(tex).unwrap();
     }
 }
