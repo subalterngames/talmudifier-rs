@@ -177,6 +177,9 @@ impl Default for Talmudifier {
     }
 }
 
+/// Short hand for simple TeX commands.
+/// Example input: `tex!("begin", "document")`
+/// Example output: `\begin{document}`
 #[macro_export]
 macro_rules! tex {
     ($command:expr, $($value:expr),+) => {
@@ -187,16 +190,6 @@ macro_rules! tex {
             )+
             t
         }
-    };
-}
-
-#[macro_export]
-macro_rules! text_arg {
-    ($column:expr) => {
-        Arg::new(concat!($column, "-text")).help(format!(
-            "The absolute file path to the {} markdown text.",
-            $column
-        ))
     };
 }
 
