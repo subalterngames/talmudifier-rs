@@ -30,7 +30,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(path: &Path) -> Result<Self, Error> {
+    pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
         match read(path) {
             Ok(text) => match from_slice(&text) {
                 Ok(config) => Ok(config),

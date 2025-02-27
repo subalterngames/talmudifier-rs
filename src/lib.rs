@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use column::{input_column::InputColumn, tex_column::TexColumn, Column};
 use config::Config;
 use error::Error;
@@ -12,14 +14,19 @@ pub(crate) mod page;
 pub(crate) mod word;
 
 pub struct Talmudifier {
-    pub left: Column,
-    pub center: Column,
-    pub right: Column,
-    pub page: Page,
-    pub title: Option<String>,
+    left: Column,
+    center: Column,
+    right: Column,
+    page: Page,
+    title: Option<String>,
 }
 
 impl Talmudifier {
+    /// Load from a config.json file.
+    pub fn load<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
+        Into::<Result<Talmudifier, Error>>::into(Config::new(path)?)
+    }
+
     pub fn talmudify(&mut self) -> Result<String, Error> {
         // First four lines.
         let mut tables = vec![Column::get_tex_table(
