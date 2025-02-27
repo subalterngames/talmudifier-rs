@@ -102,7 +102,7 @@ impl Default for Config {
             page: Page::default(),
             fonts: None,
             text_paths: TextPaths::default(),
-            title: Some("The Title".to_string()),
+            title: None,
         }
     }
 }
