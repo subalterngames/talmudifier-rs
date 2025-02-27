@@ -170,6 +170,13 @@ impl From<Config> for Result<Talmudifier, Error> {
     }
 }
 
+#[cfg(feature = "default-fonts")]
+impl Default for Talmudifier {
+    fn default() -> Self {
+        Into::<Result<Talmudifier, Error>>::into(Config::default()).unwrap()
+    }
+}
+
 #[macro_export]
 macro_rules! tex {
     ($command:expr, $($value:expr),+) => {
