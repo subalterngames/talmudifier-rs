@@ -31,8 +31,7 @@ fn main() {
     let config = Config::new(path).unwrap();
 
     // Talmudify.
-    let mut talmudifier = Into::<Result<Talmudifier, Error>>::into(config).unwrap();
-    let daf = talmudifier.talmudify().unwrap();
+    let daf = config.talmudify().unwrap();
 
     // Write.
     write(output_path, daf).unwrap();

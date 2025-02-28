@@ -7,9 +7,11 @@ use serde_json::from_slice;
 pub use source_text::SourceText;
 
 use crate::{
+    column::{input_column::InputColumn, tex_column::TexColumn, Column},
     error::Error,
     font::{cosmic_font::CosmicFont, tex_fonts::TexFonts},
     page::Page,
+    word::Word,
 };
 
 mod font;
@@ -42,6 +44,108 @@ impl Config {
         }
     }
 
+    pub fn talmudify(&self) -> Result<String, Error> {
+        // Get the TeX fonts.
+        let tex_fonts = self.get_tex_fonts()?;
+
+        // Clone the page.
+        let mut page = self.page.clone();
+
+        // Set the preamble.
+        page.set_preamble(&tex_fonts);
+
+        // Get the raw text.
+        let raw_text = self.source_text.get_text()?;
+
+        // Get the words.
+        let left_words = Word::from_md(&raw_text.left)?;
+        let center_words = Word::from_md(&raw_text.center)?;
+        let right_words = Word::from_md(&raw_text.right)?;
+
+        // Get the cosmic fonts.
+        let (left_cosmic, center_cosmic, right_cosmic) = self.get_cosmic_fonts()?;
+
+        // Get the columns.
+        let mut left = Column::new(left_words, left_cosmic, &tex_fonts.left.command);
+        let mut center = Column::new(center_words, center_cosmic, &tex_fonts.center.command);
+        let mut right = Column::new(right_words, right_cosmic, &tex_fonts.right.command);
+
+        // First four lines.
+        let mut tables = vec![Column::get_tex_table(
+            &mut InputColumn::Text(&mut left),
+            &mut InputColumn::None,
+            &mut InputColumn::Text(&mut right),
+            4,
+            &self.page,
+        )?];
+
+        // Skip.
+        tables.push(Column::get_tex_table(
+            &mut InputColumn::Text(&mut left),
+            &mut InputColumn::Empty,
+            &mut InputColumn::Text(&mut right),
+            1,
+            &self.page,
+        )?);
+
+        while !left.done() && !center.done() && !right.done() {
+            // Get the columns that are and are not done.
+            let left_optional = Self::get_optional_column(&left);
+            let center_optional = Self::get_optional_column(&center);
+            let right_optional = Self::get_optional_column(&right);
+
+            // Get the minimum number of lines.
+            let num_lines = Column::get_min_num_lines(
+                left_optional,
+                center_optional,
+                right_optional,
+                &self.page,
+            )?;
+
+            // Get all available columns.
+            let mut left = Self::get_input_column(&mut left);
+            let mut center = Self::get_input_column(&mut center);
+            let mut right = Self::get_input_column(&mut right);
+
+            // Create the table.
+            tables.push(Column::get_tex_table(
+                &mut left,
+                &mut center,
+                &mut right,
+                num_lines,
+                &self.page,
+            )?);
+
+            // Skip to the next table.
+            left = Self::get_input_column_skip(left);
+            center = Self::get_input_column_skip(center);
+            right = Self::get_input_column_skip(right);
+
+            // Create the table.
+            tables.push(Column::get_tex_table(
+                &mut left,
+                &mut center,
+                &mut right,
+                1,
+                &self.page,
+            )?);
+        }
+
+        // Build the document.
+        let mut tex = self.page.preamble.clone();
+        // Add the title.
+        if let Some(title) = &self.title {
+            tex.push_str(&crate::tex!("chapter", crate::tex!("daftitle", title)));
+            tex.push('\n');
+        }
+        for table in tables.iter() {
+            tex.push_str(&TexColumn::get_table(table));
+        }
+        tex.push_str(Page::END_DOCUMENT);
+
+        Ok(tex)
+    }
+
     fn get_cosmic_fonts_internal(fonts: &Fonts) -> CosmicFonts {
         let left = fonts.left.to_cosmic()?;
         let center = fonts.center.to_cosmic()?;
@@ -60,11 +164,44 @@ impl Config {
             _default_tex_fonts: None,
         }
     }
+
+    fn get_optional_column(column: &Column) -> Option<&Column> {
+        if column.done() {
+            None
+        } else {
+            Some(column)
+        }
+    }
+
+    fn get_input_column(column: &mut Column) -> InputColumn<'_> {
+        if column.done() {
+            InputColumn::None
+        } else {
+            InputColumn::Text(column)
+        }
+    }
+
+    fn get_input_column_skip(column: InputColumn<'_>) -> InputColumn<'_> {
+        match column {
+            InputColumn::None => InputColumn::None,
+            InputColumn::Empty => InputColumn::Empty,
+            InputColumn::Text(text) => {
+                // Skip.
+                if text.done() {
+                    InputColumn::Empty
+                }
+                // Include.
+                else {
+                    InputColumn::Text(text)
+                }
+            }
+        }
+    }
 }
 
 #[cfg(feature = "default-fonts")]
 impl Config {
-    pub fn get_cosmic_fonts(&self) -> CosmicFonts {
+    fn get_cosmic_fonts(&self) -> CosmicFonts {
         match &self.fonts {
             Some(fonts) => Self::get_cosmic_fonts_internal(fonts),
             None => Ok((
@@ -75,7 +212,7 @@ impl Config {
         }
     }
 
-    pub fn get_tex_fonts(&self) -> Result<TexFonts, Error> {
+    fn get_tex_fonts(&self) -> Result<TexFonts, Error> {
         match &self.fonts {
             Some(fonts) => Ok(Self::get_tex_fonts_internal(fonts)),
             None => match TexFonts::default() {
