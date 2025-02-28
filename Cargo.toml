@@ -21,7 +21,7 @@ clap = { version = "4.5.30", optional = true }
 
 [target.'cfg(unix)'.dependencies]
 pdf-extract = "0.8.0"
-tectonic = { git = "https://github.com/tectonic-typesetting/tectonic.git", branch = "master" }
+tectonic = { git = "https://github.com/tectonic-typesetting/tectonic.git", branch = "master", default-features = false, features = ["geturl-curl"] }
 
 [[bin]]
 name = "talmudify"
