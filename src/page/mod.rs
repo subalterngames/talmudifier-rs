@@ -1,10 +1,11 @@
 use crate::font::tex_fonts::TexFonts;
 
-use length::Length;
-use margins::Margins;
-use paper_size::PaperSize;
+pub use length::Length;
+pub use margins::Margins;
+pub use paper_size::PaperSize;
 use serde::{Deserialize, Serialize};
-use tables::Tables;
+pub use tables::Tables;
+pub use unit::Unit;
 
 mod length;
 mod margins;

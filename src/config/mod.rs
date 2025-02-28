@@ -1,9 +1,10 @@
 use std::{fs::read, path::Path};
 
-use fonts::Fonts;
+pub use font::Font;
+pub use fonts::Fonts;
 use serde::{Deserialize, Serialize};
 use serde_json::from_slice;
-use text_paths::TextPaths;
+pub use source_text::SourceText;
 
 use crate::{
     error::Error,
@@ -14,18 +15,19 @@ use crate::{
 mod font;
 mod fonts;
 mod raw_text;
-mod text_paths;
+mod source_text;
 
 type CosmicFonts = Result<(CosmicFont, CosmicFont, CosmicFont), Error>;
 
 #[derive(Deserialize, Serialize)]
+#[cfg_attr(feature = "default-fonts", derive(Default))]
 pub struct Config {
     pub page: Page,
     #[cfg(feature = "default-fonts")]
     pub fonts: Option<Fonts>,
     #[cfg(not(feature = "default-fonts"))]
     pub fonts: Fonts,
-    pub text_paths: TextPaths,
+    pub source_text: SourceText,
     pub title: Option<String>,
 }
 
@@ -92,17 +94,5 @@ impl Config {
 
     pub fn get_tex_fonts(&self) -> Result<TexFonts, Error> {
         Ok(Self::get_tex_fonts_internal(&self.fonts))
-    }
-}
-
-#[cfg(feature = "default-fonts")]
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            page: Page::default(),
-            fonts: None,
-            text_paths: TextPaths::default(),
-            title: None,
-        }
     }
 }

@@ -11,6 +11,7 @@ pub enum InputColumn<'t> {
 }
 
 impl InputColumn<'_> {
+    /// If true, the column exists, though it might not have text.
     pub const fn is_column(&self) -> bool {
         !matches!(self, Self::None)
     }

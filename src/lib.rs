@@ -7,10 +7,11 @@ use page::Page;
 use word::Word;
 
 mod column;
-pub mod config;
-pub(crate) mod error;
+mod config;
+mod error;
 pub(crate) mod font;
 pub(crate) mod page;
+pub mod prelude;
 pub(crate) mod word;
 
 pub struct Talmudifier {
@@ -146,7 +147,7 @@ impl From<Config> for Result<Talmudifier, Error> {
         page.set_preamble(&tex_fonts);
 
         // Get the raw text.
-        let raw_text = value.text_paths.read()?;
+        let raw_text = value.source_text.get_text()?;
 
         // Get the words.
         let left_words = Word::from_md(&raw_text.left)?;

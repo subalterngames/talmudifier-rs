@@ -1,5 +1,7 @@
+use std::fs::write;
+
 use serde_json::to_string_pretty;
-use talmudifier::config::Config;
+use talmudifier::prelude::*;
 
 fn main() {
     let config = Config::default();

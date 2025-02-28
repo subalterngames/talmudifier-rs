@@ -13,6 +13,9 @@ pub struct TexColumn {
 impl TexColumn {
     /// Convert a slice of columns into a TeX table.
     pub fn get_table(columns: &[Self]) -> String {
+        if columns.is_empty() {
+            return String::default();
+        }
         // Get the TeX header.
         let mut table = tex!(
             "columnratio",

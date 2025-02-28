@@ -3032,6 +3032,7 @@ dependencies = [
 name = "talmudifier"
 version = "0.1.0"
 dependencies = [
+ "clap",
  "cosmic-text",
  "markdown",
  "pdf-extract",

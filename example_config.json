@@ -51,10 +51,12 @@
     }
   },
   "fonts": null,
-  "text_paths": {
-    "left": "left.md",
-    "center": "center.md",
-    "right": "right.md"
+  "source_text": {
+    "Files": {
+      "left": "left.md",
+      "center": "center.md",
+      "right": "right.md"
+    }
   },
-  "title": "The Title"
+  "title": null
 }

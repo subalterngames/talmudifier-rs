@@ -1,7 +1,10 @@
-use std::{fs::{create_dir_all, write}, path::PathBuf};
+use std::{
+    fs::{create_dir_all, write},
+    path::PathBuf,
+};
 
 use clap::{Arg, Command};
-use talmudifier::{config::Config, error::Error};
+use talmudifier::prelude::*;
 
 fn main() {
     let args = Command::new("talmudifier")
