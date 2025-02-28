@@ -1,10 +1,10 @@
 mod column;
 mod config;
 mod error;
-pub(crate) mod font;
-pub(crate) mod page;
+mod font;
+mod page;
 pub mod prelude;
-pub(crate) mod word;
+mod word;
 
 /// Short hand for simple TeX commands.
 /// Example input: `tex!("begin", "document")`
