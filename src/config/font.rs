@@ -11,6 +11,7 @@ use crate::{
     },
 };
 
+/// The path to a font directory and the filenames of the font files.
 #[derive(Deserialize, Serialize)]
 pub struct Font {
     pub directory: PathBuf,
@@ -22,7 +23,8 @@ pub struct Font {
 }
 
 impl Font {
-    pub fn to_cosmic(&self) -> Result<CosmicFont, Error> {
+    /// Create a `CosmicFont` from the font files.
+    pub(super) fn to_cosmic(&self) -> Result<CosmicFont, Error> {
         let font_paths = self.font_paths()?;
         match CosmicFont::new(&font_paths, &self.metrics, FontSystem::new()) {
             Ok(c) => Ok(c),
@@ -30,7 +32,8 @@ impl Font {
         }
     }
 
-    pub fn to_tex(&self, name: &str) -> TexFont {
+    /// Create a `TexFont` from the font files.
+    pub(super) fn to_tex(&self, name: &str) -> TexFont {
         TexFont::new(
             name,
             &self.directory,

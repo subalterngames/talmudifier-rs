@@ -11,13 +11,16 @@ use crate::error::Error;
 
 use super::raw_text::RawText;
 
+/// The source for the raw markdown text.
 #[derive(Deserialize, Serialize)]
 pub enum SourceText {
+    /// Three markdown strings.
     Text {
         left: String,
         center: String,
         right: String,
     },
+    /// Three paths to markdown files.
     Files {
         left: PathBuf,
         center: PathBuf,
@@ -26,7 +29,7 @@ pub enum SourceText {
 }
 
 impl SourceText {
-    pub fn get_text(&self) -> Result<RawText, Error> {
+    pub(super) fn get_text(&self) -> Result<RawText, Error> {
         match self {
             Self::Text {
                 left,

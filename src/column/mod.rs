@@ -4,9 +4,9 @@ use crate::{error::Error, font::cosmic_font::CosmicFont, page::Page, word::Word}
 
 use cosmic_text::{Buffer, Shaping};
 use input_column::InputColumn;
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "linux")]
 use pdf_extract::extract_text_from_mem;
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "linux")]
 use tectonic::latex_to_pdf;
 use tex_column::TexColumn;
 use width::Width;
@@ -180,7 +180,7 @@ impl Column {
             tex.push_str(Page::END_DOCUMENT);
 
             // Create a PDF.
-            #[cfg(not(target_os = "windows"))]
+            #[cfg(target_os = "linux")]
             match latex_to_pdf(&tex) {
                 // Extract the text of the PDF.
                 Ok(pdf) => match extract_text_from_mem(&pdf) {
@@ -370,8 +370,8 @@ mod tests {
     }
 
     #[test]
-    #[cfg(not(target_os = "windows"))]
-    fn test_num_lines() {
+    #[cfg(target_os = "linux")]
+    fn test_num_lines_tex() {
         let (left, _, _) = get_test_md();
 
         let tex_fonts = TexFonts::default().unwrap();
@@ -383,7 +383,18 @@ mod tests {
     }
 
     #[test]
-    #[cfg(not(target_os = "windows"))]
+    fn test_num_lines_cosmic() {
+        let (left, _, _) = get_test_md();
+
+        let tex_fonts = TexFonts::default().unwrap();
+        let mut left = get_column(&left, &tex_fonts.left.command, CosmicFont::default_left);
+        let end = left.words.len();
+        let num_lines = left.get_num_lines_cosmic(end, Width::Half, &Page::default());
+        assert_eq!(num_lines, 11);
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
     fn test_min_num_lines() {
         let (left, center, right, _) = get_columns();
         let min_num_lines =

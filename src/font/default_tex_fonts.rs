@@ -72,10 +72,9 @@ impl DefaultTexFonts {
     }
 }
 
-/*
+#[cfg(not(test))]
 impl Drop for DefaultTexFonts {
     fn drop(&mut self) {
-        let _ = remove_dir_all(&self.directory);
+        let _ = std::fs::remove_dir_all(&self.directory);
     }
 }
-    */

@@ -7,11 +7,11 @@ pub enum Error {
     #[cfg(target_os = "windows")]
     #[error("Failed to create a PDF. Talmudifier cannot create PDFs on Windows.")]
     Pdf,
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(target_os = "linux")]
     #[error("Error creating PDF: {0}")]
     Pdf(tectonic::Error),
     #[error("Error extracting text from PDF: {0}")]
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(target_os = "linux")]
     Extract(pdf_extract::OutputError),
     #[error("Failed to get the minimum number of lines: {0}")]
     MinNumLines(String),

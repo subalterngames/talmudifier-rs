@@ -34,5 +34,6 @@ fn main() {
     let daf = config.talmudify().unwrap();
 
     // Write.
-    write(output_path, daf).unwrap();
+    write(output_path.join("daf.pdf"), &daf.pdf).unwrap();
+    write(output_path.join("daf.tex"), &daf.tex).unwrap();
 }

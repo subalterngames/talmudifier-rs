@@ -1,10 +1,12 @@
 use std::{fs::read, path::Path};
 
+pub use daf::Daf;
 pub use font::Font;
 pub use fonts::Fonts;
 use serde::{Deserialize, Serialize};
 use serde_json::from_slice;
 pub use source_text::SourceText;
+use tectonic::latex_to_pdf;
 
 use crate::{
     column::{input_column::InputColumn, tex_column::TexColumn, Column},
@@ -14,6 +16,7 @@ use crate::{
     word::Word,
 };
 
+mod daf;
 mod font;
 mod fonts;
 mod raw_text;
@@ -21,19 +24,26 @@ mod source_text;
 
 type CosmicFonts = Result<(CosmicFont, CosmicFont, CosmicFont), Error>;
 
+/// Set config data for the page and then generate it.
 #[derive(Deserialize, Serialize)]
 #[cfg_attr(feature = "default-fonts", derive(Default))]
 pub struct Config {
+    /// The size of the page, margins, etc.
     pub page: Page,
+    /// The fonts per column. If None, default fonts will be used.
     #[cfg(feature = "default-fonts")]
     pub fonts: Option<Fonts>,
+    /// The fonts per column.
     #[cfg(not(feature = "default-fonts"))]
     pub fonts: Fonts,
+    /// Raw markdown text that will be talmudified.
     pub source_text: SourceText,
+    /// If not None, the title will be at the top of the page.
     pub title: Option<String>,
 }
 
 impl Config {
+    /// Load config data from a file path.
     pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
         match read(path) {
             Ok(text) => match from_slice(&text) {
@@ -44,7 +54,12 @@ impl Config {
         }
     }
 
-    pub fn talmudify(&self) -> Result<String, Error> {
+    /// Convert raw markdown text into a Talmud page.
+    /// This can take a while (on the other of minutes).
+    /// Be patient!
+    ///
+    /// Returns a `Daf` containing the TeX string and the PDF.
+    pub fn talmudify(&self) -> Result<Daf, Error> {
         // Get the TeX fonts.
         let tex_fonts = self.get_tex_fonts()?;
 
@@ -143,7 +158,11 @@ impl Config {
         }
         tex.push_str(Page::END_DOCUMENT);
 
-        Ok(tex)
+        // Generate the final PDF.
+        match latex_to_pdf(&tex) {
+            Ok(pdf) => Ok(Daf { tex, pdf }),
+            Err(error) => Err(Error::Pdf(error)),
+        }
     }
 
     fn get_cosmic_fonts_internal(fonts: &Fonts) -> CosmicFonts {

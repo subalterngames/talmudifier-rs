@@ -26,9 +26,9 @@ pub struct Page {
 }
 
 impl Page {
-    pub const END_DOCUMENT: &str = "\n\\end{sloppypar}\\end{document}";
+    pub(crate) const END_DOCUMENT: &str = "\n\\end{sloppypar}\\end{document}";
 
-    pub fn set_preamble(&mut self, fonts: &TexFonts) {
+    pub(crate) fn set_preamble(&mut self, fonts: &TexFonts) {
         self.preamble = Self::get_preamble(fonts, &self.paper_size, &self.margins, &self.tables);
     }
 
