@@ -31,7 +31,7 @@ impl Word {
             Ok(node) => {
                 let mut words = vec![];
                 // Add the words as nodes.
-                Self::add_node(&node, &mut words, Style::default(), Position::default());
+                Self::add_node(&node, &mut words, Style::default(), Position::default())?;
                 Ok(words)
             }
             Err(error) => Err(Error::Md(error)),
@@ -40,16 +40,25 @@ impl Word {
 
     /// Convert a slice of words into Cosmic text spans.
     pub fn to_cosmic(words: &[Self], font: &CosmicFont) -> Vec<(String, AttrsOwned)> {
+        // Strings of words and their associated attributes.
         let mut cosmic_spans = vec![];
+
+        // The current span that we're building.
         let mut span = vec![];
+
+        // The current style.
         let mut style = Style::default();
+
+        // The current Cosmic formatting attributes.
         let mut attrs = font.regular.clone();
+
+        // Iterate through the words. Ignore citations.
         for word in words.iter().filter(|w| w.position == Position::Body) {
             // Add the word to the current span.
             if style == word.style {
                 span.push(word.word.clone());
             }
-            // Finish the span and set a new style.
+            // The style changed. Finish the span and set a new style.
             else {
                 cosmic_spans.push((span.join(" "), attrs));
                 // Reset the span.
@@ -60,6 +69,7 @@ impl Word {
                 style = word.style;
             }
         }
+
         // Push the last span.
         if !span.is_empty() {
             cosmic_spans.push((span.join(" "), attrs));
@@ -77,6 +87,7 @@ impl Word {
         .clone()
     }
 
+    /// Convert a slice of words to a TeX string.
     pub fn to_tex(words: &[Self], font_command: &str) -> String {
         // Build a column.
         let mut text = font_command.to_string();
@@ -132,14 +143,30 @@ impl Word {
         text
     }
 
-    /// A words from a node.
-    fn add_node(node: &Node, words: &mut Vec<Self>, style: Style, position: Position) {
+    /// A words from a markdown node.
+    fn add_node(
+        node: &Node,
+        words: &mut Vec<Self>,
+        style: Style,
+        position: Position,
+    ) -> Result<(), Error> {
         match node {
+            // Add from the root node.
             Node::Root(node) => node
                 .children
                 .iter()
-                .for_each(|child| Self::add_node(child, words, style, position)),
-            Node::InlineCode(node) => Self::add_words(&node.value, words, style, Position::Margin),
+                .try_for_each(|child| Self::add_node(child, words, style, position)),
+            Node::InlineCode(node) => {
+                // Treat the inline code as a citation. Create a new node and start to apply TeX commands.
+                let parse_options = ParseOptions {
+                    constructs: Constructs::gfm(),
+                    ..Default::default()
+                };
+                match to_mdast(&node.value, &parse_options) {
+                    Ok(node) => Self::add_node(&node, words, Style::Regular, Position::Margin),
+                    Err(error) => Err(Error::Md(error)),
+                }
+            }
             Node::Emphasis(node) => {
                 // Add an italic style.
                 let style = match style {
@@ -148,7 +175,7 @@ impl Word {
                 };
                 node.children
                     .iter()
-                    .for_each(|child| Self::add_node(child, words, style, position));
+                    .try_for_each(|child| Self::add_node(child, words, style, position))
             }
             Node::Strong(node) => {
                 // Add a bold style.
@@ -158,14 +185,17 @@ impl Word {
                 };
                 node.children
                     .iter()
-                    .for_each(|child| Self::add_node(child, words, style, position));
+                    .try_for_each(|child| Self::add_node(child, words, style, position))
             }
-            Node::Text(text) => Self::add_words(&text.value, words, style, position),
+            Node::Text(text) => {
+                Self::add_words(&text.value, words, style, position);
+                Ok(())
+            }
             Node::Paragraph(node) => node
                 .children
                 .iter()
-                .for_each(|child| Self::add_node(child, words, style, position)),
-            _ => (),
+                .try_for_each(|child| Self::add_node(child, words, style, position)),
+            _ => Ok(()),
         }
     }
 
@@ -250,12 +280,12 @@ mod tests {
 
     #[test]
     fn test_marginnote() {
-        let md = "A `footnote` *here*";
+        let md = "A `footnote *here* and` *there*";
         let words = Word::from_md(md).unwrap();
         let tex = Word::to_tex(&words, "\\font");
         assert_eq!(
             tex,
-            "\\font A \\\\marginnote{\\\\noindent\\\\justifying\\\\tiny footnote} \\textit{here}"
+            "\\font A \\\\marginnote{\\\\noindent\\\\justifying\\\\tiny footnote \\textit{here} and} \\textit{there}"
         );
     }
 }

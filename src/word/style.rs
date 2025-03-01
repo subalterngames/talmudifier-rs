@@ -8,6 +8,9 @@ pub enum Style {
 }
 
 impl Style {
+    /// Returns the command required to *start* to *set* the style *from* `self` to `style`
+    /// e.g. if `self == Self::Bold && style == Style::Italic`, then this returns:
+    /// `}\textbf{`
     pub fn get_command(&self, style: &Self) -> (Option<&'static str>, Option<&'static str>) {
         const TEXTBF: &str = "\\textbf{";
         const TEXTIT: &str = "\\textit{";

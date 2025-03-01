@@ -1,24 +1,24 @@
 //! **Convert markdown text to a PDF with Talmud-esque typesetting.**
-//! 
+//!
 //! ```
 //! use std::{fs::write, path::PathBuf, str::FromStr};
-//! 
+//!
 //! use talmudifier::prelude::*;
-//! 
+//!
 //! let directory = PathBuf::from_str("example_text").unwrap();
-//! 
+//!
 //! let mut config = Config::default();
-//! 
+//!
 //! // Set the source of the text.
 //! config.source_text = SourceText::Files {
 //!     left: directory.join("left.md"),
 //!     center: directory.join("center.md"),
 //!     right: directory.join("right.md")
 //! };
-//! 
+//!
 //! // Talmudify.
 //! let daf = config.talmudify().unwrap();
-//! 
+//!
 //! // Write the PDF.
 //! write("out.pdf", &daf.pdf).unwrap();
 //! ```
