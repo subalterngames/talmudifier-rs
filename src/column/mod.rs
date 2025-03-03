@@ -53,9 +53,6 @@ impl Column {
         num_lines: usize,
         page: &Page,
     ) -> Result<Vec<TexColumn>, Error> {
-        if !left.is_column() && !center.is_column() && !right.is_column() {
-            return Err(Error::NoColumns);
-        }
         // Get the width of each column and convert them into empty TexColumns.
         let mut tex_columns =
             Self::get_widths(left.is_column(), center.is_column(), right.is_column())
@@ -63,8 +60,19 @@ impl Column {
                 .map(|width| TexColumn { width, text: None })
                 .collect::<Vec<TexColumn>>();
 
+        // Get the valid input columns.
+        let mut input_columns = [left, center, right]
+            .into_iter()
+            .filter(|c| c.is_column())
+            .collect::<Vec<&mut InputColumn>>();
+
+        // Oops, no columns.
+        if input_columns.is_empty() {
+            return Err(Error::NoColumns);
+        }
+
         // Get a tex string per column.
-        [left, center, right]
+        input_columns
             .iter_mut()
             .zip(tex_columns.iter_mut())
             .try_for_each(|(input_column, tex_column)| match input_column {
