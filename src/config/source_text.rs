@@ -26,6 +26,8 @@ pub enum SourceText {
         center: PathBuf,
         right: PathBuf,
     },
+    /// A single file of exactly three markdown paragraphs.
+    File(PathBuf),
 }
 
 impl SourceText {
@@ -46,6 +48,21 @@ impl SourceText {
                 right,
             } => match Self::read_internal(left, center, right) {
                 Ok(raw_text) => Ok(raw_text),
+                Err(error) => Err(Error::RawText(error)),
+            },
+            Self::File(path) => match read_to_string(path) {
+                Ok(md) => {
+                    let md = md.split("\n\n").collect::<Vec<&str>>();
+                    if md.len() == 3 {
+                        Ok(RawText {
+                            left: md[0].to_string(),
+                            center: md[1].to_string(),
+                            right: md[2].to_string(),
+                        })
+                    } else {
+                        Err(Error::NumberOfParagraphs(md.len()))
+                    }
+                }
                 Err(error) => Err(Error::RawText(error)),
             },
         }

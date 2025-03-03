@@ -29,17 +29,17 @@ type CosmicFonts = Result<(CosmicFont, CosmicFont, CosmicFont), Error>;
 #[cfg_attr(feature = "default-fonts", derive(Default))]
 pub struct Config {
     /// The size of the page, margins, etc.
-    pub page: Page,
+    page: Page,
     /// The fonts per column. If None, default fonts will be used.
     #[cfg(feature = "default-fonts")]
-    pub fonts: Option<Fonts>,
+    fonts: Option<Fonts>,
     /// The fonts per column.
     #[cfg(not(feature = "default-fonts"))]
-    pub fonts: Fonts,
+    fonts: Fonts,
     /// Raw markdown text that will be talmudified.
-    pub source_text: SourceText,
+    source_text: SourceText,
     /// If not None, the title will be at the top of the page.
-    pub title: Option<String>,
+    title: Option<String>,
 }
 
 impl Config {
@@ -52,6 +52,33 @@ impl Config {
             },
             Err(error) => Err(Error::ConfigRead(error)),
         }
+    }
+
+    pub fn page(mut self, page: Page) -> Self {
+        self.page = page;
+        self
+    }
+
+    #[cfg(feature = "default-fonts")]
+    pub fn fonts(mut self, fonts: Fonts) -> Self {
+        self.fonts = Some(fonts);
+        self
+    }
+
+    #[cfg(not(feature = "default-fonts"))]
+    pub fn fonts(mut self, fonts: Fonts) -> Self {
+        self.fonts = fonts;
+        self
+    }
+
+    pub fn source_text(mut self, source_text: SourceText) -> Self {
+        self.source_text = source_text;
+        self
+    }
+
+    pub fn title(mut self, title: String) -> Self {
+        self.title = Some(title);
+        self
     }
 
     /// Convert raw markdown text into a Talmud page.

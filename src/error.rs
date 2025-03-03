@@ -35,4 +35,6 @@ pub enum Error {
     RawText(io::Error),
     #[error("Tried to create a table with no columns")]
     NoColumns,
+    #[error("Tried to read a single markdown file but found {0} paragraphs (should be 3).")]
+    NumberOfParagraphs(usize),
 }

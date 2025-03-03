@@ -7,14 +7,16 @@
 //!
 //! let directory = PathBuf::from_str("example_text").unwrap();
 //!
-//! let mut config = Config::default();
+//! // Load a default config file
+//! let mut config = Config::default()
+//!     .source_text = SourceText::Files {
+//!         left: directory.join("left.md"),
+//!         center: directory.join("center.md"),
+//!         right: directory.join("right.md")
+//! };
 //!
 //! // Set the source of the text.
-//! config.source_text = SourceText::Files {
-//!     left: directory.join("left.md"),
-//!     center: directory.join("center.md"),
-//!     right: directory.join("right.md")
-//! };
+//! config
 //!
 //! // Talmudify.
 //! let daf = config.talmudify().unwrap();
