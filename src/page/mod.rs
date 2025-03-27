@@ -21,7 +21,10 @@ pub struct Page {
     pub tables: Tables,
     #[serde(skip, default = "get_default_table_width")]
     pub table_width: f32,
-    #[serde(skip, default = "get_default_preamble")]
+    #[cfg_attr(
+        feature = "default-fonts",
+        serde(skip, default = "get_default_preamble")
+    )]
     pub preamble: String,
 }
 
@@ -97,6 +100,7 @@ impl Default for Page {
     }
 }
 
+#[cfg(feature = "default-fonts")]
 fn get_default_preamble() -> String {
     Page::get_preamble(
         &TexFonts::default().unwrap(),

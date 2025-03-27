@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, fmt::Display};
 
 use crate::{error::Error, font::cosmic_font::CosmicFont, page::Page, word::Word};
 
@@ -121,9 +121,13 @@ impl Column {
         if num_lines > 0 {
             let num_words = self.words[self.start..].len();
             for i in 0..num_words {
-                let num = self.get_num_lines_cosmic(i, width, page);
+                let num = self.get_num_lines_cosmic(self.start + i, width, page);
                 if num > num_lines {
-                    return Ok(if i == 0 { None } else { Some(i - 1) });
+                    return Ok(if i == 0 {
+                        None
+                    } else {
+                        Some(self.start + i - 1)
+                    });
                 }
             }
         }
@@ -137,7 +141,8 @@ impl Column {
     /// - `page` is used because we need width of the table.
     fn get_num_lines_cosmic(&mut self, end: usize, width: Width, page: &Page) -> usize {
         // Get the width of the column in pts.
-        let column_width = page.table_width * width.column_ratio();
+        let column_width =
+            page.table_width * width.column_ratio() - page.tables.column_separation.get_pts() * 2.;
         // Prepare the Cosmic buffer.
         let mut buffer = Buffer::new(&mut self.cosmic_font.font_system, self.cosmic_font.metrics);
         // Set the width.
@@ -179,10 +184,23 @@ impl Column {
         } else {
             // Get the preamble.
             let mut tex = page.preamble.clone();
-            tex.push_str(&TexColumn::get_table(&[TexColumn {
+            let mut text_columns = vec![TexColumn {
                 text: Some(column),
                 width,
-            }]));
+            }];
+            let w = match width {
+                Width::Half => Some(Width::Half),
+                Width::Third => Some(Width::TwoThirds),
+                Width::TwoThirds => Some(Width::Third),
+                Width::One => None,
+            };
+            if let Some(w) = w {
+                text_columns.push(TexColumn {
+                    text: None,
+                    width: w,
+                });
+            }
+            tex.push_str(&TexColumn::get_table(&text_columns));
 
             // End the document.
             tex.push_str(Page::END_DOCUMENT);
@@ -192,7 +210,7 @@ impl Column {
             match latex_to_pdf(&tex) {
                 // Extract the text of the PDF.
                 Ok(pdf) => match extract_text_from_mem(&pdf) {
-                    Ok(text) => Ok(text.split('\n').count()),
+                    Ok(text) => Ok(text.split('\n').filter(|s| !s.is_empty()).count() - 1),
                     Err(error) => Err(Error::Extract(error)),
                 },
                 Err(error) => {
@@ -238,8 +256,7 @@ impl Column {
             Ok(if end == 0 {
                 TexColumn { text: None, width }
             } else {
-                let start = self.start;
-                self.start = match end.cmp(&self.words.len()) {
+                let end = match end.cmp(&self.words.len()) {
                     // If we overshot the number of words, use words.len()
                     Ordering::Greater => self.words.len(),
                     // Use the end index
@@ -248,7 +265,8 @@ impl Column {
                     Ordering::Less => end - 1,
                 };
                 // Convert words to a TeX string.
-                let text = Word::to_tex(&self.words[start..self.start], &self.tex_font);
+                let text = Word::to_tex(&self.words[self.start..end], &self.tex_font);
+                self.start = end;
                 TexColumn {
                     text: Some(text),
                     width,
@@ -324,6 +342,18 @@ impl Column {
             Some(min) => Ok(*min),
             None => Err(Error::MinNumLines("Called min() but got None".to_string())),
         }
+    }
+}
+
+impl Display for Column {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}: {}/{} words used",
+            &self.tex_font,
+            self.start,
+            self.words.len()
+        )
     }
 }
 

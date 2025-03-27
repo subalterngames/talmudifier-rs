@@ -207,6 +207,7 @@ impl Config {
             left,
             center,
             right,
+            #[cfg(feature = "default-fonts")]
             _default_tex_fonts: None,
         }
     }
@@ -277,5 +278,18 @@ impl Config {
 
     pub fn get_tex_fonts(&self) -> Result<TexFonts, Error> {
         Ok(Self::get_tex_fonts_internal(&self.fonts))
+    }
+}
+
+#[cfg(feature = "default-fonts")]
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            page: Page::default(),
+            fonts: None,
+            source_text: SourceText::default(),
+            title: None,
+            logger: Some(Logger::default()),
+        }
     }
 }

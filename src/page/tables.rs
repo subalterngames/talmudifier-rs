@@ -14,7 +14,7 @@ impl Default for Tables {
     fn default() -> Self {
         Self {
             paragraph_indent: Length::pt(0.),
-            column_separation: Length::em(1.25),
+            column_separation: Length::inches(0.25),
             paragraph_fill_skip: Length::pt(0.),
             tabular_column_separation: Length::em(1.),
         }

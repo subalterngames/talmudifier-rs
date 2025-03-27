@@ -1,5 +1,5 @@
 /// The width of a column with respect to the width of the table.
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum Width {
     One,
     Half,
