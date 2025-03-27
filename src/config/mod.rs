@@ -40,6 +40,7 @@ pub struct Config {
     source_text: SourceText,
     /// If not None, the title will be at the top of the page.
     title: Option<String>,
+    /// If true, logging is enabled.
     log: bool,
 }
 
