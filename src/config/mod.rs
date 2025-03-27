@@ -25,8 +25,8 @@ mod source_text;
 type CosmicFonts = Result<(CosmicFont, CosmicFont, CosmicFont), Error>;
 
 /// Set config data for the page and then generate it.
-#[derive(Deserialize, Serialize)]
 #[cfg_attr(feature = "default-fonts", derive(Default))]
+#[derive(Deserialize, Serialize)]
 pub struct Config {
     /// The size of the page, margins, etc.
     page: Page,
@@ -278,18 +278,5 @@ impl Config {
 
     pub fn get_tex_fonts(&self) -> Result<TexFonts, Error> {
         Ok(Self::get_tex_fonts_internal(&self.fonts))
-    }
-}
-
-#[cfg(feature = "default-fonts")]
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            page: Page::default(),
-            fonts: None,
-            source_text: SourceText::default(),
-            title: None,
-            logger: Some(Logger::default()),
-        }
     }
 }
