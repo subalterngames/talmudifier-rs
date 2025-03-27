@@ -97,7 +97,7 @@ fn get_pdf_internal(tex: &str) -> Result<Vec<u8>, Error> {
 
 #[cfg(test)]
 mod tests {
-    use tectonic::latex_to_pdf;
+    use crate::get_pdf;
 
     pub(crate) fn get_test_md() -> (String, String, String) {
         let raw = include_str!("../test_text/test.md")
@@ -118,7 +118,7 @@ mod tests {
         .iter()
         .zip(["hello_world", "minimal_daf", "paracol", "daf"])
         {
-            if let Err(error) = latex_to_pdf(tex.replace("\r", "")) {
+            if let Err(error) = get_pdf(&tex.replace("\r", "")) {
                 panic!("Tex error: {} {}", error, path)
             }
         }

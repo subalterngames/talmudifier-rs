@@ -6,12 +6,12 @@ pub use fonts::Fonts;
 use serde::{Deserialize, Serialize};
 use serde_json::from_slice;
 pub use source_text::SourceText;
-use tectonic::latex_to_pdf;
 
 use crate::{
     column::{input_column::InputColumn, tex_column::TexColumn, Column},
     error::Error,
     font::{cosmic_font::CosmicFont, tex_fonts::TexFonts},
+    get_pdf,
     page::Page,
     word::Word,
 };
@@ -186,10 +186,8 @@ impl Config {
         tex.push_str(Page::END_DOCUMENT);
 
         // Generate the final PDF.
-        match latex_to_pdf(&tex) {
-            Ok(pdf) => Ok(Daf { tex, pdf }),
-            Err(error) => Err(Error::Pdf(error)),
-        }
+        let pdf = get_pdf(&tex)?;
+        Ok(Daf { tex, pdf })
     }
 
     fn get_cosmic_fonts_internal(fonts: &Fonts) -> CosmicFonts {

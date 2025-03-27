@@ -2,12 +2,12 @@ use std::{cmp::Ordering, fmt::Display};
 
 use crate::{error::Error, font::cosmic_font::CosmicFont, page::Page, word::Word};
 
+#[cfg(target_os = "linux")]
+use crate::get_pdf;
 use cosmic_text::{Buffer, Shaping};
 use input_column::InputColumn;
 #[cfg(target_os = "linux")]
 use pdf_extract::extract_text_from_mem;
-#[cfg(target_os = "linux")]
-use tectonic::latex_to_pdf;
 use tex_column::TexColumn;
 use width::Width;
 
@@ -207,19 +207,13 @@ impl Column {
 
             // Create a PDF.
             #[cfg(target_os = "linux")]
-            match latex_to_pdf(&tex) {
+            match get_pdf(&tex) {
                 // Extract the text of the PDF.
                 Ok(pdf) => match extract_text_from_mem(&pdf) {
                     Ok(text) => Ok(text.split('\n').filter(|s| !s.is_empty()).count() - 1),
                     Err(error) => Err(Error::Extract(error)),
                 },
-                Err(error) => {
-                    // Dump the bad tex.
-                    #[cfg(test)]
-                    std::fs::write("test_text/bad.tex", tex).unwrap();
-
-                    Err(Error::Pdf(error))
-                }
+                Err(error) => Err(error),
             }
 
             #[cfg(target_os = "windows")]
