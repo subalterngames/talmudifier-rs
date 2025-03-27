@@ -25,6 +25,9 @@
 //! write("out.pdf", &daf.pdf).unwrap();
 //! ```
 
+use error::Error;
+use tectonic::latex_to_pdf;
+
 mod column;
 mod config;
 mod error;
@@ -47,6 +50,49 @@ macro_rules! tex {
             t
         }
     };
+}
+
+#[cfg(feature = "log")]
+pub fn get_pdf(tex: &str) -> Result<Vec<u8>, Error> {
+    use chrono::Utc;
+    use std::{
+        fs::{create_dir_all, write},
+        path::PathBuf,
+        str::FromStr,
+    };
+
+    const LOG_DIRECTORY: &str = "logs";
+
+    // Create the log directory.
+    create_dir_all(LOG_DIRECTORY).unwrap();
+
+    let log_directory = PathBuf::from_str(LOG_DIRECTORY).unwrap();
+
+    let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
+
+    // Write the tex file.
+    write(log_directory.join(format!("{}.tex", &timestamp)), tex).unwrap();
+
+    // Get the pdf.
+    let pdf = get_pdf_internal(tex)?;
+
+    // Write the PDF.
+    write(log_directory.join(format!("{}.pdf", &timestamp)), &pdf).unwrap();
+
+    Ok(pdf)
+}
+
+#[cfg(not(feature = "log"))]
+pub fn get_pdf(tex: &str) -> Result<Vec<u8>, Error> {
+    get_pdf_internal(tex)
+}
+
+fn get_pdf_internal(tex: &str) -> Result<Vec<u8>, Error> {
+    // Try to generate the PDF.
+    match latex_to_pdf(tex) {
+        Ok(pdf) => Ok(pdf),
+        Err(error) => Err(Error::Pdf(error)),
+    }
 }
 
 #[cfg(test)]
