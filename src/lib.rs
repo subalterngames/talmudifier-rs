@@ -9,11 +9,11 @@
 //!
 //! // Load a default config file
 //! let mut config = Config::default()
-//!     .source_text = SourceText::Files {
+//!     .source_text(SourceText::Files {
 //!         left: directory.join("left.md"),
 //!         center: directory.join("center.md"),
 //!         right: directory.join("right.md")
-//! };
+//! });
 //!
 //! // Set the source of the text.
 //! config

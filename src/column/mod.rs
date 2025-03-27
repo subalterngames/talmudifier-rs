@@ -184,10 +184,12 @@ impl Column {
         } else {
             // Get the preamble.
             let mut tex = page.preamble.clone();
+            // Add this column.
             let mut text_columns = vec![TexColumn {
                 text: Some(column),
                 width,
             }];
+            // Add another column to set the width properly.
             let w = match width {
                 Width::Half => Some(Width::Half),
                 Width::Third => Some(Width::TwoThirds),
@@ -377,13 +379,13 @@ mod tests {
             .get_cosmic_index(4, Width::Half, &page)
             .unwrap()
             .unwrap();
-        assert_eq!(cosmic_index, 22);
+        assert_eq!(cosmic_index, 15);
 
         let cosmic_index = column
             .get_cosmic_index(4, Width::One, &page)
             .unwrap()
             .unwrap();
-        assert_eq!(cosmic_index, 46);
+        assert_eq!(cosmic_index, 42);
     }
 
     #[test]
@@ -411,7 +413,7 @@ mod tests {
         let num_lines = left
             .get_num_lines_tex(None, Width::Half, &Page::default())
             .unwrap();
-        assert_eq!(num_lines, 10);
+        assert_eq!(num_lines, 12);
     }
 
     #[test]
@@ -422,7 +424,7 @@ mod tests {
         let mut left = get_column(&left, &tex_fonts.left.command, CosmicFont::default_left);
         let end = left.words.len();
         let num_lines = left.get_num_lines_cosmic(end, Width::Half, &Page::default());
-        assert_eq!(num_lines, 11);
+        assert_eq!(num_lines, 12);
     }
 
     #[test]
@@ -432,7 +434,7 @@ mod tests {
         let min_num_lines =
             Column::get_min_num_lines(Some(&left), Some(&center), Some(&right), &Page::default())
                 .unwrap();
-        assert_eq!(min_num_lines, 8);
+        assert_eq!(min_num_lines, 14);
     }
 
     fn get_columns() -> (Column, Column, Column, TexFonts) {

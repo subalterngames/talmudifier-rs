@@ -6,7 +6,7 @@ authors = ["Esther Alter <subalterngames@gmail.com>"]
 description = "Convert markdown text into Talmud-like PDFs"
 
 [features]
-default = ["default-fonts", "ffi", "log"]
+default = ["default-fonts", "ffi"]
 ffi = []
 default-fonts = []
 clap = ["dep:clap"]
