@@ -40,6 +40,7 @@ pub struct Config {
     source_text: SourceText,
     /// If not None, the title will be at the top of the page.
     title: Option<String>,
+    log: bool,
 }
 
 impl Config {
@@ -54,30 +55,41 @@ impl Config {
         }
     }
 
+    /// Set the page layout parameters.
     pub fn page(mut self, page: Page) -> Self {
         self.page = page;
         self
     }
 
+    /// Set the fonts.
     #[cfg(feature = "default-fonts")]
     pub fn fonts(mut self, fonts: Fonts) -> Self {
         self.fonts = Some(fonts);
         self
     }
 
+    /// Set the fonts.
     #[cfg(not(feature = "default-fonts"))]
     pub fn fonts(mut self, fonts: Fonts) -> Self {
         self.fonts = fonts;
         self
     }
 
+    /// Set the source Markdown text.
     pub fn source_text(mut self, source_text: SourceText) -> Self {
         self.source_text = source_text;
         self
     }
 
+    /// Set the title text. By default, there is no title.
     pub fn title(mut self, title: String) -> Self {
         self.title = Some(title);
+        self
+    }
+
+    /// Enable logging.
+    pub fn log(mut self) -> Self {
+        self.log = true;
         self
     }
 
@@ -119,6 +131,7 @@ impl Config {
             &mut InputColumn::Text(&mut right),
             4,
             &self.page,
+            self.log,
         )?];
 
         // Skip.
@@ -128,6 +141,7 @@ impl Config {
             &mut InputColumn::Text(&mut right),
             1,
             &self.page,
+            self.log,
         )?);
 
         while !left.done() && !center.done() && !right.done() {
@@ -142,6 +156,7 @@ impl Config {
                 center_optional,
                 right_optional,
                 &self.page,
+                self.log,
             )?;
 
             // Get all available columns.
@@ -156,6 +171,7 @@ impl Config {
                 &mut right,
                 num_lines,
                 &self.page,
+                self.log,
             )?);
 
             // Skip to the next table.
@@ -170,6 +186,7 @@ impl Config {
                 &mut right,
                 1,
                 &self.page,
+                self.log,
             )?);
         }
 
@@ -186,7 +203,7 @@ impl Config {
         tex.push_str(Page::END_DOCUMENT);
 
         // Generate the final PDF.
-        let pdf = get_pdf(&tex)?;
+        let pdf = get_pdf(&tex, self.log)?;
         Ok(Daf { tex, pdf })
     }
 

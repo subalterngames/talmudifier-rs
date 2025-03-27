@@ -10,8 +10,6 @@ default = ["default-fonts", "ffi"]
 ffi = []
 default-fonts = []
 clap = ["dep:clap"]
-log = ["chrono"]
-chrono = ["dep:chrono"]
 
 [dependencies]
 cosmic-text = { version = "0.12.1", default-features = false, features = ["std", "fontconfig"] }
@@ -20,7 +18,7 @@ serde = { version = "1.0.218", features = ["derive"] }
 serde_json = "1.0.139"
 thiserror = "2.0.11"
 clap = { version = "4.5.30", optional = true }
-chrono = { version = "0.4.40", optional = true, default-features = false, features = ["clock", "std"] }
+chrono = { version = "0.4.40", default-features = false, features = ["clock", "std"] }
 
 [target.'cfg(unix)'.dependencies]
 pdf-extract = "0.8.0"

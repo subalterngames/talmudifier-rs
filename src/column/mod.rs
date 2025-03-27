@@ -52,6 +52,7 @@ impl Column {
         right: &mut InputColumn<'t>,
         num_lines: usize,
         page: &Page,
+        log: bool,
     ) -> Result<Vec<TexColumn>, Error> {
         // Get the width of each column and convert them into empty TexColumns.
         let mut tex_columns =
@@ -83,7 +84,8 @@ impl Column {
                 // This is a column with text.
                 InputColumn::Text(input_column) => {
                     // Fill the column with text.
-                    *tex_column = input_column.get_tex_column(num_lines, tex_column.width, page)?;
+                    *tex_column =
+                        input_column.get_tex_column(num_lines, tex_column.width, page, log)?;
                     Ok(())
                 }
             })?;
@@ -98,10 +100,11 @@ impl Column {
         num_lines: usize,
         width: Width,
         page: &Page,
+        log: bool,
     ) -> Result<TexColumn, Error> {
         // Guess the end index with cosmic.
         match self.get_cosmic_index(num_lines, width, page)? {
-            Some(cosmic_index) => self.get_tex_words(width, cosmic_index, num_lines, page),
+            Some(cosmic_index) => self.get_tex_words(width, cosmic_index, num_lines, page, log),
             None => Err(Error::NoMoreWords),
         }
     }
@@ -167,11 +170,13 @@ impl Column {
     /// - `end` is an optional end index for `self.words`. If `None`, the words are from `self.start..self.words.len()`.
     /// - `width` is the width of the column, as calculated elsewhere.
     /// - `page` is used because we need the preamble.
+    /// - `log` is used to toggle logging.
     fn get_num_lines_tex(
         &self,
         end: Option<usize>,
         width: Width,
         page: &Page,
+        log: bool,
     ) -> Result<usize, Error> {
         let end = match end {
             Some(end) => end,
@@ -209,7 +214,7 @@ impl Column {
 
             // Create a PDF.
             #[cfg(target_os = "linux")]
-            match get_pdf(&tex) {
+            match get_pdf(&tex, log) {
                 // Extract the text of the PDF.
                 Ok(pdf) => match extract_text_from_mem(&pdf) {
                     Ok(text) => Ok(text.split('\n').filter(|s| !s.is_empty()).count() - 1),
@@ -231,6 +236,7 @@ impl Column {
         cosmic_index: usize,
         num_lines: usize,
         page: &Page,
+        log: bool,
     ) -> Result<TexColumn, Error> {
         if self.start == self.words.len() {
             Ok(TexColumn { text: None, width })
@@ -238,13 +244,13 @@ impl Column {
             let mut end = cosmic_index;
 
             // Decrement until we have enough lines.
-            while end > 0 && self.get_num_lines_tex(Some(end), width, page)? > num_lines {
+            while end > 0 && self.get_num_lines_tex(Some(end), width, page, log)? > num_lines {
                 end -= 1;
             }
 
             // Increment until we go over.
             while end < self.words.len()
-                && self.get_num_lines_tex(Some(end), width, page)? <= num_lines
+                && self.get_num_lines_tex(Some(end), width, page, log)? <= num_lines
             {
                 end += 1;
             }
@@ -295,6 +301,7 @@ impl Column {
         center: Option<&Self>,
         right: Option<&Self>,
         page: &Page,
+        log: bool,
     ) -> Result<usize, Error> {
         if left.is_none() && center.is_none() && right.is_none() {
             return Err(Error::MinNumLines("All columns are None".to_string()));
@@ -323,7 +330,7 @@ impl Column {
             )
             .try_for_each(|(column, (has_words, (width, num_lines)))| {
                 if has_words {
-                    match column.get_num_lines_tex(None, width, page) {
+                    match column.get_num_lines_tex(None, width, page, log) {
                         Ok(n) => {
                             *num_lines = n;
                             Ok(())
@@ -411,7 +418,7 @@ mod tests {
         let tex_fonts = TexFonts::default().unwrap();
         let left = get_column(&left, &tex_fonts.left.command, CosmicFont::default_left);
         let num_lines = left
-            .get_num_lines_tex(None, Width::Half, &Page::default())
+            .get_num_lines_tex(None, Width::Half, &Page::default(), false)
             .unwrap();
         assert_eq!(num_lines, 12);
     }
@@ -431,9 +438,14 @@ mod tests {
     #[cfg(target_os = "linux")]
     fn test_min_num_lines() {
         let (left, center, right, _) = get_columns();
-        let min_num_lines =
-            Column::get_min_num_lines(Some(&left), Some(&center), Some(&right), &Page::default())
-                .unwrap();
+        let min_num_lines = Column::get_min_num_lines(
+            Some(&left),
+            Some(&center),
+            Some(&right),
+            &Page::default(),
+            false,
+        )
+        .unwrap();
         assert_eq!(min_num_lines, 14);
     }
 

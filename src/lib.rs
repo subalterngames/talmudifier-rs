@@ -7,16 +7,16 @@
 //!
 //! let directory = PathBuf::from_str("example_text").unwrap();
 //!
-//! // Load a default config file
+//! // Load a default config file.
 //! let mut config = Config::default()
+//!     // Enable logging.
+//!     .log()
+//!     // Set the source text as three Markdown files.
 //!     .source_text(SourceText::Files {
 //!         left: directory.join("left.md"),
 //!         center: directory.join("center.md"),
 //!         right: directory.join("right.md")
 //! });
-//!
-//! // Set the source of the text.
-//! config
 //!
 //! // Talmudify.
 //! let daf = config.talmudify().unwrap();
@@ -52,8 +52,7 @@ macro_rules! tex {
     };
 }
 
-#[cfg(feature = "log")]
-pub fn get_pdf(tex: &str) -> Result<Vec<u8>, Error> {
+pub(crate) fn get_pdf(tex: &str, log: bool) -> Result<Vec<u8>, Error> {
     use chrono::Utc;
     use std::{
         fs::{create_dir_all, write},
@@ -61,30 +60,29 @@ pub fn get_pdf(tex: &str) -> Result<Vec<u8>, Error> {
         str::FromStr,
     };
 
-    const LOG_DIRECTORY: &str = "logs";
+    if log {
+        const LOG_DIRECTORY: &str = "logs";
 
-    // Create the log directory.
-    create_dir_all(LOG_DIRECTORY).unwrap();
+        // Create the log directory.
+        create_dir_all(LOG_DIRECTORY).unwrap();
 
-    let log_directory = PathBuf::from_str(LOG_DIRECTORY).unwrap();
+        let log_directory = PathBuf::from_str(LOG_DIRECTORY).unwrap();
 
-    let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
+        let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
 
-    // Write the tex file.
-    write(log_directory.join(format!("{}.tex", &timestamp)), tex).unwrap();
+        // Write the tex file.
+        write(log_directory.join(format!("{}.tex", &timestamp)), tex).unwrap();
 
-    // Get the pdf.
-    let pdf = get_pdf_internal(tex)?;
+        // Get the pdf.
+        let pdf = get_pdf_internal(tex)?;
 
-    // Write the PDF.
-    write(log_directory.join(format!("{}.pdf", &timestamp)), &pdf).unwrap();
+        // Write the PDF.
+        write(log_directory.join(format!("{}.pdf", &timestamp)), &pdf).unwrap();
 
-    Ok(pdf)
-}
-
-#[cfg(not(feature = "log"))]
-pub fn get_pdf(tex: &str) -> Result<Vec<u8>, Error> {
-    get_pdf_internal(tex)
+        Ok(pdf)
+    } else {
+        get_pdf_internal(tex)
+    }
 }
 
 fn get_pdf_internal(tex: &str) -> Result<Vec<u8>, Error> {
@@ -118,7 +116,7 @@ mod tests {
         .iter()
         .zip(["hello_world", "minimal_daf", "paracol", "daf"])
         {
-            if let Err(error) = get_pdf(&tex.replace("\r", "")) {
+            if let Err(error) = get_pdf(&tex.replace("\r", ""), false) {
                 panic!("Tex error: {} {}", error, path)
             }
         }
