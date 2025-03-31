@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, fmt::Display};
+use std::fmt::Display;
 
 use crate::{error::Error, font::cosmic_font::CosmicFont, page::Page, word::Word};
 
@@ -262,16 +262,12 @@ impl Column {
             Ok(if end == 0 {
                 TexColumn { text: None, width }
             } else {
-                let end = match end.cmp(&self.words.len()) {
-                    // If we overshot the number of words, use words.len()
-                    Ordering::Greater => self.words.len(),
-                    // Use the end index
-                    Ordering::Equal => end,
-                    // This will happen if we needed to increment.
-                    Ordering::Less => end - 1,
-                };
+                end = end.min(self.words.len());
                 // Convert words to a TeX string.
                 let text = Word::to_tex(&self.words[self.start..end], &self.tex_font);
+                if log {
+                    println!("{} to {}", self.start, end);
+                }
                 self.start = end;
                 TexColumn {
                     text: Some(text),
