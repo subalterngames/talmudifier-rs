@@ -103,7 +103,7 @@ impl Column {
         log: bool,
     ) -> Result<TexColumn, Error> {
         // Guess the end index with cosmic.
-        match self.get_cosmic_index(num_lines, width, page)? {
+        match self.get_cosmic_index(num_lines, width, page) {
             Some(cosmic_index) => self.get_tex_words(width, cosmic_index, num_lines, page, log),
             None => Err(Error::NoMoreWords),
         }
@@ -115,26 +115,21 @@ impl Column {
 
     /// Given a target number of lines, typeset using Cosmic.
     /// Returns the end index of the words that fit in the column.
-    fn get_cosmic_index(
-        &mut self,
-        num_lines: usize,
-        width: Width,
-        page: &Page,
-    ) -> Result<Option<usize>, Error> {
+    fn get_cosmic_index(&mut self, num_lines: usize, width: Width, page: &Page) -> Option<usize> {
         if num_lines > 0 {
             let num_words = self.words[self.start..].len();
             for i in 0..num_words {
                 let num = self.get_num_lines_cosmic(self.start + i, width, page);
                 if num > num_lines {
-                    return Ok(if i == 0 {
+                    return if i == 0 {
                         None
                     } else {
                         Some(self.start + i - 1)
-                    });
+                    };
                 }
             }
         }
-        Ok(None)
+        None
     }
 
     /// Get the number of lines in a column with Cosmic Text.
@@ -379,16 +374,10 @@ mod tests {
         let mut column = Column::new(words, cosmic_font, &tex_fonts.left.command);
         let page = Page::default();
 
-        let cosmic_index = column
-            .get_cosmic_index(4, Width::Half, &page)
-            .unwrap()
-            .unwrap();
+        let cosmic_index = column.get_cosmic_index(4, Width::Half, &page).unwrap();
         assert_eq!(cosmic_index, 15);
 
-        let cosmic_index = column
-            .get_cosmic_index(4, Width::One, &page)
-            .unwrap()
-            .unwrap();
+        let cosmic_index = column.get_cosmic_index(4, Width::One, &page).unwrap();
         assert_eq!(cosmic_index, 42);
     }
 
