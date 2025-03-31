@@ -243,19 +243,19 @@ impl Column {
         } else {
             let mut end = cosmic_index;
 
-            let current_num_lines = self.get_num_lines_tex(Some(end), width, page, log)?;
+            let mut current_num_lines = self.get_num_lines_tex(Some(end), width, page, log)?;
 
             if current_num_lines > num_lines {
                 // Decrement until we have enough lines.
-                while end > 0 && self.get_num_lines_tex(Some(end), width, page, log)? > num_lines {
+                while end > 0 && current_num_lines > num_lines {
                     end -= 1;
+                    current_num_lines = self.get_num_lines_tex(Some(end), width, page, log)?;
                 }
             } else {
                 // Increment until we go over.
-                while end < self.words.len()
-                    && self.get_num_lines_tex(Some(end), width, page, log)? <= num_lines
-                {
+                while end < self.words.len() && current_num_lines <= num_lines {
                     end += 1;
+                    current_num_lines = self.get_num_lines_tex(Some(end), width, page, log)?;
                 }
             }
 
@@ -265,9 +265,6 @@ impl Column {
                 end = end.min(self.words.len());
                 // Convert words to a TeX string.
                 let text = Word::to_tex(&self.words[self.start..end], &self.tex_font);
-                if log {
-                    println!("{} to {}", self.start, end);
-                }
                 self.start = end;
                 TexColumn {
                     text: Some(text),
