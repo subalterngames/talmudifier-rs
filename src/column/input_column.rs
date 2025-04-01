@@ -17,6 +17,13 @@ impl InputColumn<'_> {
     pub const fn is_column(&self) -> bool {
         !matches!(self, Self::None)
     }
+
+    pub fn done(&self) -> bool {
+        match self {
+            Self::Text(column) => column.done(),
+            _ => true,
+        }
+    }
 }
 
 impl Display for InputColumn<'_> {

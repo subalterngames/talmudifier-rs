@@ -180,15 +180,18 @@ impl Config {
             center = Self::get_input_column_skip(center);
             right = Self::get_input_column_skip(right);
 
-            // Create the table.
-            tables.push(Column::get_tex_table(
-                &mut left,
-                &mut center,
-                &mut right,
-                1,
-                &self.page,
-                self.log,
-            )?);
+            // Check if we ran out of words.
+            if !left.done() && !center.done() && !right.done() {
+                // Create the table.
+                tables.push(Column::get_tex_table(
+                    &mut left,
+                    &mut center,
+                    &mut right,
+                    1,
+                    &self.page,
+                    self.log,
+                )?);
+            }
         }
 
         // Build the document.
