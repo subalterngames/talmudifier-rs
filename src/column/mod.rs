@@ -237,17 +237,19 @@ impl Column {
             if current_num_lines > num_lines {
                 // Decrement until we have enough lines.
                 while end > 0 && current_num_lines > num_lines {
+                    end -= 1;
                     current_num_lines = self.get_num_lines_tex(Some(end), width, page, log)?;
-                    if current_num_lines > num_lines {
-                        end -= 1;
+                    if current_num_lines < num_lines {
+                        end += 1
                     }
                 }
             } else {
                 // Increment until we go over.
                 while end < self.words.len() && current_num_lines <= num_lines {
+                    end += 1;
                     current_num_lines = self.get_num_lines_tex(Some(end), width, page, log)?;
-                    if current_num_lines <= num_lines {
-                        end += 1;
+                    if current_num_lines > num_lines {
+                        end -= 1;
                     }
                 }
             }
