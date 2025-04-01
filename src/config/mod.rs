@@ -207,7 +207,7 @@ impl Config {
         tex.push_str(Page::END_DOCUMENT);
 
         // Generate the final PDF.
-        let pdf = get_pdf(&tex, self.log)?;
+        let (pdf, _) = get_pdf(&tex, self.log, false)?;
         Ok(Daf { tex, pdf })
     }
 

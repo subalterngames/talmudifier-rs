@@ -7,7 +7,6 @@ use crate::get_pdf;
 use cosmic_text::{Buffer, Shaping};
 use input_column::InputColumn;
 #[cfg(target_os = "linux")]
-use pdf_extract::extract_text_from_mem;
 use tex_column::TexColumn;
 use width::Width;
 
@@ -209,13 +208,8 @@ impl Column {
 
             // Create a PDF.
             #[cfg(target_os = "linux")]
-            match get_pdf(&tex, log) {
-                // Extract the text of the PDF.
-                Ok(pdf) => match extract_text_from_mem(&pdf) {
-                    Ok(text) => Ok(text.split('\n').filter(|s| !s.is_empty()).count() - 1),
-                    Err(error) => Err(Error::Extract(error)),
-                },
-                Err(error) => Err(error),
+            {
+                Ok(get_pdf(&tex, log, true)?.1.unwrap())
             }
 
             #[cfg(target_os = "windows")]
@@ -243,14 +237,18 @@ impl Column {
             if current_num_lines > num_lines {
                 // Decrement until we have enough lines.
                 while end > 0 && current_num_lines > num_lines {
-                    end -= 1;
                     current_num_lines = self.get_num_lines_tex(Some(end), width, page, log)?;
+                    if current_num_lines > num_lines {
+                        end -= 1;
+                    }
                 }
             } else {
                 // Increment until we go over.
                 while end < self.words.len() && current_num_lines <= num_lines {
-                    end += 1;
                     current_num_lines = self.get_num_lines_tex(Some(end), width, page, log)?;
+                    if current_num_lines <= num_lines {
+                        end += 1;
+                    }
                 }
             }
 

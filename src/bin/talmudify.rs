@@ -29,7 +29,7 @@ fn main() {
 
     // Load the config file.
     let mut config = Config::new(&args.config).unwrap();
-    
+
     // Enable logging.
     if args.log {
         config = config.log();

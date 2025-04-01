@@ -25,7 +25,15 @@
 //! write("out.pdf", &daf.pdf).unwrap();
 //! ```
 
+use std::{
+    fs::{create_dir_all, write},
+    path::PathBuf,
+    str::FromStr,
+};
+
+use chrono::Utc;
 use error::Error;
+use pdf_extract::extract_text_from_mem;
 use tectonic::latex_to_pdf;
 
 mod column;
@@ -52,24 +60,22 @@ macro_rules! tex {
     };
 }
 
-pub(crate) fn get_pdf(tex: &str, log: bool) -> Result<Vec<u8>, Error> {
-    use chrono::Utc;
-    use std::{
-        fs::{create_dir_all, write},
-        path::PathBuf,
-        str::FromStr,
-    };
+pub(crate) fn get_pdf(
+    tex: &str,
+    log: bool,
+    count_lines: bool,
+) -> Result<(Vec<u8>, Option<usize>), Error> {
+    const LOG_DIRECTORY: &str = "logs";
 
+    let log_directory = PathBuf::from_str(LOG_DIRECTORY).unwrap();
     if log {
-        const LOG_DIRECTORY: &str = "logs";
-
         // Create the log directory.
         create_dir_all(LOG_DIRECTORY).unwrap();
+    }
 
-        let log_directory = PathBuf::from_str(LOG_DIRECTORY).unwrap();
+    let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
 
-        let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
-
+    let pdf = if log {
         // Write the tex file.
         write(log_directory.join(format!("{}.tex", &timestamp)), tex).unwrap();
 
@@ -79,9 +85,26 @@ pub(crate) fn get_pdf(tex: &str, log: bool) -> Result<Vec<u8>, Error> {
         // Write the PDF.
         write(log_directory.join(format!("{}.pdf", &timestamp)), &pdf).unwrap();
 
-        Ok(pdf)
+        pdf
     } else {
-        get_pdf_internal(tex)
+        get_pdf_internal(tex)?
+    };
+
+    if count_lines {
+        match extract_text_from_mem(&pdf) {
+            Ok(text) => {
+                // Log the extracted text.
+                if log {
+                    write(log_directory.join(format!("{}.txt", &timestamp)), &text).unwrap();
+                }
+                let num_lines = Some(text.split('\n').filter(|s| !s.is_empty()).count() - 1);
+                // Return the number of lines.
+                Ok((pdf, num_lines))
+            }
+            Err(error) => Err(Error::Extract(error)),
+        }
+    } else {
+        Ok((pdf, None))
     }
 }
 
@@ -116,7 +139,7 @@ mod tests {
         .iter()
         .zip(["hello_world", "minimal_daf", "paracol", "daf"])
         {
-            if let Err(error) = get_pdf(&tex.replace("\r", ""), false) {
+            if let Err(error) = get_pdf(&tex.replace("\r", ""), false, false) {
                 panic!("Tex error: {} {}", error, path)
             }
         }
