@@ -1,39 +1,44 @@
 use std::{
     fs::{create_dir_all, write},
     path::PathBuf,
+    str::FromStr,
 };
 
-use clap::{Arg, Command};
+use clap::Parser;
 use talmudifier::prelude::*;
 
+#[derive(Parser, Debug)]
+#[command(author, version, about)]
+struct Args {
+    /// The path to a config json file. If this arg is not included, and if the default-fonts feature is enabled, then default values will be used.
+    #[arg(short, long, default_value = "config.json")]
+    config: PathBuf,
+    /// The path to the output directory.
+    #[arg(short, long, default_value = "out")]
+    out: PathBuf,
+    /// If true, write intermediate .tex and .pdf files to logs/
+    #[arg(short, long)]
+    log: bool,
+}
+
 fn main() {
-    let args = Command::new("talmudifier")
-        .author(env!("CARGO_PKG_AUTHORS"))
-        .about(env!("CARGO_PKG_DESCRIPTION"))
-        .args([
-            Arg::new("config")
-            .short('c')
-            .required(false)
-            .help("The absolute path to a config json file. If this arg is not included, and if the default-fonts feature is enabled, then default values will be used."),
-            Arg::new("out")
-                .short('o')
-                .default_value("out.pdf")
-                .help("The absolute path to the output file."),
-        ]).get_matches();
-    // Get the fonts.
-    let path = args.get_one::<PathBuf>("config").unwrap();
+    let args = Args::parse();
 
     // Get the output drectory.
-    let output_path = args.get_one::<PathBuf>("out").unwrap();
-    create_dir_all(output_path.parent().unwrap()).unwrap();
+    create_dir_all(&args.out).unwrap();
 
     // Load the config file.
-    let config = Config::new(path).unwrap();
+    let mut config = Config::new(&args.config).unwrap();
+    
+    // Enable logging.
+    if args.log {
+        config = config.log();
+    }
 
     // Talmudify.
     let daf = config.talmudify().unwrap();
 
     // Write.
-    write(output_path.join("daf.pdf"), &daf.pdf).unwrap();
-    write(output_path.join("daf.tex"), &daf.tex).unwrap();
+    write(args.out.join("daf.pdf"), &daf.pdf).unwrap();
+    write(args.out.join("daf.tex"), &daf.tex).unwrap();
 }
