@@ -43,7 +43,7 @@ impl Page {
     ) -> String {
         let mut preamble = format!("\\documentclass[11pt, {}, openany]{{scrbook}}", paper_size);
         preamble += &format!(
-            "\n\\usepackage[{}, {}]{{geometry}}\n\n",
+            "\n\\usepackage[{}, {}]{{geometry}}\n\\pagenumbering{{gobble}}\n\n",
             paper_size, margins
         );
         preamble += &["marginnote", "sectsty", "ragged2e", "paracol", "fontspec"]

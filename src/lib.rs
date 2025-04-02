@@ -97,7 +97,7 @@ pub(crate) fn get_pdf(
                 if log {
                     write(log_directory.join(format!("{}.txt", &timestamp)), &text).unwrap();
                 }
-                let num_lines = Some(text.split('\n').filter(|s| !s.is_empty()).count() - 1);
+                let num_lines = Some(text.split('\n').filter(|s| !s.is_empty()).count());
                 // Return the number of lines.
                 Ok((pdf, num_lines))
             }
