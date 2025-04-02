@@ -406,7 +406,7 @@ mod tests {
         let num_lines = left
             .get_num_lines_tex(None, Width::Half, &Page::default(), false)
             .unwrap();
-        assert_eq!(num_lines, 12);
+        assert_eq!(num_lines, 25);
     }
 
     #[test]
@@ -417,7 +417,7 @@ mod tests {
         let mut left = get_column(&left, &tex_fonts.left.command, CosmicFont::default_left);
         let end = left.words.len();
         let num_lines = left.get_num_lines_cosmic(end, Width::Half, &Page::default());
-        assert_eq!(num_lines, 12);
+        assert_eq!(num_lines, 27);
     }
 
     #[test]

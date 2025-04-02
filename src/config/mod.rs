@@ -145,7 +145,7 @@ impl Config {
             self.log,
         )?);
 
-        while !left.done() && !center.done() && !right.done() {
+        while !left.done() || !center.done() || !right.done() {
             // Get the columns that are and are not done.
             let left_optional = Self::get_optional_column(&left);
             let center_optional = Self::get_optional_column(&center);
@@ -181,7 +181,7 @@ impl Config {
             right = Self::get_input_column_skip(right);
 
             // Check if we ran out of words.
-            if !left.done() && !center.done() && !right.done() {
+            if !left.done() || !center.done() || !right.done() {
                 // Create the table.
                 tables.push(Column::get_tex_table(
                     &mut left,
