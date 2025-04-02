@@ -128,7 +128,7 @@ impl Column {
                 }
             }
         }
-        None
+        Some(self.words.len())
     }
 
     /// Get the number of lines in a column with Cosmic Text.
