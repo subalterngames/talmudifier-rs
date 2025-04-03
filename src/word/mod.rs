@@ -77,6 +77,16 @@ impl Word {
         cosmic_spans
     }
 
+    fn get_attrs(font: &CosmicFont, style: &Style) -> AttrsOwned {
+        match style {
+            Style::Regular => &font.regular,
+            Style::Italic => &font.italic,
+            Style::Bold => &font.bold,
+            Style::BoldItalic => &font.bold_italic,
+        }
+        .clone()
+    }
+
     /// Convert a slice of words to a TeX string.
     pub fn to_tex(words: &[Self], font_command: &str) -> String {
         // Build a column.
