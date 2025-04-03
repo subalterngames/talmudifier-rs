@@ -1,28 +1,22 @@
 use cosmic_text::AttrsOwned;
 use markdown::{mdast::Node, to_mdast, Constructs, ParseOptions};
+use position::Position;
+use style::Style;
+use word::Word;
 
 use crate::{error::Error, font::cosmic_font::CosmicFont};
 
-use position::Position;
-use style::Style;
-
-mod latex_command;
 mod position;
 mod style;
+mod word;
 
-/// A word and its style.
-pub struct Word {
-    /// A single word.
-    pub word: String,
-    /// The font style.
-    pub style: Style,
-    /// The position on
-    pub position: Position,
-}
+type LatexCommand = (Option<&'static str>, Option<&'static str>);
 
-impl Word {
+pub struct Span(Vec<Word>);
+
+impl Span {
     /// Parse raw markdown text and get a vec of words.
-    pub fn from_md(md: &str) -> Result<Vec<Self>, Error> {
+    pub fn from_md(md: &str) -> Result<Self, Error> {
         let parse_options = ParseOptions {
             constructs: Constructs::gfm(),
             ..Default::default()
@@ -32,14 +26,14 @@ impl Word {
                 let mut words = vec![];
                 // Add the words as nodes.
                 Self::add_node(&node, &mut words, Style::default(), Position::default())?;
-                Ok(words)
+                Ok(Self(words))
             }
             Err(error) => Err(Error::Md(error)),
         }
     }
 
     /// Convert a slice of words into Cosmic text spans.
-    pub fn to_cosmic(words: &[Self], font: &CosmicFont) -> Vec<(String, AttrsOwned)> {
+    pub fn to_cosmic(&self, font: &CosmicFont) -> Vec<(String, AttrsOwned)> {
         // Strings of words and their associated attributes.
         let mut cosmic_spans = vec![];
 
@@ -53,7 +47,7 @@ impl Word {
         let mut attrs = font.regular.clone();
 
         // Iterate through the words. Ignore citations.
-        for word in words.iter().filter(|w| w.position == Position::Body) {
+        for word in self.0.iter().filter(|w| w.position == Position::Body) {
             // Add the word to the current span.
             if style == word.style {
                 span.push(word.word.clone());
@@ -64,7 +58,7 @@ impl Word {
                 // Reset the span.
                 span.clear();
                 // Set the new attrs.
-                attrs = Self::get_attrs(font, &word.style);
+                attrs = word.style.attrs(font);
                 // Remember the style.
                 style = word.style;
             }
@@ -78,12 +72,12 @@ impl Word {
     }
 
     /// Convert a slice of words to a TeX string.
-    pub fn to_tex(words: &[Self], font_command: &str) -> String {
+    pub fn to_tex(&self, font_command: &str) -> String {
         // Build a column.
         let mut text = font_command.to_string();
         let mut style = Style::default();
         let mut position = Position::default();
-        for word in words.iter() {
+        for word in self.0.iter() {
             let mut prefixes = vec![];
             let mut suffixes = vec![];
             // We changed the style.
@@ -101,11 +95,11 @@ impl Word {
             // Change the position.
             if position != word.position {
                 let command = position.get_command(&word.position);
-                if let Some(prefix) = command.prefix {
+                if let Some(prefix) = command.0 {
                     prefixes.push(prefix);
                 }
                 // Add a suffix to the previous word.
-                if let Some(suffix) = command.suffix {
+                if let Some(suffix) = command.1 {
                     suffixes.push(suffix);
                 }
 
@@ -136,7 +130,7 @@ impl Word {
     /// A words from a markdown node.
     fn add_node(
         node: &Node,
-        words: &mut Vec<Self>,
+        words: &mut Vec<Word>,
         style: Style,
         position: Position,
     ) -> Result<(), Error> {
@@ -190,7 +184,7 @@ impl Word {
     }
 
     /// Split a string into words and add them to `words`.
-    fn add_words(value: &str, words: &mut Vec<Self>, style: Style, position: Position) {
+    fn add_words(value: &str, words: &mut Vec<Word>, style: Style, position: Position) {
         value.split(' ').filter(|s| !s.is_empty()).for_each(|w| {
             words.push(Word {
                 word: w.to_string(),
@@ -203,34 +197,36 @@ impl Word {
 
 #[cfg(test)]
 mod tests {
+    use super::Span;
+
     use super::{Position, Style, Word};
 
     #[test]
     fn test_words() {
         let md = "Regular *italic* **bold and *italic*** and **this**";
-        let words = Word::from_md(md).unwrap();
-        assert_eq!(&words[0].word, "Regular");
-        assert_eq!(words[0].style, Style::Regular);
+        let span = Span::from_md(md).unwrap();
+        assert_eq!(&span.0[0].word, "Regular");
+        assert_eq!(span.0[0].style, Style::Regular);
 
-        assert_eq!(&words[1].word, "italic");
-        assert_eq!(words[1].style, Style::Italic);
+        assert_eq!(&span.0[1].word, "italic");
+        assert_eq!(span.0[1].style, Style::Italic);
 
-        assert_eq!(&words[2].word, "bold");
-        assert_eq!(words[2].style, Style::Bold);
+        assert_eq!(&span.0[2].word, "bold");
+        assert_eq!(span.0[2].style, Style::Bold);
 
-        assert_eq!(&words[3].word, "and");
-        assert_eq!(words[3].style, Style::Bold);
+        assert_eq!(&span.0[3].word, "and");
+        assert_eq!(span.0[3].style, Style::Bold);
 
-        assert_eq!(&words[4].word, "italic");
-        assert_eq!(words[4].style, Style::BoldItalic);
+        assert_eq!(&span.0[4].word, "italic");
+        assert_eq!(span.0[4].style, Style::BoldItalic);
 
-        assert_eq!(&words[5].word, "and");
-        assert_eq!(words[5].style, Style::Regular);
+        assert_eq!(&span.0[5].word, "and");
+        assert_eq!(span.0[5].style, Style::Regular);
 
-        assert_eq!(&words[6].word, "this");
-        assert_eq!(words[6].style, Style::Bold);
+        assert_eq!(&span.0[6].word, "this");
+        assert_eq!(span.0[6].style, Style::Bold);
 
-        for word in words.iter() {
+        for word in span.0.iter() {
             assert_eq!(word.position, Position::Body);
         }
     }
@@ -238,30 +234,30 @@ mod tests {
     #[test]
     fn test_footnote() {
         let md = "A `footnote` *here*";
-        let words = Word::from_md(md).unwrap();
-        assert_eq!(&words[0].word, "A");
-        assert_eq!(words[0].style, Style::Regular);
-        assert_eq!(words[0].position, Position::Body);
-        assert_eq!(&words[1].word, "footnote");
-        assert_eq!(words[1].position, Position::Margin);
-        assert_eq!(words[1].style, Style::Regular);
-        assert_eq!(words[2].position, Position::Body);
-        assert_eq!(words[2].style, Style::Italic);
+        let span = Span::from_md(md).unwrap();
+        assert_eq!(&span.0[0].word, "A");
+        assert_eq!(span.0[0].style, Style::Regular);
+        assert_eq!(span.0[0].position, Position::Body);
+        assert_eq!(&span.0[1].word, "footnote");
+        assert_eq!(span.0[1].position, Position::Margin);
+        assert_eq!(span.0[1].style, Style::Regular);
+        assert_eq!(span.0[2].position, Position::Body);
+        assert_eq!(span.0[2].style, Style::Italic);
     }
 
     #[test]
     fn test_textit() {
         let md = "*This is italic* and this is regular.";
-        let words = Word::from_md(md).unwrap();
-        let tex = Word::to_tex(&words, "\\font");
+        let span = Span::from_md(md).unwrap();
+        let tex = span.to_tex("\\font");
         assert_eq!(tex, "\\font \\textit{This is italic} and this is regular.")
     }
 
     #[test]
     fn test_bold_italic() {
         let md = "**bold** *italic* ***bold and italic*** **bold**";
-        let words = Word::from_md(md).unwrap();
-        let tex = Word::to_tex(&words, "\\font");
+        let span = Span::from_md(md).unwrap();
+        let tex = span.to_tex("\\font");
         assert_eq!(
             tex,
             "\\font \\textbf{bold} \\textit{italic \\textbf{bold and italic}} \\textbf{bold}"
@@ -271,8 +267,8 @@ mod tests {
     #[test]
     fn test_marginnote() {
         let md = "A `footnote *here* and` *there*";
-        let words = Word::from_md(md).unwrap();
-        let tex = Word::to_tex(&words, "\\font");
+        let span = Span::from_md(md).unwrap();
+        let tex = span.to_tex("\\font");
         assert_eq!(
             tex,
             "\\font A \\\\marginnote{\\\\noindent\\\\justifying\\\\tiny footnote \\textit{here} and} \\textit{there}"

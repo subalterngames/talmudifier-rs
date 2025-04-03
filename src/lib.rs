@@ -31,6 +31,7 @@ mod error;
 mod font;
 mod page;
 pub mod prelude;
+mod typesetter;
 mod word;
 
 /// Short hand for simple TeX commands.
