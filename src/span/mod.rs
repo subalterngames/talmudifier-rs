@@ -6,10 +6,7 @@ use word::Word;
 
 use crate::{error::Error, font::cosmic_font::CosmicFont};
 
-pub use span_column::SpanColumn;
-
 mod position;
-mod span_column;
 mod style;
 mod word;
 

@@ -1,6 +1,4 @@
-use crate::font::cosmic_font::CosmicFont;
-
-use super::Span;
+use crate::{font::cosmic_font::CosmicFont, span::Span};
 
 /// A column of text that can be typeset.
 /// Columns try to fill a target number of lines with words.

@@ -1,9 +1,11 @@
-use crate::{column::width::Width, span::SpanColumn};
+use crate::column::width::Width;
+
+use super::maybe_span_column::MaybeSpanColumn;
 
 /// A column, possibly with text, and a width.
-pub enum WidthColumn<'t> {
+pub enum Column<'t> {
     Column {
-        column: Option<&'t mut SpanColumn>,
+        column: MaybeSpanColumn<'t>,
         width: Width,
     },
     None,
@@ -11,8 +13,8 @@ pub enum WidthColumn<'t> {
 
 macro_rules! column_width {
     ($func_name:ident, $width:expr) => {
-        pub fn $func_name(column: Option<&'t mut SpanColumn>) -> WidthColumn<'t> {
-            WidthColumn::Column {
+        pub fn $func_name(column: MaybeSpanColumn<'t>) -> Column<'t> {
+            Column::Column {
                 column,
                 width: $width,
             }
@@ -20,7 +22,7 @@ macro_rules! column_width {
     };
 }
 
-impl<'t> WidthColumn<'t> {
+impl<'t> Column<'t> {
     column_width!(third, Width::Third);
 
     column_width!(half, Width::Half);
