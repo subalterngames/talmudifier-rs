@@ -1,6 +1,11 @@
-use crate::tex;
+use pdf_extract::extract_text_from_mem;
+use tectonic::latex_to_pdf;
 
-use super::{column::Column, OptionalColumn};
+use crate::{error::Error, page::Page, tex};
+
+use super::{
+    column::Column, maybe_span_column::MaybeSpanColumn, para_column::ParaColumn, OptionalColumn,
+};
 
 macro_rules! column_ratio {
     ($($value:expr),+) => {
@@ -15,10 +20,11 @@ macro_rules! column_ratio {
 }
 
 pub struct Table<'t> {
-    pub left: Column<'t>,
-    pub center: Column<'t>,
-    pub right: Column<'t>,
-    pub begin_paracol: String,
+    left: Column<'t>,
+    center: Column<'t>,
+    right: Column<'t>,
+    begin_paracol: String,
+    page: &'t Page,
 }
 
 impl<'t> Table<'t> {
@@ -26,6 +32,7 @@ impl<'t> Table<'t> {
         left: OptionalColumn<'t>,
         center: OptionalColumn<'t>,
         right: OptionalColumn<'t>,
+        page: &'t Page,
     ) -> Self {
         const THIRD: &str = "0.32";
         const HALF: &str = "0.5";
@@ -91,6 +98,104 @@ impl<'t> Table<'t> {
             center,
             right,
             begin_paracol,
+            page,
+        }
+    }
+
+    /// Convert TeX strings per column into a TeX table.
+    fn get_paracol(&self, left: ParaColumn, center: ParaColumn, right: ParaColumn) -> String {
+        const SWITCH: &str = "\\switchcolumn ";
+        // Get the number of actual columns.
+        let num_some = [&left, &center, &right]
+            .iter()
+            .filter(|c| !matches!(c, ParaColumn::None))
+            .count();
+        // If there are no columns, don't try to make a paracol.
+        if num_some == 0 {
+            String::default()
+        } else {
+            let mut table = self.begin_paracol.clone();
+            // Switch this many time.
+            let mut num_switches = num_some - 1;
+
+            // Get the columns with text.
+            // Add the text to the table.
+            // Add switch statements between the columns (but not at the end).
+            for para_column in [&left, &center, &right].iter() {
+                match para_column {
+                    ParaColumn::Text(text) => {
+                        // Add the text.
+                        table.push_str(text);
+                        // Switch columns.
+                        if num_switches > 0 {
+                            table.push_str(SWITCH);
+                            num_switches -= 1;
+                        }
+                    }
+                    ParaColumn::Empty => {
+                        // Switch columns.
+                        if num_switches > 0 {
+                            table.push_str(SWITCH);
+                            num_switches -= 1;
+                        }
+                    }
+                    ParaColumn::None => ()
+                }
+            }
+            
+            // End the table.
+            table.push_str("\n\n\\end{paracol}");
+            table
+        }
+    }
+
+    /// Get the number of lines in a column using Tectonic.
+    ///
+    /// - `end` is an optional end index for `self.words`. If `None`, the words are from `self.start..self.words.len()`.
+    /// - `width` is the width of the column, as calculated elsewhere.
+    /// - `page` is used because we need the preamble.
+    fn get_num_lines_tex(
+        &'t self,
+        column: &'t Column<'t>,
+        end: Option<usize>,
+    ) -> Result<Option<usize>, Error> {
+        match column {
+            Column::Column { column, width: _ } => {
+                match column {
+                    MaybeSpanColumn::Span(column) => {
+                        // Get the TeX string.
+                        // Get the preamble.
+                        let mut tex = self.page.preamble.clone();
+
+                        *text = column.to_tex(end);
+
+                        tex.push_str(&self.get_paracol());
+
+                        *text = temp;
+
+                        // End the document.
+                        tex.push_str(Page::END_DOCUMENT);
+
+                        // Create a PDF.
+                        match latex_to_pdf(&tex) {
+                            // Extract the text of the PDF.
+                            Ok(pdf) => match extract_text_from_mem(&pdf) {
+                                Ok(text) => Ok(Some(text.split('\n').count())),
+                                Err(error) => Err(Error::Extract(error)),
+                            },
+                            Err(error) => {
+                                // Dump the bad tex.
+                                #[cfg(test)]
+                                std::fs::write("test_text/bad.tex", tex).unwrap();
+
+                                Err(Error::Pdf(error))
+                            }
+                        }
+                    }
+                    MaybeSpanColumn::Empty => Ok(None),
+                }
+            }
+            Column::None => Ok(None),
         }
     }
 }
