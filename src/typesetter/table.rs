@@ -4,7 +4,8 @@ use tectonic::latex_to_pdf;
 use crate::{error::Error, page::Page, tex};
 
 use super::{
-    column::Column, maybe_span_column::MaybeSpanColumn, para_column::ParaColumn, OptionalColumn,
+    column::Column, maybe_span_column::MaybeSpanColumn, para_column::ParaColumn,
+    position::Position, OptionalColumn,
 };
 
 macro_rules! column_ratio {
@@ -102,11 +103,38 @@ impl<'t> Table<'t> {
         }
     }
 
+        /// Given 1-3 columns:
+    ///
+    /// 1. Get the width of each column.
+    ///    This is derived from the position of each column e.g. `left` and `center` is always (one third, two thirds).
+    /// 2. Get the number of lines per column, using all words that have yet to be typeset.
+    /// 3. Return the least number of lines. This will be used as a target for all columns to reach.
+    pub fn get_min_num_lines(&self
+    ) -> Result<usize, Error> {
+        // Get the number of lines per position.
+        let mut num_lines = vec![];
+        [Position::Left, Position::Center, Position::Right].into_iter().map(|position| self.get_num_lines_tex(position, None)).try_for_each(|num| {
+            match num {
+                Ok(num) => {
+                    if let Some(num) = num {
+                        num_lines.push(num);
+                    }
+                    Ok(())
+                }
+                Err(error) => return Err(error)
+            }
+        })?;
+        match num_lines.into_iter().min() {
+            Some(min) => Ok(min),
+            None => Err(Error::NoColumns)
+        }
+    }
+
     /// Convert TeX strings per column into a TeX table.
-    fn get_paracol(&self, left: ParaColumn, center: ParaColumn, right: ParaColumn) -> String {
+    fn get_paracol(&self, columns: &[ParaColumn; 3]) -> String {
         const SWITCH: &str = "\\switchcolumn ";
         // Get the number of actual columns.
-        let num_some = [&left, &center, &right]
+        let num_some = columns
             .iter()
             .filter(|c| !matches!(c, ParaColumn::None))
             .count();
@@ -121,7 +149,7 @@ impl<'t> Table<'t> {
             // Get the columns with text.
             // Add the text to the table.
             // Add switch statements between the columns (but not at the end).
-            for para_column in [&left, &center, &right].iter() {
+            for para_column in columns.iter() {
                 match para_column {
                     ParaColumn::Text(text) => {
                         // Add the text.
@@ -139,10 +167,10 @@ impl<'t> Table<'t> {
                             num_switches -= 1;
                         }
                     }
-                    ParaColumn::None => ()
+                    ParaColumn::None => (),
                 }
             }
-            
+
             // End the table.
             table.push_str("\n\n\\end{paracol}");
             table
@@ -155,47 +183,51 @@ impl<'t> Table<'t> {
     /// - `width` is the width of the column, as calculated elsewhere.
     /// - `page` is used because we need the preamble.
     fn get_num_lines_tex(
-        &'t self,
-        column: &'t Column<'t>,
+        &self,
+        position: Position,
         end: Option<usize>,
     ) -> Result<Option<usize>, Error> {
-        match column {
-            Column::Column { column, width: _ } => {
-                match column {
-                    MaybeSpanColumn::Span(column) => {
-                        // Get the TeX string.
-                        // Get the preamble.
-                        let mut tex = self.page.preamble.clone();
+        let para_columns = match position {
+            Position::Left => [
+                ParaColumn::new(&self.left, end),
+                ParaColumn::new_empty(&self.center),
+                ParaColumn::new_empty(&self.right),
+            ],
+            Position::Center => [
+                ParaColumn::new_empty(&self.left),
+                ParaColumn::new(&self.center, end),
+                ParaColumn::new_empty(&self.right),
+            ],
+            Position::Right => [
+                ParaColumn::new_empty(&self.left),
+                ParaColumn::new_empty(&self.center),
+                ParaColumn::new(&self.right, end),
+            ],
+        };
 
-                        *text = column.to_tex(end);
+        // Get the preamble.
+        let mut tex = self.page.preamble.clone();
 
-                        tex.push_str(&self.get_paracol());
+        // Add the paracol.
+        tex.push_str(&self.get_paracol(&para_columns));
 
-                        *text = temp;
+        // End the document.
+        tex.push_str(Page::END_DOCUMENT);
 
-                        // End the document.
-                        tex.push_str(Page::END_DOCUMENT);
+        // Create a PDF.
+        match latex_to_pdf(&tex) {
+            // Extract the text of the PDF.
+            Ok(pdf) => match extract_text_from_mem(&pdf) {
+                Ok(text) => Ok(Some(text.split('\n').count())),
+                Err(error) => Err(Error::Extract(error)),
+            },
+            Err(error) => {
+                // Dump the bad tex.
+                #[cfg(test)]
+                std::fs::write("test_text/bad.tex", tex).unwrap();
 
-                        // Create a PDF.
-                        match latex_to_pdf(&tex) {
-                            // Extract the text of the PDF.
-                            Ok(pdf) => match extract_text_from_mem(&pdf) {
-                                Ok(text) => Ok(Some(text.split('\n').count())),
-                                Err(error) => Err(Error::Extract(error)),
-                            },
-                            Err(error) => {
-                                // Dump the bad tex.
-                                #[cfg(test)]
-                                std::fs::write("test_text/bad.tex", tex).unwrap();
-
-                                Err(Error::Pdf(error))
-                            }
-                        }
-                    }
-                    MaybeSpanColumn::Empty => Ok(None),
-                }
+                Err(Error::Pdf(error))
             }
-            Column::None => Ok(None),
         }
     }
 }
