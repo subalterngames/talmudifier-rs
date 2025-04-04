@@ -31,6 +31,7 @@ mod error;
 mod font;
 mod page;
 pub mod prelude;
+mod span;
 mod typesetter;
 mod word;
 

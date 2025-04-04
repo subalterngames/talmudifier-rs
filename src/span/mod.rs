@@ -6,7 +6,10 @@ use word::Word;
 
 use crate::{error::Error, font::cosmic_font::CosmicFont};
 
+pub use span_column::SpanColumn;
+
 mod position;
+mod span_column;
 mod style;
 mod word;
 
@@ -199,7 +202,7 @@ impl Span {
 mod tests {
     use super::Span;
 
-    use super::{Position, Style, Word};
+    use super::{Position, Style};
 
     #[test]
     fn test_words() {

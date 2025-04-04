@@ -13,5 +13,5 @@ pub mod tex_fonts;
 
 pub struct Font {
     pub cosmic: CosmicFont,
-    pub tex: TexFont
+    pub tex: TexFont,
 }
