@@ -28,15 +28,16 @@ impl TexColumn {
         table.push('\n');
         table.push_str(&tex!("begin", "paracol", columns.len()));
         table.push('\n');
+        let mut cells = vec![];
         // Add the text.
         for column in columns.iter() {
             // Add some text.
-            if let Some(text) = &column.text {
-                table.push_str(text);
-            }
-            // Switch columns.
-            table.push_str("\\switchcolumn ");
+            cells.push(match &column.text {
+                Some(text) => text,
+                None => "",
+            });
         }
+        table.push_str(&cells.join("\\switchcolumn "));
         // End the table.
         table.push_str("\n\n\\end{paracol}");
         table

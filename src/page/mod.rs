@@ -21,7 +21,10 @@ pub struct Page {
     pub tables: Tables,
     #[serde(skip, default = "get_default_table_width")]
     pub table_width: f32,
-    #[serde(skip, default = "get_default_preamble")]
+    #[cfg_attr(
+        feature = "default-fonts",
+        serde(skip, default = "get_default_preamble")
+    )]
     pub preamble: String,
 }
 
@@ -40,7 +43,7 @@ impl Page {
     ) -> String {
         let mut preamble = format!("\\documentclass[11pt, {}, openany]{{scrbook}}", paper_size);
         preamble += &format!(
-            "\n\\usepackage[{}, {}]{{geometry}}\n\n",
+            "\n\\usepackage[{}, {}]{{geometry}}\n\\pagenumbering{{gobble}}\n\n",
             paper_size, margins
         );
         preamble += &["marginnote", "sectsty", "ragged2e", "paracol", "fontspec"]
@@ -97,6 +100,7 @@ impl Default for Page {
     }
 }
 
+#[cfg(feature = "default-fonts")]
 fn get_default_preamble() -> String {
     Page::get_preamble(
         &TexFonts::default().unwrap(),

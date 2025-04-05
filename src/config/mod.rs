@@ -6,12 +6,12 @@ pub use fonts::Fonts;
 use serde::{Deserialize, Serialize};
 use serde_json::from_slice;
 pub use source_text::SourceText;
-use tectonic::latex_to_pdf;
 
 use crate::{
     column::{input_column::InputColumn, tex_column::TexColumn, Column},
     error::Error,
     font::{cosmic_font::CosmicFont, tex_fonts::TexFonts},
+    get_pdf,
     page::Page,
     word::Word,
 };
@@ -25,8 +25,8 @@ mod source_text;
 type CosmicFonts = Result<(CosmicFont, CosmicFont, CosmicFont), Error>;
 
 /// Set config data for the page and then generate it.
-#[derive(Deserialize, Serialize)]
 #[cfg_attr(feature = "default-fonts", derive(Default))]
+#[derive(Deserialize, Serialize)]
 pub struct Config {
     /// The size of the page, margins, etc.
     page: Page,
@@ -40,6 +40,8 @@ pub struct Config {
     source_text: SourceText,
     /// If not None, the title will be at the top of the page.
     title: Option<String>,
+    /// If true, logging is enabled.
+    log: bool,
 }
 
 impl Config {
@@ -54,30 +56,41 @@ impl Config {
         }
     }
 
+    /// Set the page layout parameters.
     pub fn page(mut self, page: Page) -> Self {
         self.page = page;
         self
     }
 
+    /// Set the fonts.
     #[cfg(feature = "default-fonts")]
     pub fn fonts(mut self, fonts: Fonts) -> Self {
         self.fonts = Some(fonts);
         self
     }
 
+    /// Set the fonts.
     #[cfg(not(feature = "default-fonts"))]
     pub fn fonts(mut self, fonts: Fonts) -> Self {
         self.fonts = fonts;
         self
     }
 
+    /// Set the source Markdown text.
     pub fn source_text(mut self, source_text: SourceText) -> Self {
         self.source_text = source_text;
         self
     }
 
+    /// Set the title text. By default, there is no title.
     pub fn title(mut self, title: String) -> Self {
         self.title = Some(title);
+        self
+    }
+
+    /// Enable logging.
+    pub fn log(mut self) -> Self {
+        self.log = true;
         self
     }
 
@@ -119,6 +132,7 @@ impl Config {
             &mut InputColumn::Text(&mut right),
             4,
             &self.page,
+            self.log,
         )?];
 
         // Skip.
@@ -128,9 +142,10 @@ impl Config {
             &mut InputColumn::Text(&mut right),
             1,
             &self.page,
+            self.log,
         )?);
 
-        while !left.done() && !center.done() && !right.done() {
+        while !left.done() || !center.done() || !right.done() {
             // Get the columns that are and are not done.
             let left_optional = Self::get_optional_column(&left);
             let center_optional = Self::get_optional_column(&center);
@@ -142,6 +157,7 @@ impl Config {
                 center_optional,
                 right_optional,
                 &self.page,
+                self.log,
             )?;
 
             // Get all available columns.
@@ -156,6 +172,7 @@ impl Config {
                 &mut right,
                 num_lines,
                 &self.page,
+                self.log,
             )?);
 
             // Skip to the next table.
@@ -163,14 +180,18 @@ impl Config {
             center = Self::get_input_column_skip(center);
             right = Self::get_input_column_skip(right);
 
-            // Create the table.
-            tables.push(Column::get_tex_table(
-                &mut left,
-                &mut center,
-                &mut right,
-                1,
-                &self.page,
-            )?);
+            // Check if we ran out of words.
+            if !left.done() || !center.done() || !right.done() {
+                // Create the table.
+                tables.push(Column::get_tex_table(
+                    &mut left,
+                    &mut center,
+                    &mut right,
+                    1,
+                    &self.page,
+                    self.log,
+                )?);
+            }
         }
 
         // Build the document.
@@ -186,10 +207,8 @@ impl Config {
         tex.push_str(Page::END_DOCUMENT);
 
         // Generate the final PDF.
-        match latex_to_pdf(&tex) {
-            Ok(pdf) => Ok(Daf { tex, pdf }),
-            Err(error) => Err(Error::Pdf(error)),
-        }
+        let (pdf, _) = get_pdf(&tex, self.log, false)?;
+        Ok(Daf { tex, pdf })
     }
 
     fn get_cosmic_fonts_internal(fonts: &Fonts) -> CosmicFonts {
@@ -207,6 +226,7 @@ impl Config {
             left,
             center,
             right,
+            #[cfg(feature = "default-fonts")]
             _default_tex_fonts: None,
         }
     }

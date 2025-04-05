@@ -1,13 +1,12 @@
-use std::cmp::Ordering;
+use std::fmt::Display;
 
 use crate::{error::Error, font::cosmic_font::CosmicFont, page::Page, word::Word};
 
+#[cfg(target_os = "linux")]
+use crate::get_pdf;
 use cosmic_text::{Buffer, Shaping};
 use input_column::InputColumn;
 #[cfg(target_os = "linux")]
-use pdf_extract::extract_text_from_mem;
-#[cfg(target_os = "linux")]
-use tectonic::latex_to_pdf;
 use tex_column::TexColumn;
 use width::Width;
 
@@ -52,6 +51,7 @@ impl Column {
         right: &mut InputColumn<'t>,
         num_lines: usize,
         page: &Page,
+        log: bool,
     ) -> Result<Vec<TexColumn>, Error> {
         // Get the width of each column and convert them into empty TexColumns.
         let mut tex_columns =
@@ -83,7 +83,8 @@ impl Column {
                 // This is a column with text.
                 InputColumn::Text(input_column) => {
                     // Fill the column with text.
-                    *tex_column = input_column.get_tex_column(num_lines, tex_column.width, page)?;
+                    *tex_column =
+                        input_column.get_tex_column(num_lines, tex_column.width, page, log)?;
                     Ok(())
                 }
             })?;
@@ -98,10 +99,11 @@ impl Column {
         num_lines: usize,
         width: Width,
         page: &Page,
+        log: bool,
     ) -> Result<TexColumn, Error> {
         // Guess the end index with cosmic.
-        match self.get_cosmic_index(num_lines, width, page)? {
-            Some(cosmic_index) => self.get_tex_words(width, cosmic_index, num_lines, page),
+        match self.get_cosmic_index(num_lines, width, page) {
+            Some(cosmic_index) => self.get_tex_words(width, cosmic_index, num_lines, page, log),
             None => Err(Error::NoMoreWords),
         }
     }
@@ -112,22 +114,21 @@ impl Column {
 
     /// Given a target number of lines, typeset using Cosmic.
     /// Returns the end index of the words that fit in the column.
-    fn get_cosmic_index(
-        &mut self,
-        num_lines: usize,
-        width: Width,
-        page: &Page,
-    ) -> Result<Option<usize>, Error> {
+    fn get_cosmic_index(&mut self, num_lines: usize, width: Width, page: &Page) -> Option<usize> {
         if num_lines > 0 {
             let num_words = self.words[self.start..].len();
             for i in 0..num_words {
-                let num = self.get_num_lines_cosmic(i, width, page);
+                let num = self.get_num_lines_cosmic(self.start + i, width, page);
                 if num > num_lines {
-                    return Ok(if i == 0 { None } else { Some(i - 1) });
+                    return if i == 0 {
+                        None
+                    } else {
+                        Some(self.start + i - 1)
+                    };
                 }
             }
         }
-        Ok(None)
+        Some(self.words.len())
     }
 
     /// Get the number of lines in a column with Cosmic Text.
@@ -137,7 +138,8 @@ impl Column {
     /// - `page` is used because we need width of the table.
     fn get_num_lines_cosmic(&mut self, end: usize, width: Width, page: &Page) -> usize {
         // Get the width of the column in pts.
-        let column_width = page.table_width * width.column_ratio();
+        let column_width =
+            page.table_width * width.column_ratio() - page.tables.column_separation.get_pts() * 2.;
         // Prepare the Cosmic buffer.
         let mut buffer = Buffer::new(&mut self.cosmic_font.font_system, self.cosmic_font.metrics);
         // Set the width.
@@ -162,11 +164,13 @@ impl Column {
     /// - `end` is an optional end index for `self.words`. If `None`, the words are from `self.start..self.words.len()`.
     /// - `width` is the width of the column, as calculated elsewhere.
     /// - `page` is used because we need the preamble.
+    /// - `log` is used to toggle logging.
     fn get_num_lines_tex(
         &self,
         end: Option<usize>,
         width: Width,
         page: &Page,
+        log: bool,
     ) -> Result<usize, Error> {
         let end = match end {
             Some(end) => end,
@@ -179,29 +183,33 @@ impl Column {
         } else {
             // Get the preamble.
             let mut tex = page.preamble.clone();
-            tex.push_str(&TexColumn::get_table(&[TexColumn {
+            // Add this column.
+            let mut text_columns = vec![TexColumn {
                 text: Some(column),
                 width,
-            }]));
+            }];
+            // Add another column to set the width properly.
+            let w = match width {
+                Width::Half => Some(Width::Half),
+                Width::Third => Some(Width::TwoThirds),
+                Width::TwoThirds => Some(Width::Third),
+                Width::One => None,
+            };
+            if let Some(w) = w {
+                text_columns.push(TexColumn {
+                    text: None,
+                    width: w,
+                });
+            }
+            tex.push_str(&TexColumn::get_table(&text_columns));
 
             // End the document.
             tex.push_str(Page::END_DOCUMENT);
 
             // Create a PDF.
             #[cfg(target_os = "linux")]
-            match latex_to_pdf(&tex) {
-                // Extract the text of the PDF.
-                Ok(pdf) => match extract_text_from_mem(&pdf) {
-                    Ok(text) => Ok(text.split('\n').count()),
-                    Err(error) => Err(Error::Extract(error)),
-                },
-                Err(error) => {
-                    // Dump the bad tex.
-                    #[cfg(test)]
-                    std::fs::write("test_text/bad.tex", tex).unwrap();
-
-                    Err(Error::Pdf(error))
-                }
+            {
+                Ok(get_pdf(&tex, log, true)?.1.unwrap())
             }
 
             #[cfg(target_os = "windows")]
@@ -217,38 +225,42 @@ impl Column {
         cosmic_index: usize,
         num_lines: usize,
         page: &Page,
+        log: bool,
     ) -> Result<TexColumn, Error> {
         if self.start == self.words.len() {
             Ok(TexColumn { text: None, width })
         } else {
             let mut end = cosmic_index;
 
-            // Decrement until we have enough lines.
-            while end > 0 && self.get_num_lines_tex(Some(end), width, page)? > num_lines {
-                end -= 1;
-            }
+            let mut current_num_lines = self.get_num_lines_tex(Some(end), width, page, log)?;
 
-            // Increment until we go over.
-            while end < self.words.len()
-                && self.get_num_lines_tex(Some(end), width, page)? <= num_lines
-            {
-                end += 1;
+            if current_num_lines > num_lines {
+                // Decrement until we have enough lines.
+                while end > 0 && current_num_lines > num_lines {
+                    end -= 1;
+                    current_num_lines = self.get_num_lines_tex(Some(end), width, page, log)?;
+                    if current_num_lines < num_lines {
+                        end += 1
+                    }
+                }
+            } else {
+                // Increment until we go over.
+                while end < self.words.len() && current_num_lines <= num_lines {
+                    end += 1;
+                    current_num_lines = self.get_num_lines_tex(Some(end), width, page, log)?;
+                    if current_num_lines > num_lines {
+                        end -= 1;
+                    }
+                }
             }
 
             Ok(if end == 0 {
                 TexColumn { text: None, width }
             } else {
-                let start = self.start;
-                self.start = match end.cmp(&self.words.len()) {
-                    // If we overshot the number of words, use words.len()
-                    Ordering::Greater => self.words.len(),
-                    // Use the end index
-                    Ordering::Equal => end,
-                    // This will happen if we needed to increment.
-                    Ordering::Less => end - 1,
-                };
+                end = end.min(self.words.len());
                 // Convert words to a TeX string.
-                let text = Word::to_tex(&self.words[start..self.start], &self.tex_font);
+                let text = Word::to_tex(&self.words[self.start..end], &self.tex_font);
+                self.start = end;
                 TexColumn {
                     text: Some(text),
                     width,
@@ -281,6 +293,7 @@ impl Column {
         center: Option<&Self>,
         right: Option<&Self>,
         page: &Page,
+        log: bool,
     ) -> Result<usize, Error> {
         if left.is_none() && center.is_none() && right.is_none() {
             return Err(Error::MinNumLines("All columns are None".to_string()));
@@ -309,7 +322,7 @@ impl Column {
             )
             .try_for_each(|(column, (has_words, (width, num_lines)))| {
                 if has_words {
-                    match column.get_num_lines_tex(None, width, page) {
+                    match column.get_num_lines_tex(None, width, page, log) {
                         Ok(n) => {
                             *num_lines = n;
                             Ok(())
@@ -324,6 +337,18 @@ impl Column {
             Some(min) => Ok(*min),
             None => Err(Error::MinNumLines("Called min() but got None".to_string())),
         }
+    }
+}
+
+impl Display for Column {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}: {}/{} words used",
+            &self.tex_font,
+            self.start,
+            self.words.len()
+        )
     }
 }
 
@@ -349,17 +374,11 @@ mod tests {
         let mut column = Column::new(words, cosmic_font, &tex_fonts.left.command);
         let page = Page::default();
 
-        let cosmic_index = column
-            .get_cosmic_index(4, Width::Half, &page)
-            .unwrap()
-            .unwrap();
-        assert_eq!(cosmic_index, 22);
+        let cosmic_index = column.get_cosmic_index(4, Width::Half, &page).unwrap();
+        assert_eq!(cosmic_index, 15);
 
-        let cosmic_index = column
-            .get_cosmic_index(4, Width::One, &page)
-            .unwrap()
-            .unwrap();
-        assert_eq!(cosmic_index, 46);
+        let cosmic_index = column.get_cosmic_index(4, Width::One, &page).unwrap();
+        assert_eq!(cosmic_index, 42);
     }
 
     #[test]
@@ -385,9 +404,9 @@ mod tests {
         let tex_fonts = TexFonts::default().unwrap();
         let left = get_column(&left, &tex_fonts.left.command, CosmicFont::default_left);
         let num_lines = left
-            .get_num_lines_tex(None, Width::Half, &Page::default())
+            .get_num_lines_tex(None, Width::Half, &Page::default(), false)
             .unwrap();
-        assert_eq!(num_lines, 10);
+        assert_eq!(num_lines, 25);
     }
 
     #[test]
@@ -398,17 +417,22 @@ mod tests {
         let mut left = get_column(&left, &tex_fonts.left.command, CosmicFont::default_left);
         let end = left.words.len();
         let num_lines = left.get_num_lines_cosmic(end, Width::Half, &Page::default());
-        assert_eq!(num_lines, 11);
+        assert_eq!(num_lines, 27);
     }
 
     #[test]
     #[cfg(target_os = "linux")]
     fn test_min_num_lines() {
         let (left, center, right, _) = get_columns();
-        let min_num_lines =
-            Column::get_min_num_lines(Some(&left), Some(&center), Some(&right), &Page::default())
-                .unwrap();
-        assert_eq!(min_num_lines, 8);
+        let min_num_lines = Column::get_min_num_lines(
+            Some(&left),
+            Some(&center),
+            Some(&right),
+            &Page::default(),
+            false,
+        )
+        .unwrap();
+        assert_eq!(min_num_lines, 14);
     }
 
     fn get_columns() -> (Column, Column, Column, TexFonts) {

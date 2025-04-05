@@ -1,14 +1,18 @@
 use std::io;
 
-use super::{default_tex_fonts::DefaultTexFonts, tex_font::TexFont};
+#[cfg(feature = "default-fonts")]
+use super::default_tex_fonts::DefaultTexFonts;
+use super::tex_font::TexFont;
 
 pub struct TexFonts {
     pub left: TexFont,
     pub center: TexFont,
     pub right: TexFont,
+    #[cfg(feature = "default-fonts")]
     pub(crate) _default_tex_fonts: Option<DefaultTexFonts>,
 }
 
+#[cfg(feature = "default-fonts")]
 impl From<DefaultTexFonts> for TexFonts {
     fn from(value: DefaultTexFonts) -> Self {
         let left = value.tex_font("left");

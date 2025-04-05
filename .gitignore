@@ -1,2 +1,4 @@
 /target
 talmudifier_fonts/
+logs/
+*.pdf

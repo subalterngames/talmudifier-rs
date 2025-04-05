@@ -1,5 +1,7 @@
 use cosmic_text::AttrsOwned;
+use lazy_static::lazy_static;
 use markdown::{mdast::Node, to_mdast, Constructs, ParseOptions};
+use regex::Regex;
 
 use crate::{error::Error, font::cosmic_font::CosmicFont};
 
@@ -9,6 +11,12 @@ use style::Style;
 mod latex_command;
 mod position;
 mod style;
+
+lazy_static! {
+    static ref RE_ENDS_WITH_COMMAND: Regex = Regex::new(r#"\\(\w+)$"#).unwrap();
+    static ref RE_PUNCTUATION: Regex =
+        Regex::new(r#"^(!|\(|\)|-|=|\+|\[|\{|\]|\}|;|:|'|"|,|\.)"#).unwrap();
+}
 
 /// A word and its style.
 pub struct Word {
@@ -123,8 +131,16 @@ impl Word {
             }
             // Add the suffixes.
             suffixes.iter().for_each(|s| text.push_str(s));
-            // Add a space.
-            text.push(' ');
+
+            // Add a space if:
+            // 1. The last word isn't a command ending with {, for example: \fontcommand
+            // 2. The word isn't punctuation.
+            if RE_ENDS_WITH_COMMAND.captures(&text).is_some()
+                || RE_PUNCTUATION.captures(&word.word).is_none()
+            {
+                text.push(' ');
+            }
+
             // Add the prefixes.
             prefixes.iter().for_each(|p| text.push_str(p));
             // Add the word.
@@ -280,12 +296,12 @@ mod tests {
 
     #[test]
     fn test_marginnote() {
-        let md = "A `footnote *here* and` *there*";
+        let md = "A `footnote *here*, and` *there*";
         let words = Word::from_md(md).unwrap();
         let tex = Word::to_tex(&words, "\\font");
         assert_eq!(
             tex,
-            "\\font A \\\\marginnote{\\\\noindent\\\\justifying\\\\tiny footnote \\textit{here} and} \\textit{there}"
+            "\\font A \\\\marginnote{\\\\noindent\\\\justifying\\\\tiny footnote \\textit{here}, and} \\textit{there}"
         );
     }
 }
