@@ -1,13 +1,17 @@
 use std::convert::Infallible;
 
+use cosmic_text::{Buffer, Shaping};
 use pdf_extract::extract_text_from_mem;
 use tectonic::latex_to_pdf;
 
 use crate::{error::Error, get_pdf, page::Page, tex};
 
 use super::{
-    column::Column, maybe_span_column::MaybeSpanColumn, para_column::ParaColumn,
-    position::Position, OptionalColumn,
+    column::Column,
+    maybe_span_column::MaybeSpanColumn,
+    para_column::{self, ParaColumn},
+    position::{self, Position},
+    OptionalColumn,
 };
 
 macro_rules! column_ratio {
@@ -131,6 +135,29 @@ impl<'t> Table<'t> {
             Some(min) => Ok(min),
             None => Err(Error::NoColumns),
         }
+    }
+
+    /// Given 1-3 columns and a target `num_lines`, create a TeX table.
+    ///
+    /// `left`, `center`, and `right` are the columns. At least one of them must be `Empty` or `Text`.
+    pub fn get_tex_table(&mut self, num_lines: usize) -> Result<String, Error> {
+        let mut para_columns: [ParaColumn; 3] = Default::default();
+        for (position, para_column) in [Position::Left, Position::Center, Position::Right]
+            .into_iter()
+            .zip(para_columns.iter_mut())
+        {
+            *para_column = match self.get_cosmic_index(position, num_lines) {
+                Some(cosmic_index) => {
+                    match self.get_tex_words(position, cosmic_index, num_lines)? {
+                        Some(text) => ParaColumn::Text(text),
+                        None => ParaColumn::Empty,
+                    }
+                }
+                None => ParaColumn::None,
+            };
+        }
+
+        Ok(self.get_paracol(&para_columns))
     }
 
     /// Convert TeX strings per column into a TeX table.
@@ -282,11 +309,7 @@ impl<'t> Table<'t> {
     }
 
     fn get_column_tex(&mut self, position: Position, end: usize) -> Result<String, Infallible> {
-        let column = match position {
-            Position::Left => &mut self.left,
-            Position::Center => &mut self.center,
-            Position::Right => &mut self.right,
-        };
+        let column = self.get_mut_column(position);
 
         match column {
             Column::Column { column, width: _ } => {
@@ -301,6 +324,69 @@ impl<'t> Table<'t> {
                 }
             }
             Column::None => unreachable!(),
+        }
+    }
+
+    fn get_mut_column(&mut self, position: Position) -> &mut Column<'t> {
+        match position {
+            Position::Left => &mut self.left,
+            Position::Center => &mut self.center,
+            Position::Right => &mut self.right,
+        }
+    }
+
+    fn get_cosmic_index(&mut self, position: Position, num_lines: usize) -> Option<usize> {
+        let page_width = self.page.table_width;
+        match self.get_mut_column(position) {
+            Column::Column { column, width } => {
+                match column {
+                    MaybeSpanColumn::Span(column) => {
+                        let len = column.span.0.len();
+                        if column.start >= len {
+                            Some(0)
+                        } else {
+                            // Iterate through the slice.
+                            for end in column.start..len - column.start {
+                                // Get the width of the column in pts.
+                                let column_width = page_width * width.column_ratio();
+                                // Prepare the Cosmic buffer.
+                                let mut buffer = Buffer::new(
+                                    &mut column.cosmic_font.font_system,
+                                    column.cosmic_font.metrics,
+                                );
+
+                                // Set the width.
+                                buffer.set_size(
+                                    &mut column.cosmic_font.font_system,
+                                    Some(column_width),
+                                    None,
+                                );
+
+                                // Get the Cosmic spans.
+                                let spans = column.to_cosmic(end);
+                                // Set the text.
+                                buffer.set_rich_text(
+                                    &mut column.cosmic_font.font_system,
+                                    spans.iter().map(|(s, a)| (s.as_str(), a.as_attrs())),
+                                    column.cosmic_font.regular.as_attrs(),
+                                    Shaping::Advanced,
+                                );
+                                // Create lines.
+                                buffer
+                                    .shape_until_scroll(&mut column.cosmic_font.font_system, true);
+                                // Return the number of lines.
+                                let num = buffer.layout_runs().count();
+                                if num > num_lines {
+                                    return if end == 0 { None } else { Some(end - 1) };
+                                }
+                            }
+                            None
+                        }
+                    }
+                    MaybeSpanColumn::Empty => Some(0),
+                }
+            }
+            Column::None => None,
         }
     }
 }

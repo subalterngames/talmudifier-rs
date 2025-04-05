@@ -1,8 +1,10 @@
 use super::{column::Column, maybe_span_column::MaybeSpanColumn};
 
+#[derive(Default, Clone)]
 pub enum ParaColumn {
     Text(String),
     Empty,
+    #[default]
     None,
 }
 
