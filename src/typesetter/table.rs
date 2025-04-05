@@ -103,30 +103,30 @@ impl<'t> Table<'t> {
         }
     }
 
-        /// Given 1-3 columns:
+    /// Given 1-3 columns:
     ///
     /// 1. Get the width of each column.
     ///    This is derived from the position of each column e.g. `left` and `center` is always (one third, two thirds).
     /// 2. Get the number of lines per column, using all words that have yet to be typeset.
     /// 3. Return the least number of lines. This will be used as a target for all columns to reach.
-    pub fn get_min_num_lines(&self
-    ) -> Result<usize, Error> {
+    pub fn get_min_num_lines(&self) -> Result<usize, Error> {
         // Get the number of lines per position.
         let mut num_lines = vec![];
-        [Position::Left, Position::Center, Position::Right].into_iter().map(|position| self.get_num_lines_tex(position, None)).try_for_each(|num| {
-            match num {
+        [Position::Left, Position::Center, Position::Right]
+            .into_iter()
+            .map(|position| self.get_num_lines_tex(position, None))
+            .try_for_each(|num| match num {
                 Ok(num) => {
                     if let Some(num) = num {
                         num_lines.push(num);
                     }
                     Ok(())
                 }
-                Err(error) => return Err(error)
-            }
-        })?;
+                Err(error) => return Err(error),
+            })?;
         match num_lines.into_iter().min() {
             Some(min) => Ok(min),
-            None => Err(Error::NoColumns)
+            None => Err(Error::NoColumns),
         }
     }
 

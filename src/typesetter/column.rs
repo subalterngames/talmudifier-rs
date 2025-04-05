@@ -1,8 +1,8 @@
 use cosmic_text::{Buffer, Shaping};
 
-use crate::{column::width::Width, page::Page};
+use crate::page::Page;
 
-use super::maybe_span_column::MaybeSpanColumn;
+use super::{maybe_span_column::MaybeSpanColumn, width::Width};
 
 /// A column, possibly with text, and a width.
 pub enum Column<'t> {

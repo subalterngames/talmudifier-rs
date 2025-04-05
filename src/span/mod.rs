@@ -149,34 +149,4 @@ mod tests {
         assert_eq!(span.0[2].position, Position::Body);
         assert_eq!(span.0[2].style, Style::Italic);
     }
-
-    #[test]
-    fn test_textit() {
-        let md = "*This is italic* and this is regular.";
-        let span = Span::from_md(md).unwrap();
-        let tex = span.to_tex("\\font");
-        assert_eq!(tex, "\\font \\textit{This is italic} and this is regular.")
-    }
-
-    #[test]
-    fn test_bold_italic() {
-        let md = "**bold** *italic* ***bold and italic*** **bold**";
-        let span = Span::from_md(md).unwrap();
-        let tex = span.to_tex("\\font");
-        assert_eq!(
-            tex,
-            "\\font \\textbf{bold} \\textit{italic \\textbf{bold and italic}} \\textbf{bold}"
-        )
-    }
-
-    #[test]
-    fn test_marginnote() {
-        let md = "A `footnote *here* and` *there*";
-        let span = Span::from_md(md).unwrap();
-        let tex = span.to_tex("\\font");
-        assert_eq!(
-            tex,
-            "\\font A \\\\marginnote{\\\\noindent\\\\justifying\\\\tiny footnote \\textit{here} and} \\textit{there}"
-        );
-    }
 }

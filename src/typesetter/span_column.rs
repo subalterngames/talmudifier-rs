@@ -136,3 +136,38 @@ impl SpanColumn {
         text
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::typesetter::span_column::SpanColumn;
+
+    #[test]
+    fn test_textit() {
+        let md = "*This is italic* and this is regular.";
+        let column = SpanColumn::Span(Span::from_md(md).unwrap());
+        let tex = span.to_tex("\\font");
+        assert_eq!(tex, "\\font \\textit{This is italic} and this is regular.")
+    }
+
+    #[test]
+    fn test_bold_italic() {
+        let md = "**bold** *italic* ***bold and italic*** **bold**";
+        let column = SpanColumn::Span(Span::from_md(md).unwrap());
+        let tex = column.to_tex("\\font");
+        assert_eq!(
+            tex,
+            "\\font \\textbf{bold} \\textit{italic \\textbf{bold and italic}} \\textbf{bold}"
+        )
+    }
+
+    #[test]
+    fn test_marginnote() {
+        let md = "A `footnote *here* and` *there*";
+        let column = SpanColumn::Span(Span::from_md(md).unwrap());
+        let tex = column.to_tex("\\font");
+        assert_eq!(
+        tex,
+        "\\font A \\\\marginnote{\\\\noindent\\\\justifying\\\\tiny footnote \\textit{here} and} \\textit{there}"
+    );
+    }
+}

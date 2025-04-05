@@ -6,5 +6,6 @@ mod para_column;
 mod position;
 mod span_column;
 mod table;
+mod width;
 
 type OptionalColumn<'t> = Option<MaybeSpanColumn<'t>>;
