@@ -399,3 +399,99 @@ impl<'t> Table<'t> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        font::{cosmic_font::CosmicFont, tex_fonts::TexFonts},
+        page::Page,
+        span::Span,
+        table::{
+            maybe_span_column::MaybeSpanColumn, position::Position, span_column::SpanColumn, Table,
+        },
+        tests::get_test_md,
+    };
+
+    #[test]
+    fn test_cosmic_index() {
+        let lorem = include_str!("../../test_text/lorem.txt");
+        let span = Span::from_md(lorem).unwrap();
+        assert_eq!(span.0.len(), 402);
+        let cosmic_font = CosmicFont::default_left();
+        let tex_fonts = TexFonts::default().unwrap();
+        let mut column = SpanColumn::new(span, cosmic_font, &tex_fonts.left.command);
+        let page = Page::default();
+        let mut table = Table::new(
+            Some(MaybeSpanColumn::Span(&mut column)),
+            None,
+            Some(MaybeSpanColumn::Empty),
+            &page,
+            false,
+        );
+
+        let cosmic_index = table.get_cosmic_index(Position::Left, 4).unwrap();
+        assert_eq!(cosmic_index, 15);
+
+        table = Table::new(
+            Some(MaybeSpanColumn::Span(&mut column)),
+            None,
+            None,
+            &page,
+            false,
+        );
+        let cosmic_index = table.get_cosmic_index(Position::Left, 4).unwrap();
+        assert_eq!(cosmic_index, 42);
+    }
+
+    #[test]
+    fn test_num_lines_tex() {
+        let (left, _, _) = get_test_md();
+        let span = Span::from_md(&left).unwrap();
+        let cosmic_font = CosmicFont::default_left();
+        let tex_fonts = TexFonts::default().unwrap();
+        let mut column = SpanColumn::new(span, cosmic_font, &tex_fonts.left.command);
+        let page = Page::default();
+        let table = Table::new(
+            Some(MaybeSpanColumn::Span(&mut column)),
+            None,
+            Some(MaybeSpanColumn::Empty),
+            &page,
+            false,
+        );
+
+        let num_lines = table.get_num_lines_tex(Position::Left, None).unwrap();
+        assert_eq!(num_lines, 25);
+    }
+
+    #[test]
+    fn test_min_num_lines() {
+        let (left, center, right) = get_test_md();
+        let left = Span::from_md(&left).unwrap();
+        let center = Span::from_md(&center).unwrap();
+        let right = Span::from_md(&right).unwrap();
+
+        let tex_fonts = TexFonts::default().unwrap();
+
+        let mut left_span =
+            SpanColumn::new(left, CosmicFont::default_left(), &tex_fonts.left.command);
+        let mut center_span = SpanColumn::new(
+            center,
+            CosmicFont::default_center(),
+            &tex_fonts.center.command,
+        );
+        let mut right_span =
+            SpanColumn::new(right, CosmicFont::default_right(), &tex_fonts.right.command);
+
+        let page = Page::default();
+        let table = Table::new(
+            Some(MaybeSpanColumn::Span(&mut left_span)),
+            Some(MaybeSpanColumn::Span(&mut center_span)),
+            Some(MaybeSpanColumn::Span(&mut right_span)),
+            &page,
+            false,
+        );
+
+        let min_num_lines = table.get_min_num_lines().unwrap();
+        assert_eq!(min_num_lines, 14);
+    }
+}
