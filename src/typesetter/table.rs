@@ -1,7 +1,9 @@
+use std::convert::Infallible;
+
 use pdf_extract::extract_text_from_mem;
 use tectonic::latex_to_pdf;
 
-use crate::{error::Error, page::Page, tex};
+use crate::{error::Error, get_pdf, page::Page, tex};
 
 use super::{
     column::Column, maybe_span_column::MaybeSpanColumn, para_column::ParaColumn,
@@ -26,6 +28,7 @@ pub struct Table<'t> {
     right: Column<'t>,
     begin_paracol: String,
     page: &'t Page,
+    log: bool,
 }
 
 impl<'t> Table<'t> {
@@ -34,6 +37,7 @@ impl<'t> Table<'t> {
         center: OptionalColumn<'t>,
         right: OptionalColumn<'t>,
         page: &'t Page,
+        log: bool,
     ) -> Self {
         const THIRD: &str = "0.32";
         const HALF: &str = "0.5";
@@ -100,6 +104,7 @@ impl<'t> Table<'t> {
             right,
             begin_paracol,
             page,
+            log,
         }
     }
 
@@ -117,9 +122,7 @@ impl<'t> Table<'t> {
             .map(|position| self.get_num_lines_tex(position, None))
             .try_for_each(|num| match num {
                 Ok(num) => {
-                    if let Some(num) = num {
-                        num_lines.push(num);
-                    }
+                    num_lines.push(num);
                     Ok(())
                 }
                 Err(error) => return Err(error),
@@ -182,11 +185,7 @@ impl<'t> Table<'t> {
     /// - `end` is an optional end index for `self.words`. If `None`, the words are from `self.start..self.words.len()`.
     /// - `width` is the width of the column, as calculated elsewhere.
     /// - `page` is used because we need the preamble.
-    fn get_num_lines_tex(
-        &self,
-        position: Position,
-        end: Option<usize>,
-    ) -> Result<Option<usize>, Error> {
+    fn get_num_lines_tex(&self, position: Position, end: Option<usize>) -> Result<usize, Error> {
         let para_columns = match position {
             Position::Left => [
                 ParaColumn::new(&self.left, end),
@@ -214,20 +213,94 @@ impl<'t> Table<'t> {
         // End the document.
         tex.push_str(Page::END_DOCUMENT);
 
-        // Create a PDF.
-        match latex_to_pdf(&tex) {
-            // Extract the text of the PDF.
-            Ok(pdf) => match extract_text_from_mem(&pdf) {
-                Ok(text) => Ok(Some(text.split('\n').count())),
-                Err(error) => Err(Error::Extract(error)),
-            },
-            Err(error) => {
-                // Dump the bad tex.
-                #[cfg(test)]
-                std::fs::write("test_text/bad.tex", tex).unwrap();
+        Ok(get_pdf(&tex, self.log, true)?.1.unwrap())
+    }
 
-                Err(Error::Pdf(error))
+    /// Typeset using Tectonic to fill a column with `num_lines` of a TeX string.
+    /// `cosmic_index` is the best-first-guess of the end index.
+    fn get_tex_words(
+        &mut self,
+        position: Position,
+        cosmic_index: usize,
+        num_lines: usize,
+    ) -> Result<Option<String>, Error> {
+        let (num_words, is_done) = self.get_num_words(position)?;
+        if is_done {
+            Ok(None)
+        } else {
+            let mut end = cosmic_index;
+
+            let mut current_num_lines = self.get_num_lines_tex(position, Some(end))?;
+
+            if current_num_lines > num_lines {
+                // Decrement until we have enough lines.
+                while end > 0 && current_num_lines > num_lines {
+                    end -= 1;
+                    current_num_lines = self.get_num_lines_tex(position, Some(end))?;
+                    if current_num_lines < num_lines {
+                        end += 1
+                    }
+                }
+            } else {
+                // Increment until we go over.
+                while end < num_words && current_num_lines <= num_lines {
+                    end += 1;
+                    current_num_lines = self.get_num_lines_tex(position, Some(end))?;
+                    if current_num_lines > num_lines {
+                        end -= 1;
+                    }
+                }
             }
+
+            Ok(if end == 0 {
+                None
+            } else {
+                end = end.min(num_words);
+                // Convert words to a TeX string.
+                Some(self.get_column_tex(position, end).unwrap())
+            })
+        }
+    }
+
+    fn get_num_words(&self, position: Position) -> Result<(usize, bool), Error> {
+        let column = match position {
+            Position::Left => &self.left,
+            Position::Center => &self.center,
+            Position::Right => &self.right,
+        };
+
+        match column {
+            Column::Column { column, width: _ } => match column {
+                MaybeSpanColumn::Span(column) => {
+                    let len = column.span.0.len();
+                    Ok((len, column.start >= len))
+                }
+                MaybeSpanColumn::Empty => Ok((0, true)),
+            },
+            Column::None => Err(Error::NoMoreWords),
+        }
+    }
+
+    fn get_column_tex(&mut self, position: Position, end: usize) -> Result<String, Infallible> {
+        let column = match position {
+            Position::Left => &mut self.left,
+            Position::Center => &mut self.center,
+            Position::Right => &mut self.right,
+        };
+
+        match column {
+            Column::Column { column, width: _ } => {
+                match column {
+                    MaybeSpanColumn::Span(column) => {
+                        let text = column.to_tex(Some(end));
+                        // Increase the next start index.
+                        column.start = end;
+                        Ok(text)
+                    }
+                    MaybeSpanColumn::Empty => Ok(String::default()),
+                }
+            }
+            Column::None => unreachable!(),
         }
     }
 }
