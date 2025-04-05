@@ -1,10 +1,9 @@
-use cosmic_text::AttrsOwned;
 use markdown::{mdast::Node, to_mdast, Constructs, ParseOptions};
 use position::Position;
 use style::Style;
 use word::Word;
 
-use crate::{error::Error, font::cosmic_font::CosmicFont};
+use crate::error::Error;
 
 pub mod position;
 pub mod style;

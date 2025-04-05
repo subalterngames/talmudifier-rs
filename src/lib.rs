@@ -36,15 +36,13 @@ use error::Error;
 use pdf_extract::extract_text_from_mem;
 use tectonic::latex_to_pdf;
 
-mod column;
 mod config;
 mod error;
 mod font;
 mod page;
 pub mod prelude;
 mod span;
-mod typesetter;
-mod word;
+mod table;
 
 /// Short hand for simple TeX commands.
 /// Example input: `tex!("begin", "document")`

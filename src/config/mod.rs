@@ -8,12 +8,12 @@ use serde_json::from_slice;
 pub use source_text::SourceText;
 
 use crate::{
-    column::{input_column::InputColumn, tex_column::TexColumn, Column},
     error::Error,
     font::{cosmic_font::CosmicFont, tex_fonts::TexFonts},
     get_pdf,
     page::Page,
-    word::Word,
+    span::Span,
+    table::{maybe_span_column::MaybeSpanColumn, span_column::SpanColumn, OptionalColumn, Table},
 };
 
 mod daf;
@@ -113,85 +113,79 @@ impl Config {
         let raw_text = self.source_text.get_text()?;
 
         // Get the words.
-        let left_words = Word::from_md(&raw_text.left)?;
-        let center_words = Word::from_md(&raw_text.center)?;
-        let right_words = Word::from_md(&raw_text.right)?;
+        let left_span = Span::from_md(&raw_text.left)?;
+        let center_span = Span::from_md(&raw_text.center)?;
+        let right_span = Span::from_md(&raw_text.right)?;
 
         // Get the cosmic fonts.
         let (left_cosmic, center_cosmic, right_cosmic) = self.get_cosmic_fonts()?;
 
         // Get the columns.
-        let mut left = Column::new(left_words, left_cosmic, &tex_fonts.left.command);
-        let mut center = Column::new(center_words, center_cosmic, &tex_fonts.center.command);
-        let mut right = Column::new(right_words, right_cosmic, &tex_fonts.right.command);
+        let mut left = SpanColumn::new(left_span, left_cosmic, &tex_fonts.left.command);
+        let mut center = SpanColumn::new(center_span, center_cosmic, &tex_fonts.center.command);
+        let mut right = SpanColumn::new(right_span, right_cosmic, &tex_fonts.right.command);
 
         // First four lines.
-        let mut tables = vec![Column::get_tex_table(
-            &mut InputColumn::Text(&mut left),
-            &mut InputColumn::None,
-            &mut InputColumn::Text(&mut right),
-            4,
+        let mut table = Table::new(
+            Some(MaybeSpanColumn::Span(&mut left)),
+            None,
+            Some(MaybeSpanColumn::Span(&mut right)),
             &self.page,
             self.log,
-        )?];
+        );
+        let mut tables = vec![table.get_tex_table(4)?];
 
         // Skip.
-        tables.push(Column::get_tex_table(
-            &mut InputColumn::Text(&mut left),
-            &mut InputColumn::Empty,
-            &mut InputColumn::Text(&mut right),
-            1,
+        table = Table::new(
+            Some(MaybeSpanColumn::Span(&mut left)),
+            Some(MaybeSpanColumn::Empty),
+            Some(MaybeSpanColumn::Span(&mut right)),
             &self.page,
             self.log,
-        )?);
+        );
+        tables.push(table.get_tex_table(1)?);
 
-        while !left.done() || !center.done() || !right.done() {
-            // Get the columns that are and are not done.
-            let left_optional = Self::get_optional_column(&left);
-            let center_optional = Self::get_optional_column(&center);
-            let right_optional = Self::get_optional_column(&right);
+        let mut done = table.done();
+
+        while !done {
+            // Decide which columns to use.
+            let left_column = Self::get_column(&mut left);
+            let center_column = Self::get_column(&mut center);
+            let right_column = Self::get_column(&mut right);
+
+            // Get the columns already done.
+            let was_done = [&left_column, &center_column, &right_column]
+                .iter()
+                .map(|c| c.is_none())
+                .collect::<Vec<bool>>();
+
+            // Create a table.
+            table = Table::new(
+                left_column,
+                center_column,
+                right_column,
+                &self.page,
+                self.log,
+            );
 
             // Get the minimum number of lines.
-            let num_lines = Column::get_min_num_lines(
-                left_optional,
-                center_optional,
-                right_optional,
+            let num_lines = table.get_min_num_lines()?;
+
+            // Generate the table.
+            tables.push(table.get_tex_table(num_lines)?);
+
+            // Skip.
+            table = Table::new(
+                Self::get_skip_column(&mut left, was_done[0]),
+                Self::get_skip_column(&mut center, was_done[1]),
+                Self::get_skip_column(&mut right, was_done[2]),
                 &self.page,
                 self.log,
-            )?;
+            );
+            tables.push(table.get_tex_table(1)?);
 
-            // Get all available columns.
-            let mut left = Self::get_input_column(&mut left);
-            let mut center = Self::get_input_column(&mut center);
-            let mut right = Self::get_input_column(&mut right);
-
-            // Create the table.
-            tables.push(Column::get_tex_table(
-                &mut left,
-                &mut center,
-                &mut right,
-                num_lines,
-                &self.page,
-                self.log,
-            )?);
-
-            // Skip to the next table.
-            left = Self::get_input_column_skip(left);
-            center = Self::get_input_column_skip(center);
-            right = Self::get_input_column_skip(right);
-
-            // Check if we ran out of words.
-            if !left.done() || !center.done() || !right.done() {
-                // Create the table.
-                tables.push(Column::get_tex_table(
-                    &mut left,
-                    &mut center,
-                    &mut right,
-                    1,
-                    &self.page,
-                    self.log,
-                )?);
-            }
+            // Re-check if we're done.
+            done = table.done();
         }
 
         // Build the document.
@@ -201,9 +195,9 @@ impl Config {
             tex.push_str(&crate::tex!("chapter", crate::tex!("daftitle", title)));
             tex.push('\n');
         }
-        for table in tables.iter() {
-            tex.push_str(&TexColumn::get_table(table));
-        }
+        // Add the tables.
+        tex.push_str(&tables.join("\n"));
+        // End the document.
         tex.push_str(Page::END_DOCUMENT);
 
         // Generate the final PDF.
@@ -231,36 +225,23 @@ impl Config {
         }
     }
 
-    fn get_optional_column(column: &Column) -> Option<&Column> {
-        if column.done() {
+    fn get_column(span_column: &mut SpanColumn) -> OptionalColumn<'_> {
+        if span_column.done() {
             None
         } else {
-            Some(column)
+            Some(MaybeSpanColumn::Span(span_column))
         }
     }
 
-    fn get_input_column(column: &mut Column) -> InputColumn<'_> {
-        if column.done() {
-            InputColumn::None
-        } else {
-            InputColumn::Text(column)
-        }
-    }
-
-    fn get_input_column_skip(column: InputColumn<'_>) -> InputColumn<'_> {
-        match column {
-            InputColumn::None => InputColumn::None,
-            InputColumn::Empty => InputColumn::Empty,
-            InputColumn::Text(text) => {
-                // Skip.
-                if text.done() {
-                    InputColumn::Empty
-                }
-                // Include.
-                else {
-                    InputColumn::Text(text)
-                }
+    fn get_skip_column(span_column: &mut SpanColumn, was_none: bool) -> OptionalColumn<'_> {
+        if span_column.done() {
+            if was_none {
+                None
+            } else {
+                Some(MaybeSpanColumn::Empty)
             }
+        } else {
+            Some(MaybeSpanColumn::Span(span_column))
         }
     }
 }

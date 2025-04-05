@@ -28,4 +28,14 @@ impl<'t> Column<'t> {
     column_width!(two_thirds, Width::TwoThirds);
 
     column_width!(one, Width::One);
+
+    pub fn done(&self) -> bool {
+        match self {
+            Self::Column { column, width: _ } => match column {
+                MaybeSpanColumn::Span(column) => column.done(),
+                MaybeSpanColumn::Empty => true,
+            },
+            Self::None => true,
+        }
+    }
 }

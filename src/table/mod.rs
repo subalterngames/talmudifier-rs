@@ -1,18 +1,21 @@
 use std::convert::Infallible;
 
+use column::Column;
 use cosmic_text::{Buffer, Shaping};
-use pdf_extract::extract_text_from_mem;
-use tectonic::latex_to_pdf;
+use maybe_span_column::MaybeSpanColumn;
+use para_column::ParaColumn;
+use position::Position;
 
 use crate::{error::Error, get_pdf, page::Page, tex};
 
-use super::{
-    column::Column,
-    maybe_span_column::MaybeSpanColumn,
-    para_column::{self, ParaColumn},
-    position::{self, Position},
-    OptionalColumn,
-};
+mod column;
+pub(crate) mod maybe_span_column;
+mod para_column;
+mod position;
+pub(crate) mod span_column;
+mod width;
+
+pub type OptionalColumn<'t> = Option<MaybeSpanColumn<'t>>;
 
 macro_rules! column_ratio {
     ($($value:expr),+) => {
@@ -129,7 +132,7 @@ impl<'t> Table<'t> {
                     num_lines.push(num);
                     Ok(())
                 }
-                Err(error) => return Err(error),
+                Err(error) => Err(error),
             })?;
         match num_lines.into_iter().min() {
             Some(min) => Ok(min),
@@ -158,6 +161,12 @@ impl<'t> Table<'t> {
         }
 
         Ok(self.get_paracol(&para_columns))
+    }
+
+    pub fn done(&self) -> bool {
+        [&self.left, &self.center, &self.right]
+            .iter()
+            .all(|c| c.done())
     }
 
     /// Convert TeX strings per column into a TeX table.

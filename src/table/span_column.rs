@@ -1,9 +1,17 @@
 use cosmic_text::AttrsOwned;
+use lazy_static::lazy_static;
+use regex::Regex;
 
 use crate::{
     font::cosmic_font::CosmicFont,
     span::{position::Position, style::Style, Span},
 };
+
+lazy_static! {
+    static ref RE_ENDS_WITH_COMMAND: Regex = Regex::new(r#"\\(\w+)$"#).unwrap();
+    static ref RE_PUNCTUATION: Regex =
+        Regex::new(r#"^(!|\(|\)|-|=|\+|\[|\{|\]|\}|;|:|'|"|,|\.)"#).unwrap();
+}
 
 /// A column of text that can be typeset.
 /// Columns try to fill a target number of lines with words.
@@ -116,8 +124,16 @@ impl SpanColumn {
             }
             // Add the suffixes.
             suffixes.iter().for_each(|s| text.push_str(s));
-            // Add a space.
-            text.push(' ');
+
+            // Add a space if:
+            // 1. The last word isn't a command ending with {, for example: \fontcommand
+            // 2. The word isn't punctuation.
+            if RE_ENDS_WITH_COMMAND.captures(&text).is_some()
+                || RE_PUNCTUATION.captures(&word.word).is_none()
+            {
+                text.push(' ');
+            }
+
             // Add the prefixes.
             prefixes.iter().for_each(|p| text.push_str(p));
             // Add the word.
@@ -135,15 +151,15 @@ impl SpanColumn {
         }
         text
     }
+
+    pub fn done(&self) -> bool {
+        self.start >= self.span.0.len()
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        font::{cosmic_font::CosmicFont, tex_font::TexFont, tex_fonts::TexFonts},
-        span::Span,
-        typesetter::span_column::SpanColumn,
-    };
+    use crate::{font::cosmic_font::CosmicFont, span::Span, table::span_column::SpanColumn};
 
     #[test]
     fn test_textit() {

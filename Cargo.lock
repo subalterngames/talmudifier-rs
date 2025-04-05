@@ -2659,6 +2659,7 @@ dependencies = [
  "chrono",
  "clap",
  "cosmic-text",
+ "lazy_static",
  "markdown",
  "pdf-extract",
  "regex",
