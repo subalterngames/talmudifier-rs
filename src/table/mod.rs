@@ -36,6 +36,7 @@ pub struct Table<'t> {
     begin_paracol: String,
     page: &'t Page,
     log: bool,
+    num_columns: usize
 }
 
 impl<'t> Table<'t> {
@@ -112,6 +113,7 @@ impl<'t> Table<'t> {
             begin_paracol,
             page,
             log,
+            num_columns
         }
     }
 
@@ -345,7 +347,7 @@ impl<'t> Table<'t> {
     }
 
     fn get_cosmic_index(&mut self, position: Position, num_lines: usize) -> Option<usize> {
-        let page_width = self.page.table_width;
+        let page_width = self.page.table_width - (self.num_columns - 1) as f32 * self.page.tables.column_separation.get_pts();
         match self.get_mut_column(position) {
             Column::Column { column, width } => {
                 match column {
