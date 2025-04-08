@@ -282,7 +282,7 @@ impl<'t> Table<'t> {
                 }
             } else {
                 // Increment until we go over.
-                while end < num_words && current_num_lines <= num_lines {
+                while end < num_words - 1 && current_num_lines <= num_lines {
                     end += 1;
                     current_num_lines = self.get_num_lines_tex(position, Some(end))?;
                     if current_num_lines > num_lines {
@@ -361,7 +361,7 @@ impl<'t> Table<'t> {
                             Some(0)
                         } else {
                             // Iterate through the slice.
-                            for end in column.start..len - column.start {
+                            for end in column.start..len {
                                 // Get the width of the column in pts.
                                 let column_width = page_width * width.column_ratio() - separation;
                                 // Prepare the Cosmic buffer.

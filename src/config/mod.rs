@@ -233,9 +233,9 @@ impl Config {
         }
     }
 
-    fn get_skip_column(span_column: &mut SpanColumn, was_none: bool) -> OptionalColumn<'_> {
+    fn get_skip_column(span_column: &mut SpanColumn, was_done: bool) -> OptionalColumn<'_> {
         if span_column.done() {
-            if was_none {
+            if was_done {
                 None
             } else {
                 Some(MaybeSpanColumn::Empty)
