@@ -20,11 +20,12 @@ pub type OptionalColumn<'t> = Option<MaybeSpanColumn<'t>>;
 macro_rules! column_ratio {
     ($($value:expr),+) => {
         {
-            let mut t = "\\columnratio".to_string();
+            let mut ratios = vec![];
             $(
-                t.push_str(&format!("{{{}}}", &$value));
+                ratios.push($value.to_string());
             )+
-            t
+
+            tex!("columnratio", ratios.join(","))
         }
     };
 }
@@ -36,7 +37,7 @@ pub struct Table<'t> {
     begin_paracol: String,
     page: &'t Page,
     log: bool,
-    num_columns: usize
+    num_columns: usize,
 }
 
 impl<'t> Table<'t> {
@@ -113,7 +114,7 @@ impl<'t> Table<'t> {
             begin_paracol,
             page,
             log,
-            num_columns
+            num_columns,
         }
     }
 
@@ -347,7 +348,10 @@ impl<'t> Table<'t> {
     }
 
     fn get_cosmic_index(&mut self, position: Position, num_lines: usize) -> Option<usize> {
-        let page_width = self.page.table_width - (self.num_columns - 1) as f32 * self.page.tables.column_separation.get_pts();
+        let page_width = self.page.table_width;
+        let separation =
+            (self.num_columns - 1) as f32 * self.page.tables.column_separation.get_pts();
+
         match self.get_mut_column(position) {
             Column::Column { column, width } => {
                 match column {
@@ -359,7 +363,7 @@ impl<'t> Table<'t> {
                             // Iterate through the slice.
                             for end in column.start..len - column.start {
                                 // Get the width of the column in pts.
-                                let column_width = page_width * width.column_ratio();
+                                let column_width = page_width * width.column_ratio() - separation;
                                 // Prepare the Cosmic buffer.
                                 let mut buffer = Buffer::new(
                                     &mut column.cosmic_font.font_system,
@@ -432,7 +436,7 @@ mod tests {
         );
 
         let cosmic_index = table.get_cosmic_index(Position::Left, 4).unwrap();
-        assert_eq!(cosmic_index, 15);
+        assert_eq!(cosmic_index, 19);
 
         table = Table::new(
             Some(MaybeSpanColumn::Span(&mut column)),
@@ -442,7 +446,7 @@ mod tests {
             false,
         );
         let cosmic_index = table.get_cosmic_index(Position::Left, 4).unwrap();
-        assert_eq!(cosmic_index, 42);
+        assert_eq!(cosmic_index, 46);
     }
 
     #[test]
@@ -494,6 +498,6 @@ mod tests {
         );
 
         let min_num_lines = table.get_min_num_lines().unwrap();
-        assert_eq!(min_num_lines, 14);
+        assert_eq!(min_num_lines, 10);
     }
 }
