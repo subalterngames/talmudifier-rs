@@ -177,6 +177,7 @@ impl<'t> Table<'t> {
     /// Convert TeX strings per column into a TeX table.
     fn get_paracol(&self, columns: &[ParaColumn; 3]) -> Option<String> {
         const SWITCH: &str = "\\switchcolumn ";
+        const SWITCH_2: &str = "\\switchcolumn[2] ";
         // Get the number of actual columns.
         let num_some = columns
             .iter()
@@ -195,32 +196,66 @@ impl<'t> Table<'t> {
             {
                 None
             } else {
+                // Get the switches.
+                let switches = match (&columns[0], &columns[1], &columns[2]) {
+                    (
+                        ParaColumn::Text(_) | ParaColumn::Empty,
+                        ParaColumn::Text(_),
+                        ParaColumn::Text(_) | ParaColumn::Empty,
+                    ) => [Some(SWITCH), Some(SWITCH), None],
+
+                    (
+                        ParaColumn::Text(_) | ParaColumn::Empty,
+                        ParaColumn::Empty,
+                        ParaColumn::Text(_) | ParaColumn::Empty,
+                    ) => [Some(SWITCH_2), None, None],
+                    
+                    (
+                        ParaColumn::None,
+                        ParaColumn::Text(_) | ParaColumn::Empty,
+                        ParaColumn::Text(_) | ParaColumn::Empty,
+                    ) => [None, Some(SWITCH), None],
+
+                    (
+                        ParaColumn::Text(_) | ParaColumn::Empty,
+                        ParaColumn::Text(_) | ParaColumn::Empty,
+                        ParaColumn::None,
+                    )
+                    | (
+                        ParaColumn::Text(_),
+                        ParaColumn::None,
+                        ParaColumn::Empty | ParaColumn::Text(_),
+                    )
+                    | (ParaColumn::Empty, ParaColumn::None, ParaColumn::Text(_)) => {
+                        [Some(SWITCH), None, None]
+                    }
+
+                    (ParaColumn::Text(_), ParaColumn::None, ParaColumn::None)
+                    | (ParaColumn::None, ParaColumn::Text(_), ParaColumn::None)
+                    | (ParaColumn::None, ParaColumn::None, ParaColumn::Text(_)) => {
+                        [None, None, None]
+                    }
+                    
+                    (
+                        ParaColumn::Empty | ParaColumn::None,
+                        ParaColumn::Empty | ParaColumn::None,
+                        ParaColumn::Empty | ParaColumn::None,
+                    ) => unreachable!(),
+                };
+
                 let mut table = self.begin_paracol.clone();
-                // Switch this many time.
-                let mut num_switches = num_some - 1;
 
                 // Get the columns with text.
                 // Add the text to the table.
                 // Add switch statements between the columns (but not at the end).
-                for para_column in columns.iter() {
-                    match para_column {
-                        ParaColumn::Text(text) => {
-                            // Add the text.
-                            table.push_str(text);
-                            // Switch columns.
-                            if num_switches > 0 {
-                                table.push_str(SWITCH);
-                                num_switches -= 1;
-                            }
-                        }
-                        ParaColumn::Empty => {
-                            // Switch columns.
-                            if num_switches > 0 {
-                                table.push_str(SWITCH);
-                                num_switches -= 1;
-                            }
-                        }
-                        ParaColumn::None => (),
+                for (para_column, switch) in columns.iter().zip(switches) {
+                    // Add text.
+                    if let ParaColumn::Text(text) = para_column {
+                        table.push_str(text);
+                    }
+                    // Add a switch.
+                    if let Some(switch) = switch {
+                        table.push_str(switch);
                     }
                 }
 
