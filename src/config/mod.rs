@@ -208,16 +208,18 @@ impl Config {
             }
 
             // Skip.
-            table = Table::new(
-                Self::get_skip_column(&mut left, was_done[0]),
-                Self::get_skip_column(&mut center, was_done[1]),
-                Self::get_skip_column(&mut right, was_done[2]),
-                &self.page,
-                self.log,
-            );
-            match table.get_tex_table(1)? {
-                Some(table) => tables.push(table),
-                None => done = true,
+            if !done {
+                table = Table::new(
+                    Self::get_skip_column(&mut left, was_done[0]),
+                    Self::get_skip_column(&mut center, was_done[1]),
+                    Self::get_skip_column(&mut right, was_done[2]),
+                    &self.page,
+                    self.log,
+                );
+                match table.get_tex_table(1)? {
+                    Some(table) => tables.push(table),
+                    None => done = true,
+                }
             }
 
             // Re-check if we're done.
