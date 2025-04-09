@@ -138,7 +138,7 @@ impl Config {
 
         let mut done = false;
 
-        match table.get_tex_table(4)? {
+        match table.get_tex_table(None, 4)? {
             Some(table) => {
                 tables.push(table);
             }
@@ -158,7 +158,7 @@ impl Config {
                 &self.page,
                 self.log,
             );
-            match table.get_tex_table(1)? {
+            match table.get_tex_table(None, 1)? {
                 Some(table) => tables.push(table),
                 None => done = true,
             }
@@ -190,17 +190,11 @@ impl Config {
             );
 
             // Get the minimum number of lines.
-            match table.get_min_num_lines()? {
-                Some(num_lines) => {
-                    // Generate the table.
-                    match table.get_tex_table(num_lines)? {
-                        Some(table) => tables.push(table),
-                        None => done = true,
-                    }
-                }
-                None => {
-                    done = true;
-                }
+            let (position, num_lines) = table.get_min_num_lines()?;
+            // Generate the table.
+            match table.get_tex_table(Some(position), num_lines)? {
+                Some(table) => tables.push(table),
+                None => done = true,
             }
 
             if !done {
@@ -216,7 +210,7 @@ impl Config {
                     &self.page,
                     self.log,
                 );
-                match table.get_tex_table(1)? {
+                match table.get_tex_table(None, 1)? {
                     Some(table) => tables.push(table),
                     None => done = true,
                 }

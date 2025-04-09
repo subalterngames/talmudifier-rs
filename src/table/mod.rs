@@ -122,20 +122,22 @@ impl<'t> Table<'t> {
     ///    This is derived from the position of each column e.g. `left` and `center` is always (one third, two thirds).
     /// 2. Get the number of lines per column, using all words that have yet to be typeset.
     /// 3. Return the least number of lines. This will be used as a target for all columns to reach.
-    pub fn get_min_num_lines(&self) -> Result<Option<usize>, Error> {
+    pub fn get_min_num_lines(&self) -> Result<(Position, usize), Error> {
         // Get the number of lines per position.
         let mut num_lines = vec![];
         [Position::Left, Position::Center, Position::Right]
             .into_iter()
-            .map(|position| self.get_num_lines_tex(position, None))
-            .try_for_each(|num| match num {
+            .map(|position| (position, self.get_num_lines_tex(position, None)))
+            .try_for_each(|(position, num)| match num {
                 Ok(num) => {
-                    num_lines.push(num);
+                    if let Some(num) = num {
+                        num_lines.push((position, num));
+                    }
                     Ok(())
                 }
                 Err(error) => Err(error),
             })?;
-        match num_lines.into_iter().min() {
+        match num_lines.into_iter().min_by(|a, b| a.1.cmp(&b.1)) {
             Some(min) => Ok(min),
             None => Err(Error::NoColumns),
         }
@@ -144,21 +146,33 @@ impl<'t> Table<'t> {
     /// Given 1-3 columns and a target `num_lines`, create a TeX table.
     ///
     /// `left`, `center`, and `right` are the columns. At least one of them must be `Empty` or `Text`.
-    pub fn get_tex_table(&mut self, num_lines: usize) -> Result<Option<String>, Error> {
+    pub fn get_tex_table(
+        &mut self,
+        position: Option<Position>,
+        num_lines: usize,
+    ) -> Result<Option<String>, Error> {
         let mut para_columns: [ParaColumn; 3] = Default::default();
-        for (position, para_column) in [Position::Left, Position::Center, Position::Right]
+        for (pos, para_column) in [Position::Left, Position::Center, Position::Right]
             .into_iter()
             .zip(para_columns.iter_mut())
         {
-            *para_column = match self.get_cosmic_index(position, num_lines) {
-                Some(cosmic_index) => {
-                    match self.get_tex_words(position, cosmic_index, num_lines)? {
-                        Some(text) => ParaColumn::Text(text),
-                        None => ParaColumn::Empty,
-                    }
+            *para_column = if position.is_some() && pos == position.unwrap() {
+                // Include all words.
+                match self.get_column_tex(pos, None) {
+                    Some(tex) => ParaColumn::Text(tex),
+                    None => ParaColumn::None,
                 }
-                None => ParaColumn::None,
-            };
+            } else {
+                match self.get_cosmic_index(pos, num_lines) {
+                    Some(cosmic_index) => {
+                        match self.get_tex_words(pos, cosmic_index, num_lines)? {
+                            Some(text) => ParaColumn::Text(text),
+                            None => ParaColumn::Empty,
+                        }
+                    }
+                    None => ParaColumn::None,
+                }
+            }
         }
 
         if Self::para_columns_done(&para_columns) {
@@ -209,7 +223,7 @@ impl<'t> Table<'t> {
                         ParaColumn::Empty,
                         ParaColumn::Text(_) | ParaColumn::Empty,
                     ) => [Some(SWITCH_2), None, None],
-                    
+
                     (
                         ParaColumn::None,
                         ParaColumn::Text(_) | ParaColumn::Empty,
@@ -235,7 +249,7 @@ impl<'t> Table<'t> {
                     | (ParaColumn::None, ParaColumn::None, ParaColumn::Text(_)) => {
                         [None, None, None]
                     }
-                    
+
                     (
                         ParaColumn::Empty | ParaColumn::None,
                         ParaColumn::Empty | ParaColumn::None,
@@ -260,7 +274,7 @@ impl<'t> Table<'t> {
                 }
 
                 // End the table.
-                table.push_str("\n\n\\end{paracol}");
+                table.push_str("\\end{paracol}");
                 Some(table)
             }
         }
@@ -383,32 +397,38 @@ impl<'t> Table<'t> {
                     Ok(if end == 0 {
                         None
                     } else {
-                        end = end.min(len);
-
-                        let column = self.get_mut_column(position);
-
-                        match column {
-                            Column::Column { column, width: _ } => {
-                                match column {
-                                    MaybeSpanColumn::Span(column) => {
-                                        if column.start >= end {
-                                            None
-                                        } else {
-                                            let text = column.to_tex(Some(end));
-                                            // Increase the next start index.
-                                            column.start = end;
-                                            Some(text)
-                                        }
-                                    }
-                                    MaybeSpanColumn::Empty => Some(String::default()),
-                                }
-                            }
-                            Column::None => None,
-                        }
+                        self.get_column_tex(position, Some(end))
                     })
                 }
                 None => Ok(None),
             }
+        }
+    }
+
+    fn get_column_tex(&mut self, position: Position, end: Option<usize>) -> Option<String> {
+        let column = self.get_mut_column(position);
+        match column {
+            Column::Column { column, width: _ } => {
+                match column {
+                    MaybeSpanColumn::Span(column) => {
+                        let len = column.span.0.len();
+                        let end = match end {
+                            Some(end) => end.min(len),
+                            None => len,
+                        };
+                        if column.start >= end {
+                            None
+                        } else {
+                            let text = column.to_tex(Some(end));
+                            // Increase the next start index.
+                            column.start = end;
+                            Some(text)
+                        }
+                    }
+                    MaybeSpanColumn::Empty => Some(String::default()),
+                }
+            }
+            Column::None => None,
         }
     }
 
@@ -577,7 +597,7 @@ mod tests {
             false,
         );
 
-        let min_num_lines = table.get_min_num_lines().unwrap().unwrap();
-        assert_eq!(min_num_lines, 10);
+        let min_num_lines = table.get_min_num_lines().unwrap();
+        assert_eq!(min_num_lines.1, 10);
     }
 }
