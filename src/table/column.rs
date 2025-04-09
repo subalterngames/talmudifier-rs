@@ -60,6 +60,7 @@ mod tests {
 
     #[test]
     fn test_column() {
+        const MD: &str = "There are so many words in this sentence!";
         let column = Column::None;
         assert!(column.done());
 
@@ -67,17 +68,14 @@ mod tests {
         let column = Column::new(empty, Width::Half);
         assert!(!column.done());
 
-        let span = Span::from_md("There are so many words in this sentence!").unwrap();
+        let span = Span::from_md(MD).unwrap();
         let mut span_column = SpanColumn::new(span, CosmicFont::default_left(), "\\font");
         span_column.start = 3;
         let full = MaybeSpanColumn::Span(&mut span_column);
-        let column = Column::Column {
-            column: full,
-            width: Width::Half,
-        };
+        let column = Column::new(full, Width::Half);
         assert!(!column.done());
 
-        let span = Span::from_md("There are so many words in this sentence!").unwrap();
+        let span = Span::from_md(MD).unwrap();
         let len = span.0.len();
         let mut span_column = SpanColumn::new(span, CosmicFont::default_left(), "\\font");
         span_column.start = len;
