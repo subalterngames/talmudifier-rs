@@ -12,7 +12,16 @@ impl ParaColumn {
     pub fn new(column: &Column<'_>, end: Option<usize>) -> Self {
         match column {
             Column::Column { column, width: _ } => match column {
-                MaybeSpanColumn::Span(column) => Self::Text(column.to_tex(end)),
+                MaybeSpanColumn::Span(column) => match end {
+                    Some(end) => {
+                        if column.start >= end {
+                            Self::None
+                        } else {
+                            Self::Text(column.to_tex(Some(end)))
+                        }
+                    }
+                    None => Self::Text(column.to_tex(end)),
+                },
                 MaybeSpanColumn::Empty => Self::Empty,
             },
             Column::None => Self::None,

@@ -125,6 +125,8 @@ impl Config {
         let mut center = SpanColumn::new(center_span, center_cosmic, &tex_fonts.center.command);
         let mut right = SpanColumn::new(right_span, right_cosmic, &tex_fonts.right.command);
 
+        let mut tables = vec![];
+
         // First four lines.
         let mut table = Table::new(
             Some(MaybeSpanColumn::Span(&mut left)),
@@ -133,19 +135,38 @@ impl Config {
             &self.page,
             self.log,
         );
-        let mut tables = vec![table.get_tex_table(4)?];
+
+        let mut done = false;
+
+        match table.get_tex_table(4)? {
+            Some(table) => {
+                tables.push(table);
+            }
+            None => done = true,
+        }
+
+        if !done {
+            done = table.done();
+        }
 
         // Skip.
-        table = Table::new(
-            Some(MaybeSpanColumn::Span(&mut left)),
-            Some(MaybeSpanColumn::Empty),
-            Some(MaybeSpanColumn::Span(&mut right)),
-            &self.page,
-            self.log,
-        );
-        tables.push(table.get_tex_table(1)?);
+        if !done {
+            table = Table::new(
+                Some(MaybeSpanColumn::Span(&mut left)),
+                Some(MaybeSpanColumn::Empty),
+                Some(MaybeSpanColumn::Span(&mut right)),
+                &self.page,
+                self.log,
+            );
+            match table.get_tex_table(1)? {
+                Some(table) => tables.push(table),
+                None => done = true,
+            }
+        }
 
-        let mut done = table.done();
+        if !done {
+            done = table.done();
+        }
 
         while !done {
             // Decide which columns to use.
@@ -169,10 +190,22 @@ impl Config {
             );
 
             // Get the minimum number of lines.
-            let num_lines = table.get_min_num_lines()?;
+            match table.get_min_num_lines()? {
+                Some(num_lines) => {
+                    // Generate the table.
+                    match table.get_tex_table(num_lines)? {
+                        Some(table) => tables.push(table),
+                        None => done = true,
+                    }
+                }
+                None => {
+                    done = true;
+                }
+            }
 
-            // Generate the table.
-            tables.push(table.get_tex_table(num_lines)?);
+            if !done {
+                done = table.done();
+            }
 
             // Skip.
             table = Table::new(
@@ -182,10 +215,15 @@ impl Config {
                 &self.page,
                 self.log,
             );
-            tables.push(table.get_tex_table(1)?);
+            match table.get_tex_table(1)? {
+                Some(table) => tables.push(table),
+                None => done = true,
+            }
 
             // Re-check if we're done.
-            done = table.done();
+            if !done {
+                done = table.done();
+            }
         }
 
         // Build the document.
