@@ -9,6 +9,7 @@ pub enum Width {
 
 impl Width {
     /// Returns the width of the column as a ratio of the width of the table.
+    /// This is used by Cosmic Text.
     pub const fn column_ratio(&self) -> f32 {
         match self {
             Self::One => 1.,

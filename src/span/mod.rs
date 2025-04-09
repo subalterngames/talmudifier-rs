@@ -1,3 +1,5 @@
+//! A `Span` is a vec of `Word`s and some associated functions.
+//!
 use markdown::{mdast::Node, to_mdast, Constructs, ParseOptions};
 use position::Position;
 use style::Style;

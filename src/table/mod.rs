@@ -164,7 +164,7 @@ impl<'t> Table<'t> {
         if Self::para_columns_done(&para_columns) {
             Ok(None)
         } else {
-            Ok(Some(self.get_paracol(&para_columns)))
+            Ok(self.get_paracol(&para_columns))
         }
     }
 
@@ -175,7 +175,7 @@ impl<'t> Table<'t> {
     }
 
     /// Convert TeX strings per column into a TeX table.
-    fn get_paracol(&self, columns: &[ParaColumn; 3]) -> String {
+    fn get_paracol(&self, columns: &[ParaColumn; 3]) -> Option<String> {
         const SWITCH: &str = "\\switchcolumn ";
         // Get the number of actual columns.
         let num_some = columns
@@ -184,40 +184,50 @@ impl<'t> Table<'t> {
             .count();
         // If there are no columns, don't try to make a paracol.
         if num_some == 0 {
-            String::default()
+            None
         } else {
-            let mut table = self.begin_paracol.clone();
-            // Switch this many time.
-            let mut num_switches = num_some - 1;
+            // If there is no text, don't try to make a paracol.
+            if columns
+                .iter()
+                .filter(|c| matches!(c, ParaColumn::Text(_)))
+                .count()
+                == 0
+            {
+                None
+            } else {
+                let mut table = self.begin_paracol.clone();
+                // Switch this many time.
+                let mut num_switches = num_some - 1;
 
-            // Get the columns with text.
-            // Add the text to the table.
-            // Add switch statements between the columns (but not at the end).
-            for para_column in columns.iter() {
-                match para_column {
-                    ParaColumn::Text(text) => {
-                        // Add the text.
-                        table.push_str(text);
-                        // Switch columns.
-                        if num_switches > 0 {
-                            table.push_str(SWITCH);
-                            num_switches -= 1;
+                // Get the columns with text.
+                // Add the text to the table.
+                // Add switch statements between the columns (but not at the end).
+                for para_column in columns.iter() {
+                    match para_column {
+                        ParaColumn::Text(text) => {
+                            // Add the text.
+                            table.push_str(text);
+                            // Switch columns.
+                            if num_switches > 0 {
+                                table.push_str(SWITCH);
+                                num_switches -= 1;
+                            }
                         }
-                    }
-                    ParaColumn::Empty => {
-                        // Switch columns.
-                        if num_switches > 0 {
-                            table.push_str(SWITCH);
-                            num_switches -= 1;
+                        ParaColumn::Empty => {
+                            // Switch columns.
+                            if num_switches > 0 {
+                                table.push_str(SWITCH);
+                                num_switches -= 1;
+                            }
                         }
+                        ParaColumn::None => (),
                     }
-                    ParaColumn::None => (),
                 }
-            }
 
-            // End the table.
-            table.push_str("\n\n\\end{paracol}");
-            table
+                // End the table.
+                table.push_str("\n\n\\end{paracol}");
+                Some(table)
+            }
         }
     }
 
@@ -252,16 +262,21 @@ impl<'t> Table<'t> {
         if Self::para_columns_done(&para_columns) {
             Ok(None)
         } else {
-            // Get the preamble.
-            let mut tex = self.page.preamble.clone();
+            match self.get_paracol(&para_columns) {
+                Some(paracol) => {
+                    // Get the preamble.
+                    let mut tex = self.page.preamble.clone();
 
-            // Add the paracol.
-            tex.push_str(&self.get_paracol(&para_columns));
+                    // Add the paracol.
+                    tex.push_str(&paracol);
 
-            // End the document.
-            tex.push_str(Page::END_DOCUMENT);
+                    // End the document.
+                    tex.push_str(Page::END_DOCUMENT);
 
-            Ok(Some(get_pdf(&tex, self.log, true)?.1.unwrap()))
+                    Ok(Some(get_pdf(&tex, self.log, true)?.1.unwrap()))
+                }
+                None => Ok(None),
+            }
         }
     }
 
@@ -273,12 +288,31 @@ impl<'t> Table<'t> {
         cosmic_index: usize,
         num_lines: usize,
     ) -> Result<Option<String>, Error> {
-        let (num_words, is_done) = self.get_num_words(position)?;
-        if is_done {
+        // Get the target column.
+        let column = match position {
+            Position::Left => &self.left,
+            Position::Center => &self.center,
+            Position::Right => &self.right,
+        };
+
+        // If we know that the column is already done, stop here.
+        if column.done() {
             Ok(None)
         } else {
+            // Get the total number of words.
+            let len = match column {
+                Column::Column { column, width: _ } => match column {
+                    MaybeSpanColumn::Span(column) => column.span.0.len(),
+                    // Stop here.
+                    MaybeSpanColumn::Empty => return Ok(None),
+                },
+                Column::None => unreachable!(),
+            };
+
+            // Set the initial end estimate to the index returned by Cosmic.
             let mut end = cosmic_index;
 
+            // Get the current number of lines.
             match self.get_num_lines_tex(position, Some(end))? {
                 Some(mut current_num_lines) => {
                     if current_num_lines > num_lines {
@@ -297,7 +331,7 @@ impl<'t> Table<'t> {
                         }
                     } else {
                         // Increment until we go over.
-                        while end < num_words - 1 && current_num_lines <= num_lines {
+                        while end < len - 1 && current_num_lines <= num_lines {
                             end += 1;
                             match self.get_num_lines_tex(position, Some(end))? {
                                 Some(n) => {
@@ -314,7 +348,7 @@ impl<'t> Table<'t> {
                     Ok(if end == 0 {
                         None
                     } else {
-                        end = end.min(num_words);
+                        end = end.min(len);
 
                         let column = self.get_mut_column(position);
 
@@ -340,25 +374,6 @@ impl<'t> Table<'t> {
                 }
                 None => Ok(None),
             }
-        }
-    }
-
-    fn get_num_words(&self, position: Position) -> Result<(usize, bool), Error> {
-        let column = match position {
-            Position::Left => &self.left,
-            Position::Center => &self.center,
-            Position::Right => &self.right,
-        };
-
-        match column {
-            Column::Column { column, width: _ } => match column {
-                MaybeSpanColumn::Span(column) => {
-                    let len = column.span.0.len();
-                    Ok((len, column.start >= len))
-                }
-                MaybeSpanColumn::Empty => Ok((0, true)),
-            },
-            Column::None => Err(Error::NoMoreWords),
         }
     }
 
