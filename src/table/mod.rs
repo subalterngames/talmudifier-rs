@@ -47,7 +47,6 @@ impl<'t> Table<'t> {
         log: bool,
     ) -> Self {
         const THIRD: &str = "0.32";
-        const TWO_THIRDS: &str = "0.675";
         const HALF: &str = "0.5";
 
         // Get the number of span/empty columns (excluding non-columns).
@@ -70,7 +69,7 @@ impl<'t> Table<'t> {
                 Column::third(left),
                 Column::two_thirds(center),
                 Column::None,
-                column_ratio!(THIRD, TWO_THIRDS),
+                column_ratio!("0.31"),
             ),
             (Some(left), None, Some(right)) => (
                 Column::half(left),
@@ -82,7 +81,7 @@ impl<'t> Table<'t> {
                 Column::two_thirds(center),
                 Column::third(right),
                 Column::None,
-                column_ratio!(TWO_THIRDS, THIRD),
+                column_ratio!("0.675"),
             ),
             (Some(left), None, None) => (
                 Column::one(left),
@@ -105,7 +104,7 @@ impl<'t> Table<'t> {
             (None, None, None) => (Column::None, Column::None, Column::None, String::default()),
         };
 
-        let begin_paracol = format!("{}\n{}\n", begin_paracol, ratio);
+        let begin_paracol = format!("{}\n{}\n", ratio, begin_paracol);
         Self {
             left,
             center,
@@ -191,8 +190,8 @@ impl<'t> Table<'t> {
 
     /// Convert TeX strings per column into a TeX table.
     fn get_paracol(&self, columns: &[ParaColumn; 3]) -> Option<String> {
-        const SWITCH: &str = "\\switchcolumn ";
-        const SWITCH_2: &str = "\\switchcolumn[2] ";
+        const SWITCH: &str = "\n\\switchcolumn\n";
+        const SWITCH_2: &str = "\n\\switchcolumn[2]\n";
         // Get the number of actual columns.
         let num_some = columns
             .iter()
@@ -275,7 +274,7 @@ impl<'t> Table<'t> {
                 }
 
                 // End the table.
-                table.push_str("\\end{paracol}");
+                table.push_str("\n\\end{paracol}");
                 Some(table)
             }
         }
@@ -599,6 +598,6 @@ mod tests {
         );
 
         let min_num_lines = table.get_min_num_lines().unwrap();
-        assert_eq!(min_num_lines.1, 10);
+        assert_eq!(min_num_lines.1, 11);
     }
 }

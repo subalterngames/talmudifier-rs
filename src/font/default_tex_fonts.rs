@@ -7,6 +7,7 @@ use std::{
 
 use super::{default_fonts::*, font_metrics::FontMetrics, tex_font::TexFont};
 
+/// Read the default fonts from 
 pub struct DefaultTexFonts {
     directory: PathBuf,
 }
