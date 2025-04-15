@@ -20,6 +20,8 @@ use crate::{
     prelude::FontMetrics,
 };
 
+const DEFAULT_ROOT_DIRECTORY: &str = "talmudifier_fonts";
+
 /// The paths to the font files.
 #[derive(Deserialize, Serialize)]
 pub struct Font {
@@ -31,6 +33,15 @@ pub struct Font {
 }
 
 impl Font {
+    pub(super) fn new(fonts_directory: &Path, folder: &str) -> Self {
+        Self {
+            directory: fonts_directory.join(folder),
+            regular: "regular.ttf".to_string(),
+            italic: Some("italic.ttf".to_string()),
+            bold: Some("bold.ttf".to_string()),
+            bold_italic: Some("bold_italic.ttf".to_string()),
+        }
+    }
     /// Create a `CosmicFont` from the font files.
     pub(super) fn to_cosmic(&self, metrics: &FontMetrics) -> Result<CosmicFont, Error> {
         let font_paths = self.font_paths()?;

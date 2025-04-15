@@ -28,6 +28,7 @@ macro_rules! column_ratio {
     };
 }
 
+/// A table is comprised of 1-3 columns of raw markdown text that can be typeset into a TeX table.
 pub struct Table<'t> {
     left: Column<'t>,
     center: Column<'t>,
@@ -116,36 +117,54 @@ impl<'t> Table<'t> {
         }
     }
 
-    /// Given 1-3 columns:
-    ///
-    /// 1. Get the width of each column.
-    ///    This is derived from the position of each column e.g. `left` and `center` is always (one third, two thirds).
-    /// 2. Get the number of lines per column, using all words that have yet to be typeset.
-    /// 3. Return the least number of lines. This will be used as a target for all columns to reach.
-    pub fn get_min_num_lines(&self) -> Result<(Position, usize), Error> {
-        // Get the number of lines per position.
-        let mut num_lines = vec![];
-        [Position::Left, Position::Center, Position::Right]
+    /// Returns the [`Position`] of the column with the least remaining number of lines.
+    /// To get the number of lines, we need to render a PDF and extract the text, which is slow.
+    /// However, if there is only 1 column with text, we skip the render and this returns `(position, None)`.
+    pub fn get_min_num_lines(&self) -> Result<(Position, Option<usize>), Error> {
+        // If there is only one column, skip the render.
+        let tex = [Position::Left, Position::Center, Position::Right]
             .into_iter()
-            .map(|position| (position, self.get_num_lines_tex(position, None)))
-            .try_for_each(|(position, num)| match num {
-                Ok(num) => {
-                    if let Some(num) = num {
-                        num_lines.push((position, num));
+            .zip([&self.left, &self.center, &self.right])
+            .filter_map(|(p, c)| match c {
+                Column::Column { column, width: _ } => match column {
+                    MaybeSpanColumn::Span(column) => Some((p, column.to_tex(None))),
+                    MaybeSpanColumn::Empty => Some((p, String::default())),
+                },
+                Column::None => None,
+            })
+            .collect::<Vec<(Position, String)>>();
+        if tex.len() == 1 {
+            Ok((tex[0].0, None))
+        } else {
+            // Get the number of lines per position.
+            let mut num_lines = vec![];
+            [Position::Left, Position::Center, Position::Right]
+                .into_iter()
+                .map(|position| (position, self.get_num_lines_tex(position, None)))
+                .try_for_each(|(position, num)| match num {
+                    Ok(num) => {
+                        if let Some(num) = num {
+                            num_lines.push((position, num));
+                        }
+                        Ok(())
                     }
-                    Ok(())
-                }
-                Err(error) => Err(error),
-            })?;
-        match num_lines.into_iter().min_by(|a, b| a.1.cmp(&b.1)) {
-            Some(min) => Ok(min),
-            None => Err(Error::NoColumns),
+                    Err(error) => Err(error),
+                })?;
+            match num_lines.into_iter().min_by(|a, b| a.1.cmp(&b.1)) {
+                Some(min) => Ok((min.0, Some(min.1))),
+                None => Err(Error::NoColumns),
+            }
         }
     }
 
-    /// Given 1-3 columns and a target `num_lines`, create a TeX table.
-    ///
-    /// `left`, `center`, and `right` are the columns. At least one of them must be `Empty` or `Text`.
+    /// Given a target `num_lines`, generate a TeX string of the table.
+    /// The table will include all the words starting from `self.start` in each respective column up to `end` where `end` is an index in the underlying span of words that fills a column of `num_lines`-worth of text.
+    /// 
+    /// To fill each column up to `num_lines`, we need to iteratively generate PDFs, extract the text, and count the number of lines. This is *slow*.
+    /// 
+    /// `position` can be set to include only the text of a specific column. This is important when trying to get the minimum number of lines.
+    /// 
+    /// Returns None if none of the columns have text.
     pub fn get_tex_table(
         &mut self,
         position: Option<Position>,
@@ -182,6 +201,30 @@ impl<'t> Table<'t> {
         }
     }
 
+    /// Get a TeX table that only has one column.
+    /// Unlike [`get_tex_table(position, num_lines)`], this function doesn't generate any intermediary PDFs.
+    /// This function assumes that there is exactly 1 column that contains text, and then generates a table including its text.
+    /// This function is therefore much faster than the iterative approach.
+    /// 
+    /// TL;DR this is an optimization that saves one PDF iteration.
+    pub fn get_tex_table_one_column(&self) -> String {
+        let mut para_columns: [ParaColumn; 3] = Default::default();
+        for (pos, para_column) in [Position::Left, Position::Center, Position::Right]
+            .into_iter()
+            .zip(para_columns.iter_mut())
+        {
+            *para_column = match self.get_column(pos) {
+                Column::Column { column, width: _ } => match column {
+                    MaybeSpanColumn::Span(column) => ParaColumn::Text(column.to_tex(None)),
+                    MaybeSpanColumn::Empty => ParaColumn::Empty,
+                },
+                Column::None => ParaColumn::None,
+            };
+        }
+        self.get_paracol(&para_columns).unwrap()
+    }
+
+    /// Returns true if none of the columns have any further text.
     pub fn done(&self) -> bool {
         [&self.left, &self.center, &self.right]
             .iter()
@@ -280,11 +323,14 @@ impl<'t> Table<'t> {
         }
     }
 
-    /// Get the number of lines in a column using Tectonic.
-    ///
-    /// - `end` is an optional end index for `self.words`. If `None`, the words are from `self.start..self.words.len()`.
-    /// - `width` is the width of the column, as calculated elsewhere.
-    /// - `page` is used because we need the preamble.
+    /// Get the number of lines in a column.
+    /// 
+    /// - `position` is used to specify the column.
+    /// - `end` is the end index. If None, `end` is set to the total number of words in the column.
+    /// 
+    /// This is slow because it needs to render a PDF, extract the PDF to plaintext, and count the number of lines.
+    /// 
+    /// Returns None if no columns have remaining text. 
     fn get_num_lines_tex(
         &self,
         position: Position,
@@ -329,8 +375,14 @@ impl<'t> Table<'t> {
         }
     }
 
-    /// Typeset using Tectonic to fill a column with `num_lines` of a TeX string.
-    /// `cosmic_index` is the best-first-guess of the end index.
+    /// Generate a TeX string from a column. The string will fill `num_lines` on the page.
+    /// 
+    /// - `position` is used to specify the column.
+    /// - `cosmic_index` is the initial end index that we calculated using Cosmic Text.
+    /// 
+    /// This is, by far, the slowest function in Talmudifier. 
+    /// It needs to iterate through each remaining word in the column until `num_lines` are filled.
+    /// So, it needs to perform multiple PDF renders and extracts.
     fn get_tex_words(
         &mut self,
         position: Position,
@@ -338,11 +390,7 @@ impl<'t> Table<'t> {
         num_lines: usize,
     ) -> Result<Option<String>, Error> {
         // Get the target column.
-        let column = match position {
-            Position::Left => &self.left,
-            Position::Center => &self.center,
-            Position::Right => &self.right,
-        };
+        let column = self.get_column(position);
 
         // If we know that the column is already done, stop here.
         if column.done() {
@@ -405,6 +453,9 @@ impl<'t> Table<'t> {
         }
     }
 
+    /// Convert a column at `position` to a TeX including words from the column's start index to an `end` index.
+    /// If `end` is None, it's set to the number of words in the column.
+    /// Returns None if there aren't any remaining words in the column.
     fn get_column_tex(&mut self, position: Position, end: Option<usize>) -> Option<String> {
         let column = self.get_mut_column(position);
         match column {
@@ -440,6 +491,15 @@ impl<'t> Table<'t> {
         }
     }
 
+    fn get_column(&self, position: Position) -> &Column<'t> {
+        match position {
+            Position::Left => &self.left,
+            Position::Center => &self.center,
+            Position::Right => &self.right,
+        }
+    }
+
+    /// Use Cosmic Text to guess the initial end index that will be used to fill a TeX column.
     fn get_cosmic_index(&mut self, position: Position, num_lines: usize) -> Option<usize> {
         let page_width = self.page.table_width;
         let separation =
@@ -598,6 +658,6 @@ mod tests {
         );
 
         let min_num_lines = table.get_min_num_lines().unwrap();
-        assert_eq!(min_num_lines.1, 11);
+        assert_eq!(min_num_lines.1.unwrap(), 11);
     }
 }

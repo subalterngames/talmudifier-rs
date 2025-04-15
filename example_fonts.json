@@ -1,0 +1,23 @@
+{
+  "left": {
+    "directory": "talmudifier_fonts/left",
+    "regular": "regular.ttf",
+    "italic": "italic.ttf",
+    "bold": "bold.ttf",
+    "bold_italic": "bold_italic.ttf"
+  },
+  "center": {
+    "directory": "talmudifier_fonts/center",
+    "regular": "regular.ttf",
+    "italic": "italic.ttf",
+    "bold": "bold.ttf",
+    "bold_italic": "bold_italic.ttf"
+  },
+  "right": {
+    "directory": "talmudifier_fonts/right",
+    "regular": "regular.ttf",
+    "italic": "italic.ttf",
+    "bold": "bold.ttf",
+    "bold_italic": "bold_italic.ttf"
+  }
+}

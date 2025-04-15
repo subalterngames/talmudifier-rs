@@ -1,30 +1,4 @@
-//! **Convert markdown text to a PDF with Talmud-esque typesetting.**
-//!
-//! ```
-//! use std::{fs::write, path::PathBuf, str::FromStr};
-//!
-//! use talmudifier::prelude::*;
-//!
-//! let directory = PathBuf::from_str("example_text").unwrap();
-//!
-//! // Load a default talmudifier.
-//! let mut talmudifier = Talmudifier::default()
-//!     // Set the source text as three Markdown files.
-//!     .source_text(SourceText::Files {
-//!         left: directory.join("left.md"),
-//!         center: directory.join("center.md"),
-//!         right: directory.join("right.md")
-//! });
-//!
-//! // Talmudify.
-//! let daf = talmudifier.talmudify().unwrap();
-//!
-//! // Write the .tex. This is sometimes useful for debugging.
-//! write("out.tex", &daf.tex).unwrap();
-//!
-//! // Write the PDF.
-//! write("out.pdf", &daf.pdf).unwrap();
-//! ```
+#![doc = include_str!("../README.md")]
 
 use std::{
     fs::{create_dir_all, read, write},
@@ -137,7 +111,7 @@ impl Talmudifier {
         self
     }
 
-    /// Enable logging. 
+    /// Enable logging.
     /// This will generate intermediary .pdf, .tex, and .txt files per iteration.
     /// The .txt files include the text extracted from the .pdf
     /// This function is useful for debugging because you can identify where a typesetting error occurred.
@@ -244,10 +218,20 @@ impl Talmudifier {
 
             // Get the minimum number of lines.
             let (position, num_lines) = table.get_min_num_lines()?;
-            // Generate the table.
-            match table.get_tex_table(Some(position), num_lines)? {
-                Some(table) => tables.push(table),
-                None => done = true,
+            match num_lines {
+                Some(num_lines) =>
+                // Generate the table.
+                {
+                    match table.get_tex_table(Some(position), num_lines)? {
+                        Some(table) => tables.push(table),
+                        None => done = true,
+                    }
+                }
+                // There is only one column. Stop here.
+                None => {
+                    tables.push(table.get_tex_table_one_column());
+                    done = true;
+                }
             }
 
             if !done {

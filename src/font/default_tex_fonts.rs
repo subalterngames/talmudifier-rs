@@ -5,7 +5,7 @@ use std::{
     str::FromStr,
 };
 
-use super::{default_fonts::*, tex_font::TexFont};
+use super::{default_fonts::*, tex_font::TexFont, DEFAULT_ROOT_DIRECTORY};
 
 /// XeTeX requires fonts to be saved to a path (rather than exist in memory).
 /// When this struct is created, it writes the fonts stored in the binary to disk in a folder.
@@ -15,8 +15,6 @@ pub struct DefaultTexFonts {
 }
 
 impl DefaultTexFonts {
-    const ROOT_DIRECTORY: &str = "talmudifier_fonts";
-
     pub fn new() -> Result<Self, io::Error> {
         Self::dump_fonts("left", IM_FELL_REGULAR, IM_FELL_ITALIC, IM_FELL_BOLD, None)?;
         Self::dump_fonts(
@@ -34,7 +32,7 @@ impl DefaultTexFonts {
             Some(AVERIA_BOLD_ITALIC),
         )?;
         Ok(Self {
-            directory: PathBuf::from_str(Self::ROOT_DIRECTORY).unwrap(),
+            directory: PathBuf::from_str(DEFAULT_ROOT_DIRECTORY).unwrap(),
         })
     }
 
@@ -56,7 +54,7 @@ impl DefaultTexFonts {
         bold: &[u8],
         bold_italic: Option<&[u8]>,
     ) -> Result<(), io::Error> {
-        let directory = PathBuf::from_str(Self::ROOT_DIRECTORY)
+        let directory = PathBuf::from_str(DEFAULT_ROOT_DIRECTORY)
             .unwrap()
             .join(folder);
 
