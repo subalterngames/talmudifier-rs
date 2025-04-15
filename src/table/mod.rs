@@ -81,7 +81,7 @@ impl<'t> Table<'t> {
                 Column::two_thirds(center),
                 Column::third(right),
                 Column::None,
-                column_ratio!("0.675"),
+                column_ratio!("0.655"),
             ),
             (Some(left), None, None) => (
                 Column::one(left),

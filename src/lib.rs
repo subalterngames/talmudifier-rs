@@ -9,8 +9,6 @@
 //!
 //! // Load a default config file.
 //! let mut config = Config::default()
-//!     // Enable logging.
-//!     .log()
 //!     // Set the source text as three Markdown files.
 //!     .source_text(SourceText::Files {
 //!         left: directory.join("left.md"),
@@ -20,6 +18,9 @@
 //!
 //! // Talmudify.
 //! let daf = config.talmudify().unwrap();
+//! 
+//! // Write the .tex. This is sometimes useful for debugging.
+//! write("out.tex", &daf.tex).unwrap();
 //!
 //! // Write the PDF.
 //! write("out.pdf", &daf.pdf).unwrap();

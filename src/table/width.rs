@@ -15,7 +15,7 @@ impl Width {
             Self::One => 1.,
             Self::Half => 0.5,
             Self::Third => 0.32,
-            Self::TwoThirds => 0.675,
+            Self::TwoThirds => 0.655,
         }
     }
 }
