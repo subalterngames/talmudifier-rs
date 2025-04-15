@@ -3,7 +3,7 @@
 - [ ] Uniform font size
 - [ ] Test title
 - [ ] Inline title
-- [ ] Remove logging in example
+- [x] Remove logging in example
 - [ ] Write an actual README
 - [ ] Update comments in `table` and `config`
 - [ ] Windows

@@ -7,7 +7,9 @@ use std::{
 
 use super::{default_fonts::*, font_metrics::FontMetrics, tex_font::TexFont};
 
-/// Read the default fonts from 
+/// XeTeX requires fonts to be saved to a path (rather than exist in memory).
+/// When this struct is created, it writes the fonts stored in the binary to disk in a folder.
+/// When this struct is dropped, that folder is deleted.
 pub struct DefaultTexFonts {
     directory: PathBuf,
 }
@@ -73,7 +75,9 @@ impl DefaultTexFonts {
     }
 }
 
-#[cfg(not(test))]
+// While testing, we can't delete the folder due to test concurrency.
+
+#[cfg(not(test))] 
 impl Drop for DefaultTexFonts {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.directory);

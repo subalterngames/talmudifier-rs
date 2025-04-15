@@ -1,5 +1,3 @@
-use std::io;
-
 #[cfg(feature = "default-fonts")]
 use super::default_tex_fonts::DefaultTexFonts;
 use super::tex_font::TexFont;
@@ -29,7 +27,7 @@ impl From<DefaultTexFonts> for TexFonts {
 
 #[cfg(feature = "default-fonts")]
 impl TexFonts {
-    pub fn default() -> Result<Self, io::Error> {
+    pub fn default() -> Result<Self, std::io::Error> {
         Ok(DefaultTexFonts::new()?.into())
     }
 }

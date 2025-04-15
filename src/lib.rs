@@ -18,7 +18,7 @@
 //!
 //! // Talmudify.
 //! let daf = config.talmudify().unwrap();
-//! 
+//!
 //! // Write the .tex. This is sometimes useful for debugging.
 //! write("out.tex", &daf.tex).unwrap();
 //!

@@ -1,6 +1,6 @@
 //! Generate a PDF from a .tex file. This is useful for debugging.
 //! Usage:
-//! 
+//!
 //! 1. Find a PDF + .tex file that looks weird
 //! 2. Manually edit the .tex file
 //! 3. Run `textest`
