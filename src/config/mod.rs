@@ -1,15 +1,13 @@
 use std::{fs::read, path::Path};
 
 pub use daf::Daf;
-pub use font::Font;
-pub use fonts::Fonts;
 use serde::{Deserialize, Serialize};
 use serde_json::from_slice;
 pub use source_text::SourceText;
 
 use crate::{
     error::Error,
-    font::{cosmic_font::CosmicFont, tex_fonts::TexFonts},
+    font::{cosmic_font::CosmicFont, fonts::Fonts, tex_fonts::TexFonts},
     get_pdf,
     page::Page,
     span::Span,
@@ -17,8 +15,6 @@ use crate::{
 };
 
 mod daf;
-mod font;
-mod fonts;
 mod raw_text;
 mod source_text;
 
@@ -276,7 +272,7 @@ impl Config {
         let left = fonts.left.to_cosmic(&self.page.font_metrics)?;
         let center = fonts.center.to_cosmic(&self.page.font_metrics)?;
         let right = fonts.right.to_cosmic(&self.page.font_metrics)?;
-        Ok((left, center, right))   
+        Ok((left, center, right))
     }
 }
 

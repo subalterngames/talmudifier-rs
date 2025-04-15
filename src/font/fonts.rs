@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::font::Font;
+use super::Font;
 
 /// Fonts for the left, center, and right columns.
 #[derive(Deserialize, Serialize)]

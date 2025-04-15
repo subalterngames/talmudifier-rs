@@ -1,7 +1,7 @@
 pub use crate::{
-    config::{Config, Daf, Font, Fonts, SourceText},
+    config::{Config, Daf, SourceText},
     error::Error,
-    font::font_metrics::FontMetrics,
+    font::{font_metrics::FontMetrics, fonts::Fonts, Font},
     page::{Length, Margins, Page, PaperSize, Tables, Unit},
 };
 
