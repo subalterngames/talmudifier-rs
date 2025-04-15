@@ -8,5 +8,5 @@
 - [ ] Update comments in `table` and `config`
 - [ ] Windows
 - [ ] MacOS
-- [ ] Without default features
+- [x] Without default features
 - [ ] Rename config
