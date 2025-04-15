@@ -37,8 +37,8 @@
         "unit": "Pt"
       },
       "column_separation": {
-        "length": 1.25,
-        "unit": "Em"
+        "length": 0.25,
+        "unit": "In"
       },
       "paragraph_fill_skip": {
         "length": 0.0,
@@ -48,6 +48,10 @@
         "length": 1.0,
         "unit": "Em"
       }
+    },
+    "font_metrics": {
+      "size": 11.0,
+      "skip": 13.0
     }
   },
   "fonts": null,
@@ -58,5 +62,6 @@
       "right": "right.md"
     }
   },
-  "title": null
+  "title": null,
+  "log": false
 }

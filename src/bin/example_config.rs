@@ -1,3 +1,5 @@
+//! Generate `example_talmudifier.json`
+
 #[cfg(feature = "default-fonts")]
 fn main() {
     use std::fs::write;
@@ -5,9 +7,9 @@ fn main() {
     use serde_json::to_string_pretty;
     use talmudifier::prelude::*;
 
-    let config = Config::default();
-    let s = to_string_pretty(&config).unwrap();
-    write("example_config.json", s).unwrap();
+    let talmudifier = Talmudifier::default();
+    let s = to_string_pretty(&talmudifier).unwrap();
+    write("example_talmudifier.json", s).unwrap();
 }
 
 #[cfg(not(feature = "default-fonts"))]

@@ -31,7 +31,7 @@ pub enum SourceText {
 }
 
 impl SourceText {
-    pub(super) fn get_text(&self) -> Result<RawText, Error> {
+    pub(crate) fn get_text(&self) -> Result<RawText, Error> {
         match self {
             Self::Text {
                 left,
@@ -81,6 +81,8 @@ impl SourceText {
 }
 
 impl Default for SourceText {
+    /// Try to read text from three files: `left.md`, `center.md`, and `right.md`
+    /// These files must be in the same folder as the working directory.
     fn default() -> Self {
         Self::Files {
             left: PathBuf::from_str("left.md").unwrap(),

@@ -27,8 +27,8 @@ fn main() {
     // Get the output drectory.
     create_dir_all(&args.out).unwrap();
 
-    // Load the config file.
-    let mut config = Config::new(&args.config).unwrap();
+    // Load the talmudifier.
+    let mut talmudifier = Talmudifier::new(&args.config).unwrap();
 
     // Enable logging.
     if args.log {
@@ -36,7 +36,7 @@ fn main() {
     }
 
     // Talmudify.
-    let daf = config.talmudify().unwrap();
+    let daf = talmudifier.talmudify().unwrap();
 
     // Write.
     write(args.out.join("daf.pdf"), &daf.pdf).unwrap();
