@@ -30,6 +30,6 @@ impl From<DefaultTexFonts> for TexFonts {
 #[cfg(feature = "default-fonts")]
 impl TexFonts {
     pub fn default() -> Result<Self, io::Error> {
-        Ok(DefaultTexFonts::default()?.into())
+        Ok(DefaultTexFonts::new()?.into())
     }
 }

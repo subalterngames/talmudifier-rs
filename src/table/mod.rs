@@ -47,6 +47,7 @@ impl<'t> Table<'t> {
         log: bool,
     ) -> Self {
         const THIRD: &str = "0.32";
+        const TWO_THIRDS: &str = "0.675";
         const HALF: &str = "0.5";
 
         // Get the number of span/empty columns (excluding non-columns).
@@ -69,7 +70,7 @@ impl<'t> Table<'t> {
                 Column::third(left),
                 Column::two_thirds(center),
                 Column::None,
-                column_ratio!("0.31"),
+                column_ratio!(THIRD, TWO_THIRDS),
             ),
             (Some(left), None, Some(right)) => (
                 Column::half(left),
@@ -81,7 +82,7 @@ impl<'t> Table<'t> {
                 Column::two_thirds(center),
                 Column::third(right),
                 Column::None,
-                column_ratio!("0.675"),
+                column_ratio!(TWO_THIRDS, THIRD),
             ),
             (Some(left), None, None) => (
                 Column::one(left),

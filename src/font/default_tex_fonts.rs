@@ -14,7 +14,7 @@ pub struct DefaultTexFonts {
 impl DefaultTexFonts {
     const ROOT_DIRECTORY: &str = "talmudifier_fonts";
 
-    pub fn default() -> Result<Self, io::Error> {
+    pub fn new() -> Result<Self, io::Error> {
         Self::dump_fonts("left", IM_FELL_REGULAR, IM_FELL_ITALIC, IM_FELL_BOLD, None)?;
         Self::dump_fonts(
             "center",

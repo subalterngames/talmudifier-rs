@@ -29,3 +29,7 @@ tectonic = { git = "https://github.com/tectonic-typesetting/tectonic.git", branc
 [[bin]]
 name = "talmudify"
 required-features = ["clap"]
+
+[[bin]]
+name = "textest"
+required-features = ["clap"]
