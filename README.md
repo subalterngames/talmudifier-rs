@@ -9,4 +9,4 @@
 - [ ] Windows
 - [ ] MacOS
 - [x] Without default features
-- [ ] Rename config
+- [x] Rename config
