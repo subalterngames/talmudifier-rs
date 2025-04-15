@@ -1,4 +1,4 @@
-use crate::font::tex_fonts::TexFonts;
+use crate::{font::tex_fonts::TexFonts, prelude::FontMetrics, tex};
 
 pub use length::Length;
 pub use margins::Margins;
@@ -19,6 +19,7 @@ pub struct Page {
     pub paper_size: PaperSize,
     pub margins: Margins,
     pub tables: Tables,
+    pub font_metrics: FontMetrics,
     #[serde(skip, default = "get_default_table_width")]
     pub table_width: f32,
     #[cfg_attr(
@@ -32,7 +33,13 @@ impl Page {
     pub(crate) const END_DOCUMENT: &str = "\n\\end{sloppypar}\\end{document}";
 
     pub(crate) fn set_preamble(&mut self, fonts: &TexFonts) {
-        self.preamble = Self::get_preamble(fonts, &self.paper_size, &self.margins, &self.tables);
+        self.preamble = Self::get_preamble(
+            fonts,
+            &self.paper_size,
+            &self.margins,
+            &self.tables,
+            &self.font_metrics,
+        );
     }
 
     fn get_preamble(
@@ -40,6 +47,7 @@ impl Page {
         paper_size: &PaperSize,
         margins: &Margins,
         tables: &Tables,
+        font_metrics: &FontMetrics,
     ) -> String {
         let mut preamble = format!("\\documentclass[11pt, {}, openany]{{scrbook}}", paper_size);
         preamble += &format!(
@@ -69,11 +77,12 @@ impl Page {
             preamble.push('\n');
         }
         preamble += "\\newcommand{\\daftitle}[1]{\\centerfont{\\huge{#1}}}\n";
-        preamble + "\n\n\\raggedbottom\n\n\\begin{document}\\begin{sloppypar}\n\n"
+        preamble += "\n\n\\raggedbottom\n\n\\begin{document}\\begin{sloppypar}\n\n";
+        preamble + &tex!("fontsize", font_metrics.size, font_metrics.skip)
     }
 
     fn set_length(keyword: &str, length: &Length) -> String {
-        format!("\n{}", crate::tex!("setlength", keyword, length))
+        format!("\n{}", tex!("setlength", keyword, length))
     }
 }
 
@@ -84,11 +93,14 @@ impl Default for Page {
         let table_width = margins.get_table_width();
         let tables = Tables::default();
         let paper_size = PaperSize::default();
+        let font_metrics = FontMetrics::default();
+
         let preamble = Page::get_preamble(
             &TexFonts::default().unwrap(),
             &paper_size,
             &margins,
             &tables,
+            &font_metrics,
         );
         Self {
             paper_size,
@@ -96,6 +108,7 @@ impl Default for Page {
             tables,
             table_width,
             preamble,
+            font_metrics,
         }
     }
 }
@@ -107,6 +120,7 @@ fn get_default_preamble() -> String {
         &PaperSize::default(),
         &Margins::default(),
         &Tables::default(),
+        &FontMetrics::default(),
     )
 }
 

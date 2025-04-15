@@ -1,6 +1,6 @@
 # TODO
 
-- [ ] Uniform font size
+- [x] Uniform font size
 - [ ] Test title
 - [ ] Inline title
 - [x] Remove logging in example

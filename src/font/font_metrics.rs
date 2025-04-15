@@ -1,9 +1,12 @@
 use cosmic_text::Metrics;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
+/// Metrics for each font on the page.
+#[derive(Clone, Deserialize, Serialize)]
 pub struct FontMetrics {
+    /// The size of the font.
     pub size: f32,
+    /// The height of the line skip.
     pub skip: f32,
 }
 

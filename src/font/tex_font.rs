@@ -1,7 +1,5 @@
 use std::path::Path;
 
-use super::font_metrics::FontMetrics;
-
 pub struct TexFont {
     /// The font family declaration.
     pub font_family: String,
@@ -17,7 +15,6 @@ impl TexFont {
         italic: &Option<String>,
         bold: &Option<String>,
         bold_italic: &Option<String>,
-        metrics: &FontMetrics,
     ) -> Self {
         const STYLES: [&str; 3] = ["ItalicFont", "BoldFont", "BoldItalicFont"];
 
@@ -44,11 +41,7 @@ impl TexFont {
         font_family.push_str(&format!("]{{{}.ttf}}", regular));
 
         // This is the font size plus the font command.
-        let command = format!(
-            "{}\\{}",
-            crate::tex!("fontsize", metrics.size, metrics.skip),
-            name
-        );
+        let command = format!("\\{}", name);
         Self {
             command,
             font_family,

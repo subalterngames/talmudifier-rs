@@ -5,7 +5,7 @@ use std::{
     str::FromStr,
 };
 
-use super::{default_fonts::*, font_metrics::FontMetrics, tex_font::TexFont};
+use super::{default_fonts::*, tex_font::TexFont};
 
 /// XeTeX requires fonts to be saved to a path (rather than exist in memory).
 /// When this struct is created, it writes the fonts stored in the binary to disk in a folder.
@@ -46,7 +46,6 @@ impl DefaultTexFonts {
             &Some("italic".to_string()),
             &Some("bold".to_string()),
             &Some("bold_italic".to_string()),
-            &FontMetrics::default(),
         )
     }
 
@@ -77,7 +76,7 @@ impl DefaultTexFonts {
 
 // While testing, we can't delete the folder due to test concurrency.
 
-#[cfg(not(test))] 
+#[cfg(not(test))]
 impl Drop for DefaultTexFonts {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.directory);

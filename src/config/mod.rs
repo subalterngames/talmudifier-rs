@@ -239,13 +239,6 @@ impl Config {
         Ok(Daf { tex, pdf })
     }
 
-    fn get_cosmic_fonts_internal(fonts: &Fonts) -> CosmicFonts {
-        let left = fonts.left.to_cosmic()?;
-        let center = fonts.center.to_cosmic()?;
-        let right = fonts.right.to_cosmic()?;
-        Ok((left, center, right))
-    }
-
     fn get_tex_fonts_internal(fonts: &Fonts) -> TexFonts {
         let left = fonts.left.to_tex("leftfont");
         let center = fonts.center.to_tex("centerfont");
@@ -284,7 +277,7 @@ impl Config {
 impl Config {
     fn get_cosmic_fonts(&self) -> CosmicFonts {
         match &self.fonts {
-            Some(fonts) => Self::get_cosmic_fonts_internal(fonts),
+            Some(fonts) => fonts.into(),
             None => Ok((
                 CosmicFont::default_left(),
                 CosmicFont::default_center(),
@@ -307,10 +300,19 @@ impl Config {
 #[cfg(not(feature = "default-fonts"))]
 impl Config {
     pub fn get_cosmic_fonts(&self) -> CosmicFonts {
-        Self::get_cosmic_fonts_internal(&self.fonts)
+        (&self.fonts).into()
     }
 
     pub fn get_tex_fonts(&self) -> Result<TexFonts, Error> {
         Ok(Self::get_tex_fonts_internal(&self.fonts))
+    }
+}
+
+impl From<&Fonts> for CosmicFonts {
+    fn from(value: &Fonts) -> Self {
+        let left = value.left.to_cosmic(&value.metrics)?;
+        let center = value.center.to_cosmic(&value.metrics)?;
+        let right = value.right.to_cosmic(&value.metrics)?;
+        Ok((left, center, right))
     }
 }

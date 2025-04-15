@@ -5,10 +5,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::Error,
-    font::{
-        cosmic_font::CosmicFont, font_metrics::FontMetrics, font_paths::FontPaths,
-        tex_font::TexFont,
-    },
+    font::{cosmic_font::CosmicFont, font_paths::FontPaths, tex_font::TexFont},
+    prelude::FontMetrics,
 };
 
 /// The path to a font directory and the filenames of the font files.
@@ -19,14 +17,13 @@ pub struct Font {
     pub italic: Option<String>,
     pub bold: Option<String>,
     pub bold_italic: Option<String>,
-    pub metrics: FontMetrics,
 }
 
 impl Font {
     /// Create a `CosmicFont` from the font files.
-    pub(super) fn to_cosmic(&self) -> Result<CosmicFont, Error> {
+    pub(super) fn to_cosmic(&self, metrics: &FontMetrics) -> Result<CosmicFont, Error> {
         let font_paths = self.font_paths()?;
-        match CosmicFont::new(&font_paths, &self.metrics, FontSystem::new()) {
+        match CosmicFont::new(&font_paths, metrics, FontSystem::new()) {
             Ok(c) => Ok(c),
             Err(error) => Err(Error::CosmicFont(error)),
         }
@@ -41,7 +38,6 @@ impl Font {
             &self.italic,
             &self.bold,
             &self.bold_italic,
-            &self.metrics,
         )
     }
 
