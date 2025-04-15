@@ -1,7 +1,6 @@
 use std::{
     fs::{create_dir_all, write},
     path::PathBuf,
-    str::FromStr,
 };
 
 use clap::Parser;
@@ -10,13 +9,13 @@ use talmudifier::prelude::*;
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
 struct Args {
-    /// The path to a config json file. If this arg is not included, and if the default-fonts feature is enabled, then default values will be used.
-    #[arg(short, long, default_value = "config.json")]
-    config: PathBuf,
+    /// The path to a talmudifier json file. If this arg is not included, and if the default-fonts feature is enabled, then default values will be used.
+    #[arg(short, long, default_value = "talmudifier.json")]
+    talmudifier: PathBuf,
     /// The path to the output directory.
     #[arg(short, long, default_value = "out")]
     out: PathBuf,
-    /// If true, write intermediate .tex and .pdf files to logs/
+    /// If included, write intermediate .tex and .pdf files to logs/. This is useful for debugging but slow.
     #[arg(short, long)]
     log: bool,
 }
@@ -28,11 +27,11 @@ fn main() {
     create_dir_all(&args.out).unwrap();
 
     // Load the talmudifier.
-    let mut talmudifier = Talmudifier::new(&args.config).unwrap();
+    let mut talmudifier = Talmudifier::new(&args.talmudifier).unwrap();
 
     // Enable logging.
     if args.log {
-        config = config.log();
+        talmudifier = talmudifier.log();
     }
 
     // Talmudify.
