@@ -1,0 +1,152 @@
+# Talmudifier
+
+@OVERVIEW@
+
+
+```rust
+use std::{fs::write, path::PathBuf, str::FromStr};
+
+use talmudifier::prelude::*;
+
+let directory = PathBuf::from_str("example_text").unwrap();
+
+// Load a default talmudifier.
+let mut talmudifier = Talmudifier::default()
+    // Set the source text as three Markdown files.
+    .source_text(SourceText::Files {
+        left: directory.join("left.md"),
+        center: directory.join("center.md"),
+        right: directory.join("right.md")
+});
+
+// Talmudify.
+let daf = talmudifier.talmudify().unwrap();
+
+// Write the .tex. This is sometimes useful for debugging.
+write("out.tex", &daf.tex).unwrap();
+
+// Write the PDF.
+write("out.pdf", &daf.pdf).unwrap();
+```
+
+## Getting started
+
+@GETTING_STARTED@
+
+## Compile as an executable
+
+Talmudifier can be compiled as an executable:
+
+```bash,ignore
+cargo build --release --bin talmudify --features clap
+```
+
+This will create: `target/release/talmudify`. You can run it like any other shell program: `./talmudify [ARGS]`
+
+```ignore
+Usage: talmudify [OPTIONS]
+
+Options:
+  -t, --talmudifier <TALMUDIFIER>  The path to a talmudifier json file. If this arg is not included, and if the default-fonts feature is enabled, then default values will be used [default: talmudifier.json]
+  -o, --out <OUT>                  The path to the output directory [default: out]
+  -l, --log                        If included, write intermediate .tex and .pdf files to logs/. This is useful for debugging but slow.
+  -h, --help                       Print help
+  -V, --version                    Print version
+```
+
+## talmudifier.json
+
+@CONFIG@
+
+### Length values
+
+@LENGTH@
+
+### Fonts
+
+@FONTS@
+
+
+### Source text
+
+`"source_text"` specifies the source text that will be talmdufied. There are three options:
+
+1. File paths to three markdown files. These files must exist and must be single paragraphs (no double line breaks):
+
+```ignore
+"Files": {
+    "left": "left.md",
+    "center": "center.md",
+    "right": "right.md"
+}
+```
+
+2. Three markdown strings:
+
+```ignore
+"Text": {
+    "left": "This is the left column.",
+    "center": "This is the center column.",
+    "right": "This is the right column."
+}
+```
+
+3. A single markdown file with exactly three paragraphs:
+
+Example JSON:
+
+```ignore
+"File": "text.md"
+```
+
+An example file:
+
+```ignore
+This is the left column.
+
+This is the center column.
+
+This is the right column.
+```
+
+@MARKDOWN@
+
+### Title
+
+By default, `"title"` is set to `null`. Set it to something else to add a title to the page:
+
+`"title": "Chapter 1"`
+
+### Logging
+
+Set `"log": true` to enable logging. This will generated intermediary files per iteration that can be useful for debugging. This will also make Talmudifier run slower.
+
+## How it works
+
+@HOW@
+
+## Feature flags
+
+- `default-fonts` embeds default fonts into the executable. You might want to remove this if you want to use other fonts because the default fonts make the binary bigger.
+- `ffi` is required by the underlying PDF generator (`tectonic`). *Always include this feature.*
+- `clap` is required for some of the executables. If you're using Talmudifier as a library, you can ignore this.
+
+## Changes from Python
+
+@CHANGES@
+
+## Other executables
+
+To regenerate `example_talmudifier.json`:
+
+```bash,ignore
+cargo run --bin example_config
+```
+
+To convert an arbitrary .tex file into a .pdf (useful for debugging):
+
+```bash,ignore
+cargo run --bin textest --features clap -d directory/ -f filename.tex
+```
+
+The `-d` argument is optional and defaults to `logs/`.

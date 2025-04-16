@@ -404,7 +404,11 @@ fn get_pdf_internal(tex: &str) -> Result<Vec<u8>, Error> {
     // Try to generate the PDF.
     match latex_to_pdf(tex) {
         Ok(pdf) => Ok(pdf),
-        Err(error) => Err(Error::Pdf(error)),
+        Err(error) => {
+            // Dump the TeX string.
+            let _ = write("bad.tex", tex);
+            Err(Error::Pdf(error))
+        }
     }
 }
 

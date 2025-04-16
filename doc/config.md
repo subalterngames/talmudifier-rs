@@ -1,0 +1,1 @@
+Talmudifier uses JSON config files for typesetting. `example_talmudifier.json` is an example config file. To make your own config file, copy+paste the example and edit as needed. It should be mostly human-readable.
