@@ -159,11 +159,11 @@ impl<'t> Table<'t> {
 
     /// Given a target `num_lines`, generate a TeX string of the table.
     /// The table will include all the words starting from `self.start` in each respective column up to `end` where `end` is an index in the underlying span of words that fills a column of `num_lines`-worth of text.
-    /// 
+    ///
     /// To fill each column up to `num_lines`, we need to iteratively generate PDFs, extract the text, and count the number of lines. This is *slow*.
-    /// 
+    ///
     /// `position` can be set to include only the text of a specific column. This is important when trying to get the minimum number of lines.
-    /// 
+    ///
     /// Returns None if none of the columns have text.
     pub fn get_tex_table(
         &mut self,
@@ -205,7 +205,7 @@ impl<'t> Table<'t> {
     /// Unlike [`get_tex_table(position, num_lines)`], this function doesn't generate any intermediary PDFs.
     /// This function assumes that there is exactly 1 column that contains text, and then generates a table including its text.
     /// This function is therefore much faster than the iterative approach.
-    /// 
+    ///
     /// TL;DR this is an optimization that saves one PDF iteration.
     pub fn get_tex_table_one_column(&self) -> String {
         let mut para_columns: [ParaColumn; 3] = Default::default();
@@ -324,13 +324,13 @@ impl<'t> Table<'t> {
     }
 
     /// Get the number of lines in a column.
-    /// 
+    ///
     /// - `position` is used to specify the column.
     /// - `end` is the end index. If None, `end` is set to the total number of words in the column.
-    /// 
+    ///
     /// This is slow because it needs to render a PDF, extract the PDF to plaintext, and count the number of lines.
-    /// 
-    /// Returns None if no columns have remaining text. 
+    ///
+    /// Returns None if no columns have remaining text.
     fn get_num_lines_tex(
         &self,
         position: Position,
@@ -376,11 +376,11 @@ impl<'t> Table<'t> {
     }
 
     /// Generate a TeX string from a column. The string will fill `num_lines` on the page.
-    /// 
+    ///
     /// - `position` is used to specify the column.
     /// - `cosmic_index` is the initial end index that we calculated using Cosmic Text.
-    /// 
-    /// This is, by far, the slowest function in Talmudifier. 
+    ///
+    /// This is, by far, the slowest function in Talmudifier.
     /// It needs to iterate through each remaining word in the column until `num_lines` are filled.
     /// So, it needs to perform multiple PDF renders and extracts.
     fn get_tex_words(

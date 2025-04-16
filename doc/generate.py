@@ -11,11 +11,10 @@ def to_daf(text: str, strip_code: bool = True) -> str:
     text = RE_LINK.sub(r"\1", text[:])
     text = RE_RELATIVE_LINK.sub(r"\1", text)
     text = RE_IMAGE.sub("", text)
-    text = text.replace("\n\n", " ").replace("\n", " ").replace('"', '').replace('\\*', '*').replace("\\`", "`")
+    text = text.replace("\n\n", " ").replace("\n", " ").replace('\\*', '*').replace("\\`", "`")
     text = RE_MULTI_SPACE.sub(" ", text)
     if strip_code:
         text = text.replace("`", "")
-    text = text.replace("~", "$\sim$")
     return text
 
 

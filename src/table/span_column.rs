@@ -11,6 +11,8 @@ lazy_static! {
     static ref RE_ENDS_WITH_COMMAND: Regex = Regex::new(r#"\\(\w+)$"#).unwrap();
     static ref RE_PUNCTUATION: Regex =
         Regex::new(r#"^(!|\(|\)|-|=|\+|\[|\{|\]|\}|;|:|'|"|,|\.)"#).unwrap();
+    static ref RE_QUOTES: Regex = Regex::new(r#"([“|"](.*?)[”|"])"#).unwrap();
+    static ref RE_SPECIAL_CHARS: Regex = Regex::new(r#"(#|\$|%|&|_)"#).unwrap();
 }
 
 /// A column of text that can be typeset.
@@ -149,11 +151,21 @@ impl SpanColumn {
         if let Position::Margin = position {
             text.push('}');
         }
+        Self::santitize_tex(&mut text);
         text
     }
 
     pub fn done(&self) -> bool {
         self.start >= self.span.0.len()
+    }
+
+    /// Sanitize a TeX string.
+    fn santitize_tex(tex: &mut String) {
+        *tex = RE_SPECIAL_CHARS
+            .replace_all(&RE_QUOTES.replace_all(tex, "``$2''"), "\\$1")
+            .replace("~", "$\\sim$")
+            .replace("<", "\\textless")
+            .replace(">", "\\textgreater");
     }
 }
 
