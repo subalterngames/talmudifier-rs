@@ -127,7 +127,7 @@ impl<'t> Table<'t> {
             .zip([&self.left, &self.center, &self.right])
             .filter_map(|(p, c)| match c {
                 Column::Column { column, width: _ } => match column {
-                    MaybeSpanColumn::Span(column) => Some((p, column.to_tex(None))),
+                    MaybeSpanColumn::Span(column) => Some((p, column.to_tex(None, false))),
                     MaybeSpanColumn::Empty => Some((p, String::default())),
                 },
                 Column::None => None,
@@ -199,7 +199,7 @@ impl<'t> Table<'t> {
         {
             *para_column = match self.get_column(pos) {
                 Column::Column { column, width: _ } => match column {
-                    MaybeSpanColumn::Span(column) => ParaColumn::Text(column.to_tex(None)),
+                    MaybeSpanColumn::Span(column) => ParaColumn::Text(column.to_tex(None, true)),
                     MaybeSpanColumn::Empty => ParaColumn::Empty,
                 },
                 Column::None => ParaColumn::None,
@@ -234,7 +234,7 @@ impl<'t> Table<'t> {
         Ok(
             if target_position.is_some() && position == target_position.unwrap() {
                 // Include all words.
-                match self.get_column_tex(position, None) {
+                match self.get_column_tex(position, None, true) {
                     Some(tex) => ParaColumn::Text(tex),
                     None => ParaColumn::None,
                 }
@@ -359,19 +359,19 @@ impl<'t> Table<'t> {
     ) -> Result<Option<usize>, Error> {
         let para_columns = match position {
             Position::Left => [
-                ParaColumn::new(&self.left, end),
+                ParaColumn::new(&self.left, end, false),
                 ParaColumn::new_empty(&self.center),
                 ParaColumn::new_empty(&self.right),
             ],
             Position::Center => [
                 ParaColumn::new_empty(&self.left),
-                ParaColumn::new(&self.center, end),
+                ParaColumn::new(&self.center, end, false),
                 ParaColumn::new_empty(&self.right),
             ],
             Position::Right => [
                 ParaColumn::new_empty(&self.left),
                 ParaColumn::new_empty(&self.center),
-                ParaColumn::new(&self.right, end),
+                ParaColumn::new(&self.right, end, false),
             ],
         };
 
@@ -466,7 +466,7 @@ impl<'t> Table<'t> {
                     Ok(if end == 0 {
                         None
                     } else {
-                        self.get_column_tex(position, Some(end))
+                        self.get_column_tex(position, Some(end), true)
                     })
                 }
                 None => Ok(None),
@@ -477,7 +477,12 @@ impl<'t> Table<'t> {
     /// Convert a column at `position` to a TeX including words from the column's start index to an `end` index.
     /// If `end` is None, it's set to the number of words in the column.
     /// Returns None if there aren't any remaining words in the column.
-    fn get_column_tex(&mut self, position: Position, end: Option<usize>) -> Option<String> {
+    fn get_column_tex(
+        &mut self,
+        position: Position,
+        end: Option<usize>,
+        marginalia: bool,
+    ) -> Option<String> {
         let column = self.get_mut_column(position);
         match column {
             Column::Column { column, width: _ } => {
@@ -491,7 +496,7 @@ impl<'t> Table<'t> {
                         if column.start >= end {
                             None
                         } else {
-                            let text = column.to_tex(Some(end));
+                            let text = column.to_tex(Some(end), marginalia);
                             // Increase the next start index.
                             column.start = end;
                             Some(text)
@@ -536,6 +541,10 @@ impl<'t> Table<'t> {
                         } else {
                             // Iterate through the slice.
                             for end in column.start..len {
+                                // Ignore marginalia.
+                                if !column.is_word_in_body(end) {
+                                    continue;
+                                }
                                 // Get the width of the column in pts.
                                 let column_width = page_width * width.column_ratio() - separation;
                                 // Prepare the Cosmic buffer.

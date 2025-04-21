@@ -9,8 +9,7 @@ use crate::{
 
 lazy_static! {
     static ref RE_ENDS_WITH_COMMAND: Regex = Regex::new(r#"\\(\w+)$"#).unwrap();
-    static ref RE_PUNCTUATION: Regex =
-        Regex::new(r#"^(!|\(|\)|-|=|\+|\[|\{|\]|\}|;|:|,|\.)"#).unwrap();
+    static ref RE_PUNCTUATION: Regex = Regex::new(r#"^(!|;|:|,|\.)"#).unwrap();
     static ref RE_QUOTES: Regex = Regex::new(r#"([“|"](.*?)[”|"])"#).unwrap();
     static ref RE_SPECIAL_CHARS: Regex = Regex::new(r#"(#|\$|%|&|_)"#).unwrap();
 }
@@ -40,6 +39,10 @@ impl SpanColumn {
             cosmic_font,
             tex_font: tex_font.to_string(),
         }
+    }
+
+    pub fn is_word_in_body(&self, index: usize) -> bool {
+        self.span.0[index].position == Position::Body
     }
 
     /// Convert a slice of words into Cosmic text spans.
@@ -85,7 +88,7 @@ impl SpanColumn {
     }
 
     /// Convert a slice of words to a TeX string.
-    pub fn to_tex(&self, end: Option<usize>) -> String {
+    pub fn to_tex(&self, end: Option<usize>, marginalia: bool) -> String {
         // Get the end index. If `end` was none, use all remaining words.
         let end = match end {
             Some(end) => end,
@@ -112,18 +115,25 @@ impl SpanColumn {
                 style = word.style;
             }
             // Change the position.
-            if position != word.position {
-                let command = position.get_command(&word.position);
-                if let Some(prefix) = command.0 {
-                    prefixes.push(prefix);
-                }
-                // Add a suffix to the previous word.
-                if let Some(suffix) = command.1 {
-                    suffixes.push(suffix);
-                }
+            if marginalia {
+                if position != word.position {
+                    let command = position.get_command(&word.position);
+                    if let Some(prefix) = command.0 {
+                        prefixes.push(prefix);
+                    }
+                    // Add a suffix to the previous word.
+                    if let Some(suffix) = command.1 {
+                        suffixes.push(suffix);
+                    }
 
-                position = word.position;
+                    position = word.position;
+                }
             }
+            // Ignore marginalia.
+            else if word.position == Position::Margin {
+                continue;
+            }
+
             // Add the suffixes.
             suffixes.iter().for_each(|s| text.push_str(s));
 
@@ -177,7 +187,7 @@ mod tests {
     fn test_textit() {
         let md = "*This is italic* and this is regular.";
         let column = get_column(md);
-        let tex = column.to_tex(None);
+        let tex = column.to_tex(None, true);
         assert_eq!(tex, "\\font \\textit{This is italic} and this is regular.")
     }
 
@@ -185,7 +195,7 @@ mod tests {
     fn test_bold_italic() {
         let md = "**bold** *italic* ***bold and italic*** **bold**";
         let column = get_column(md);
-        let tex = column.to_tex(None);
+        let tex = column.to_tex(None, true);
         assert_eq!(
             tex,
             "\\font \\textbf{bold} \\textit{italic \\textbf{bold and italic}} \\textbf{bold}"
@@ -196,11 +206,13 @@ mod tests {
     fn test_marginnote() {
         let md = "A `footnote *here* and` *there*";
         let column = get_column(md);
-        let tex = column.to_tex(None);
+        let tex = column.to_tex(None, true);
         assert_eq!(
         tex,
         "\\font A \\marginnote{\\noindent\\justifying\\tiny footnote \\textit{here} and} \\textit{there}"
     );
+        let tex = column.to_tex(None, false);
+        assert_eq!(tex, "\\font A \\textit{there}");
     }
 
     fn get_column(md: &str) -> SpanColumn {

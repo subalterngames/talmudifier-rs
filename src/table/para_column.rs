@@ -10,7 +10,7 @@ pub enum ParaColumn {
 }
 
 impl ParaColumn {
-    pub fn new(column: &Column<'_>, end: Option<usize>) -> Self {
+    pub fn new(column: &Column<'_>, end: Option<usize>, marginalia: bool) -> Self {
         match column {
             Column::Column { column, width: _ } => match column {
                 MaybeSpanColumn::Span(column) => {
@@ -22,7 +22,7 @@ impl ParaColumn {
                     if column.start >= end {
                         Self::None
                     } else {
-                        Self::Text(column.to_tex(Some(end)))
+                        Self::Text(column.to_tex(Some(end), marginalia))
                     }
                 }
                 MaybeSpanColumn::Empty => Self::Empty,
@@ -63,9 +63,9 @@ mod tests {
         span_column.start = 6;
         let full = MaybeSpanColumn::Span(&mut span_column);
         let column = Column::new(full, Width::Half);
-        let para_column = ParaColumn::new(&column, None);
+        let para_column = ParaColumn::new(&column, None, true);
         assert!(matches!(para_column, ParaColumn::Text(_)));
-        let para_column = ParaColumn::new(&column, Some(5));
+        let para_column = ParaColumn::new(&column, Some(5), true);
         assert!(matches!(para_column, ParaColumn::None));
     }
 }

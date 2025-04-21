@@ -106,8 +106,8 @@ impl Talmudifier {
     }
 
     /// Set the title text. By default, there is no title.
-    pub fn title(mut self, title: String) -> Self {
-        self.title = Some(title);
+    pub fn title<S: ToString>(mut self, title: S) -> Self {
+        self.title = Some(title.to_string());
         self
     }
 

@@ -16,6 +16,9 @@ let directory = PathBuf::from_str("example_text").unwrap();
 
 // Load a default talmudifier.
 let mut talmudifier = Talmudifier::default()
+ .log()
+ // Add a title to the page.
+ .title("Talmudifier")
  // Set the source text as three Markdown files.
  .source_text(SourceText::Files {
  left: directory.join("left.md"),
