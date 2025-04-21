@@ -11,7 +11,7 @@ def to_daf(text: str, strip_code: bool = True) -> str:
     text = RE_LINK.sub(r"\1", text[:])
     text = RE_RELATIVE_LINK.sub(r"\1", text)
     text = RE_IMAGE.sub("", text)
-    text = text.replace("\n\n", " ").replace("\n", " ").replace('\\*', '*').replace("\\`", "`")
+    text = text.replace("\n\n", " ").replace("\n", " ").replace('\\*', '*').replace("\\`", "`").replace('"', '')
     text = RE_MULTI_SPACE.sub(" ", text)
     if strip_code:
         text = text.replace("`", "")
@@ -32,7 +32,16 @@ how = Path("how.md").read_text(encoding="utf-8")
 changes = Path("changes.md").read_text(encoding="utf-8")
 
 readme = template.replace("@OVERVIEW@", overview).replace("@GETTING_STARTED@", getting_started).replace("@CONFIG@", config).replace("@LENGTH@", length).replace("@FONTS@", fonts).replace("@MARKDOWN@", markdown).replace("@HOW@", how).replace("@CHANGES@", changes)
+# README.
 Path("../README.md").write_text(readme)
+
+# README for rustdoc.
+readme = RE_LINK.sub(r"\1", readme[:])
+readme = RE_RELATIVE_LINK.sub(r"\1", readme)
+readme = RE_IMAGE.sub("", readme)
+readme = RE_MULTI_SPACE.sub(" ", readme)
+Path("README_rs.md").write_text(readme)
+
 
 # Center.
 center = to_daf(overview) + " " + to_daf(getting_started)
@@ -42,6 +51,6 @@ output_directory.joinpath("center.md").write_text(center)
 left = to_daf(config) + " " + to_daf(length) + " " + to_daf(fonts) + " " + to_daf(markdown, strip_code=False)
 output_directory.joinpath("left.md").write_text(left)
 
-# Right
+# Right.
 right = to_daf(how, strip_code=False) + " " + to_daf(changes)
 output_directory.joinpath("right.md").write_text(right)

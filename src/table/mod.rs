@@ -175,23 +175,7 @@ impl<'t> Table<'t> {
             .into_iter()
             .zip(para_columns.iter_mut())
         {
-            *para_column = if position.is_some() && pos == position.unwrap() {
-                // Include all words.
-                match self.get_column_tex(pos, None) {
-                    Some(tex) => ParaColumn::Text(tex),
-                    None => ParaColumn::None,
-                }
-            } else {
-                match self.get_cosmic_index(pos, num_lines) {
-                    Some(cosmic_index) => {
-                        match self.get_tex_words(pos, cosmic_index, num_lines)? {
-                            Some(text) => ParaColumn::Text(text),
-                            None => ParaColumn::Empty,
-                        }
-                    }
-                    None => ParaColumn::None,
-                }
-            }
+            *para_column = self.get_para_column(pos, position, num_lines)?;
         }
 
         if Self::para_columns_done(&para_columns) {
@@ -224,11 +208,48 @@ impl<'t> Table<'t> {
         self.get_paracol(&para_columns).unwrap()
     }
 
+    pub fn get_title_table(&mut self, title: &str) -> Result<Option<String>, Error> {
+        let left = self.get_para_column(Position::Left, None, 4)?;
+        let right = self.get_para_column(Position::Right, None, 4)?;
+
+        // The center is the title.
+        let center = ParaColumn::Text(tex!("chapter", crate::tex!("daftitle", title)));
+
+        Ok(self.get_paracol(&[left, center, right]))
+    }
+
     /// Returns true if none of the columns have any further text.
     pub fn done(&self) -> bool {
         [&self.left, &self.center, &self.right]
             .iter()
             .all(|c| c.done())
+    }
+
+    fn get_para_column(
+        &mut self,
+        position: Position,
+        target_position: Option<Position>,
+        num_lines: usize,
+    ) -> Result<ParaColumn, Error> {
+        Ok(
+            if target_position.is_some() && position == target_position.unwrap() {
+                // Include all words.
+                match self.get_column_tex(position, None) {
+                    Some(tex) => ParaColumn::Text(tex),
+                    None => ParaColumn::None,
+                }
+            } else {
+                match self.get_cosmic_index(position, num_lines) {
+                    Some(cosmic_index) => {
+                        match self.get_tex_words(position, cosmic_index, num_lines)? {
+                            Some(text) => ParaColumn::Text(text),
+                            None => ParaColumn::Empty,
+                        }
+                    }
+                    None => ParaColumn::None,
+                }
+            },
+        )
     }
 
     /// Convert TeX strings per column into a TeX table.

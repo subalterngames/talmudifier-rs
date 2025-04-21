@@ -1,4 +1,4 @@
-#![doc = include_str!("../README.md")]
+#![doc = include_str!("../doc/README_rs.md")]
 
 use std::{
     fs::{create_dir_all, read, write},
@@ -195,6 +195,27 @@ impl Talmudifier {
             done = table.done();
         }
 
+        // Title.
+        if !done {
+            if let Some(title) = &self.title {
+                table = Table::new(
+                    Some(MaybeSpanColumn::Span(&mut left)),
+                    Some(MaybeSpanColumn::Empty),
+                    Some(MaybeSpanColumn::Span(&mut right)),
+                    &self.page,
+                    self.log,
+                );
+                match table.get_title_table(title)? {
+                    Some(table) => tables.push(table),
+                    None => done = true,
+                }
+            }
+        }
+
+        if !done {
+            done = table.done();
+        }
+
         while !done {
             // Decide which columns to use.
             let left_column = Self::get_column(&mut left);
@@ -261,11 +282,7 @@ impl Talmudifier {
 
         // Build the document.
         let mut tex = self.page.preamble.clone();
-        // Add the title.
-        if let Some(title) = &self.title {
-            tex.push_str(&crate::tex!("chapter", crate::tex!("daftitle", title)));
-            tex.push('\n');
-        }
+
         // Add the tables.
         tex.push_str(&tables.join("\n"));
         // End the document.

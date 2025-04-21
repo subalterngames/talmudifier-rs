@@ -10,7 +10,7 @@ use crate::{
 lazy_static! {
     static ref RE_ENDS_WITH_COMMAND: Regex = Regex::new(r#"\\(\w+)$"#).unwrap();
     static ref RE_PUNCTUATION: Regex =
-        Regex::new(r#"^(!|\(|\)|-|=|\+|\[|\{|\]|\}|;|:|'|"|,|\.)"#).unwrap();
+        Regex::new(r#"^(!|\(|\)|-|=|\+|\[|\{|\]|\}|;|:|,|\.)"#).unwrap();
     static ref RE_QUOTES: Regex = Regex::new(r#"([“|"](.*?)[”|"])"#).unwrap();
     static ref RE_SPECIAL_CHARS: Regex = Regex::new(r#"(#|\$|%|&|_)"#).unwrap();
 }
@@ -199,7 +199,7 @@ mod tests {
         let tex = column.to_tex(None);
         assert_eq!(
         tex,
-        "\\font A \\\\marginnote{\\\\noindent\\\\justifying\\\\tiny footnote \\textit{here} and} \\textit{there}"
+        "\\font A \\marginnote{\\noindent\\justifying\\tiny footnote \\textit{here} and} \\textit{there}"
     );
     }
 
