@@ -210,7 +210,7 @@ impl<'t> Table<'t> {
 
     /// Returns a table with text on the left and right, and the title in the center.
     pub fn get_title_table(&mut self, title: &str) -> Result<Option<String>, Error> {
-        const NUM_LINES: usize = 3;
+        const NUM_LINES: usize = 4;
 
         let left = self.get_para_column(Position::Left, None, NUM_LINES)?;
         let right = self.get_para_column(Position::Right, None, NUM_LINES)?;

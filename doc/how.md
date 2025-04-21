@@ -1,6 +1,6 @@
 The Talmud's typesetting dates back to the invention of the printing press. Printmaking was easy but paper was expensive so people crammed several texts onto a single page. The standard "Talmud page layout" is actually the Talmud as printed in the Vilna Shas, and other page layouts are possible.
 
-There are rules defining how to typeset a Talmud page. The Vilna Shas predates the rigorous use of algorithms, so some pages follow the rules less strictly than others. Talmudifier strictly follows the following rules:
+There are rules defining how to typeset a Talmud page. The Vilna Shas predates the formalization of iterative algorithms, so some pages follow the rules less strictly than others. Talmudifier strictly follows the following rules:
 
 1. There are always three columns of text
 2. Whenever possible, the page starts with four lines of text in the left and right columns followed by a "gap" row to give the center column some breating space:
