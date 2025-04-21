@@ -11,7 +11,7 @@ def to_daf(text: str, strip_code: bool = True) -> str:
     text = RE_LINK.sub(r"\1", text[:])
     text = RE_RELATIVE_LINK.sub(r"\1", text)
     text = RE_IMAGE.sub("", text)
-    text = text.replace("\n\n", " ").replace("\n", " ").replace('\\*', '*').replace("\\`", "`").replace('"', '')
+    text = text.replace("\n\n", " ").replace("\n", " ").replace("\\`", "`").replace('"', '')
     text = RE_MULTI_SPACE.sub(" ", text)
     if strip_code:
         text = text.replace("`", "")
@@ -26,10 +26,9 @@ overview = Path("overview.md").read_text(encoding="utf-8")
 config = Path("config.md").read_text(encoding="utf-8")
 length = Path("length.md").read_text(encoding="utf-8")
 fonts = Path("fonts.md").read_text(encoding="utf-8")
-markdown = Path("markdown.md").read_text(encoding="utf-8")
 how = Path("how.md").read_text(encoding="utf-8")
 
-readme = template.replace("@OVERVIEW@", overview).replace("@CONFIG@", config).replace("@LENGTH@", length).replace("@FONTS@", fonts).replace("@MARKDOWN@", markdown).replace("@HOW@", how)
+readme = template.replace("@OVERVIEW@", overview).replace("@CONFIG@", config).replace("@LENGTH@", length).replace("@FONTS@", fonts).replace("@HOW@", how)
 # README.
 Path("../README.md").write_text(readme)
 
@@ -46,7 +45,7 @@ center = to_daf(overview)
 output_directory.joinpath("center.md").write_text(center)
 
 # Left.
-left = to_daf(config) + " " + to_daf(length) + " " + to_daf(fonts) + " " + to_daf(markdown, strip_code=False)
+left = to_daf(config) + " " + to_daf(length) + " " + to_daf(fonts)
 output_directory.joinpath("left.md").write_text(left)
 
 # Right.

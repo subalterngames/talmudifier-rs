@@ -14,8 +14,8 @@ impl Width {
         match self {
             Self::One => 1.,
             Self::Half => 0.5,
-            Self::Third => 0.32,
-            Self::TwoThirds => 0.655,
+            Self::Third => 0.3333,
+            Self::TwoThirds => 0.6666,
         }
     }
 }
