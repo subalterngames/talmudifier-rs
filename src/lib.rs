@@ -1,4 +1,10 @@
+
 #![doc = include_str!("../doc/README_rs.md")]
+//!
+#![cfg_attr(all(), 
+doc = embed_doc_image::embed_image!("daf", "images/daf.jpg"),
+doc = embed_doc_image::embed_image!("four_rows", "images/four_rows.jpg"),
+doc = embed_doc_image::embed_image!("center", "images/center.jpg"))]
 
 use std::{
     fs::{create_dir_all, read, write},
@@ -115,7 +121,7 @@ impl Talmudifier {
     /// This will generate intermediary .pdf, .tex, and .txt files per iteration.
     /// The .txt files include the text extracted from the .pdf
     /// This function is useful for debugging because you can identify where a typesetting error occurred.
-    /// However, this function will make [`talmudifiy()`] run slower.
+    /// However, this function will make [`self.talmudifiy()`] run slower.
     pub fn log(mut self) -> Self {
         self.log = true;
         self

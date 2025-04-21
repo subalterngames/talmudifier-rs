@@ -2,7 +2,6 @@
 
 @OVERVIEW@
 
-
 ```rust
 use std::{fs::write, path::PathBuf, str::FromStr};
 

@@ -4,7 +4,7 @@ import re
 RE_LINK = re.compile(r"\[(.*?)]\((https://|#)[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)\)", flags=re.MULTILINE)
 RE_RELATIVE_LINK = re.compile(r"\[(.*?)]\(#.*?\)")
 RE_MULTI_SPACE = re.compile(r"([ ]{2,})")
-RE_IMAGE = re.compile(r"(!\[]\(.*?\))")
+RE_IMAGE = re.compile(r"[ ]{0,}(!\[(.*?)]\((images/(.*?).jpg)\))")
 
 
 def to_daf(text: str, strip_code: bool = True) -> str:
@@ -35,19 +35,19 @@ Path("../README.md").write_text(readme)
 # README for rustdoc.
 readme = RE_LINK.sub(r"\1", readme[:])
 readme = RE_RELATIVE_LINK.sub(r"\1", readme)
-readme = RE_IMAGE.sub("", readme)
+readme = RE_IMAGE.sub(r"\n![\2][\4]\n", readme).strip()
 readme = RE_MULTI_SPACE.sub(" ", readme)
 Path("README_rs.md").write_text(readme)
 
 
 # Center.
 center = to_daf(overview)
-output_directory.joinpath("center.md").write_text(center)
+output_directory.joinpath("center.md").write_text(center.strip())
 
 # Left.
 left = to_daf(config) + " " + to_daf(length) + " " + to_daf(fonts)
-output_directory.joinpath("left.md").write_text(left)
+output_directory.joinpath("left.md").write_text(left.strip())
 
 # Right.
 right = to_daf(how, strip_code=False)
-output_directory.joinpath("right.md").write_text(right)
+output_directory.joinpath("right.md").write_text(right.strip())

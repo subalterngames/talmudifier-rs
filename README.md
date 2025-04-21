@@ -6,6 +6,7 @@ Given three paragraphs of markdown text, Talmudifier will generate a .pdf file u
 
 This is a Rust port of my [Talmudifier Python module](https://github.com/subalterngames/talmudifier). It's faster now.
 
+![A PDF that Talmudifier generated. There are three columns of text, and of varying widths. The text is pulled from this README.](images/daf.jpg)
 
 ```rust
 use std::{fs::write, path::PathBuf, str::FromStr};
@@ -155,7 +156,7 @@ There are rules defining how to typeset a Talmud page. The Vilna Shas predates t
 
 1. There are always three columns of text
 2. Whenever possible, the page starts with four lines of text in the left and right columns followed by a "gap" row to give the center column some breating space:
-  ![](images/four_rows.jpg)
+  ![The first four rows, and gap row, of an actual Talmud page.](images/four_rows.jpg)
 3. After this, columns are typeset using the following algorithm until there is no more text:
   - Each column can have a different typeface (most famously, Rashi's commentary has its own typeface).
   - The widths of the columns are determined by which columns still have text. For example, if the left and right columns have text that needs to be typeset but the center column doesn't, then the column widths are each half of the total width of the table.
@@ -163,7 +164,7 @@ There are rules defining how to typeset a Talmud page. The Vilna Shas predates t
   - Add all columns that still have text to the page up to *n* lines (or, if there isn't enough text, just add all remaining text).
   - Marginalia is always in-line with the text that it is commenting on.
   - For the columns that still have text, add "gap" rows.
-  ![](images/center.jpg)
+  ![An actual Talmud page with red arrows over each of three columns. The arrows describe when the columns start and end.](images/center.jpg)
 
 For more information, read: `Printing the Talmud : a history of the earliest printed editions of the Talmud by Martin Heller`
 

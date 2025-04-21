@@ -12,5 +12,5 @@
 - [x] Rename config
 - [x] Sanitize md for tex
 - [ ] Benchmark
-- [ ] Splash image
-- [ ] Rust doc images
+- [x] Splash image
+- [x] Rust doc images
