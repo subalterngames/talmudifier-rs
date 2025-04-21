@@ -208,12 +208,22 @@ impl<'t> Table<'t> {
         self.get_paracol(&para_columns).unwrap()
     }
 
+    /// Returns a table with text on the left and right, and the title in the center.
     pub fn get_title_table(&mut self, title: &str) -> Result<Option<String>, Error> {
-        let left = self.get_para_column(Position::Left, None, 4)?;
-        let right = self.get_para_column(Position::Right, None, 4)?;
+        const NUM_LINES: usize = 3;
+
+        let left = self.get_para_column(Position::Left, None, NUM_LINES)?;
+        let right = self.get_para_column(Position::Right, None, NUM_LINES)?;
 
         // The center is the title.
-        let center = ParaColumn::Text(tex!("chapter", crate::tex!("daftitle", title)));
+        // \begin{center}\centerfont{\huge{Talmudifier}}\end{center}
+        let title = format!(
+            "{}\\centerfont{{{}}}{}",
+            tex!("begin", "center"),
+            tex!("huge", &title),
+            tex!("end", "center")
+        );
+        let center = ParaColumn::Text(title);
 
         Ok(self.get_paracol(&[left, center, right]))
     }

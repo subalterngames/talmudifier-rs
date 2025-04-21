@@ -4,7 +4,7 @@
 
 Given three paragraphs of markdown text, Talmudifier will generate a .pdf file using XeTeX (via Rust's tectonic crate). You can also include a title, basic styling (bold, italic, etc.) and marginalia.
 
-This is a Rust port of my [Talmudifier Python module](https://github.com/subalterngames/talmudifier).
+This is a Rust port of my [Talmudifier Python module](https://github.com/subalterngames/talmudifier). It's faster now.
 
 
 ```rust

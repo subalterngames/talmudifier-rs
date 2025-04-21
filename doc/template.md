@@ -33,7 +33,17 @@ write("out.pdf", &daf.pdf).unwrap();
 
 ## Getting started
 
-@GETTING_STARTED@
+It's easy! You don't need to be a programmer to use Talmudifier.
+
+1. [Download and extract this repo](https://github.com/subalterngames/talmudifier-rs/archive/refs/heads/main.zip)
+2. [Download and install Rust](https://www.rust-lang.org/tools/install)
+3. Open a terminal shell. 
+  - Windows: Search for `powershell` and run it
+  - macOS: Search for `terminal` and run it
+  - Linux: You know what to do
+4. In the terminal, type `cd [PATH]` and press enter. *Do not literally type* `[PATH]`. That's a substitute word for whatever the actual path to the repo is. For example, if you extracted the repo in Downloads, then: `cd ~/Downloads/talmudifier`
+5. [Compile as an executable](#compile-as-an-executable)
+6. [Create a valid talmudifier.json file](#talmudifierjson)
 
 ## Compile as an executable
 
@@ -135,7 +145,17 @@ Set `"log": true` to enable logging. This will generated intermediary files per 
 
 ## Changes from Python
 
-@CHANGES@
+This is a Rust port of my `talmudifier` Python module. Major differences include:
+
+- It's much faster.
+- No external TeX engine needed. Talmudifier has its own internal TeX engine.
+- No need to download any TeX packages. Talmudifier will download the required packages for you.
+- Use Cosmic Text to guess the end index that is then used to generate a TeX column of a specified number of lines. Previously, I was using hard-coded guesses to do this. Cosmic Text is much more flexible and accurate.
+- Default fonts are automatically included
+- Simplified the config file
+- No longer supported:
+  - 1-1 word/character substitutions
+  - Colorization of specific words
 
 ## Other executables
 

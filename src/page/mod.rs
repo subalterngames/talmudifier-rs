@@ -76,7 +76,6 @@ impl Page {
             preamble.push_str(&font.font_family);
             preamble.push('\n');
         }
-        preamble += "\\newcommand{\\daftitle}[1]{\\centerfont{\\huge{#1}}}\n";
         preamble += "\n\n\\raggedbottom\n\n\\begin{document}\\begin{sloppypar}\n\n";
         preamble + &tex!("fontsize", font_metrics.size, font_metrics.skip)
     }

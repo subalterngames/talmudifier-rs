@@ -23,15 +23,13 @@ output_directory: Path = Path("../example_text").resolve()
 template = Path("template.md").read_text(encoding="utf-8")
 
 overview = Path("overview.md").read_text(encoding="utf-8")
-getting_started = Path("getting_started.md").read_text(encoding="utf-8")
 config = Path("config.md").read_text(encoding="utf-8")
 length = Path("length.md").read_text(encoding="utf-8")
 fonts = Path("fonts.md").read_text(encoding="utf-8")
 markdown = Path("markdown.md").read_text(encoding="utf-8")
 how = Path("how.md").read_text(encoding="utf-8")
-changes = Path("changes.md").read_text(encoding="utf-8")
 
-readme = template.replace("@OVERVIEW@", overview).replace("@GETTING_STARTED@", getting_started).replace("@CONFIG@", config).replace("@LENGTH@", length).replace("@FONTS@", fonts).replace("@MARKDOWN@", markdown).replace("@HOW@", how).replace("@CHANGES@", changes)
+readme = template.replace("@OVERVIEW@", overview).replace("@CONFIG@", config).replace("@LENGTH@", length).replace("@FONTS@", fonts).replace("@MARKDOWN@", markdown).replace("@HOW@", how)
 # README.
 Path("../README.md").write_text(readme)
 
@@ -44,7 +42,7 @@ Path("README_rs.md").write_text(readme)
 
 
 # Center.
-center = to_daf(overview) + " " + to_daf(getting_started)
+center = to_daf(overview)
 output_directory.joinpath("center.md").write_text(center)
 
 # Left.
@@ -52,5 +50,5 @@ left = to_daf(config) + " " + to_daf(length) + " " + to_daf(fonts) + " " + to_da
 output_directory.joinpath("left.md").write_text(left)
 
 # Right.
-right = to_daf(how, strip_code=False) + " " + to_daf(changes)
+right = to_daf(how, strip_code=False)
 output_directory.joinpath("right.md").write_text(right)
