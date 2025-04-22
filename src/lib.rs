@@ -1,7 +1,6 @@
-
 #![doc = include_str!("../doc/README_rs.md")]
 //!
-#![cfg_attr(all(), 
+#![cfg_attr(all(),
 doc = embed_doc_image::embed_image!("daf", "images/daf.jpg"),
 doc = embed_doc_image::embed_image!("four_rows", "images/four_rows.jpg"),
 doc = embed_doc_image::embed_image!("center", "images/center.jpg"))]

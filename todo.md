@@ -14,3 +14,4 @@
 - [ ] Benchmark
 - [x] Splash image
 - [x] Rust doc images
+- [ ] TeX bundle

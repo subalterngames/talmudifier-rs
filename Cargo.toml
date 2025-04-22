@@ -34,3 +34,6 @@ required-features = ["clap"]
 [[bin]]
 name = "textest"
 required-features = ["clap"]
+
+[[bin]]
+name = "benchmark"

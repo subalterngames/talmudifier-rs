@@ -16,7 +16,7 @@ use talmudifier::prelude::*;
 let directory = PathBuf::from_str("example_text").unwrap();
 
 // Load a default talmudifier.
-let mut talmudifier = Talmudifier::default()
+let talmudifier = Talmudifier::default()
     // Add a title to the page.
     .title("Talmudifier")
     // Set the source text as three Markdown files.
@@ -47,6 +47,7 @@ It's easy! You don't need to be a programmer to use Talmudifier.
   - macOS: Search for `terminal` and run it
   - Linux: You know what to do
 4. In the terminal, type `cd [PATH]` and press enter. *Do not literally type* `[PATH]`. That's a substitute word for whatever the actual path to the repo is. For example, if you extracted the repo in Downloads, then: `cd ~/Downloads/talmudifier`
+5. Type `./install.sh` and press enter.
 5. [Compile as an executable](#compile-as-an-executable)
 6. [Create a valid talmudifier.json file](#talmudifierjson)
 
@@ -54,13 +55,13 @@ It's easy! You don't need to be a programmer to use Talmudifier.
 
 Talmudifier can be compiled as an executable:
 
-```bash,ignore
+```text
 cargo build --release --bin talmudify --features clap
 ```
 
 This will create: `target/release/talmudify`. You can run it like any other shell program: `./talmudify [ARGS]`
 
-```ignore
+```text
 Usage: talmudify [OPTIONS]
 
 Options:
@@ -96,7 +97,7 @@ Limitations:
 
 1. File paths to three markdown files. These files must exist and must be single paragraphs (no double line breaks):
 
-```ignore
+```text
 "Files": {
     "left": "left.md",
     "center": "center.md",
@@ -106,7 +107,7 @@ Limitations:
 
 2. Three markdown strings:
 
-```ignore
+```text
 "Text": {
     "left": "This is the left column.",
     "center": "This is the center column.",
@@ -118,13 +119,13 @@ Limitations:
 
 Example JSON:
 
-```ignore
+```text
 "File": "text.md"
 ```
 
 An example file:
 
-```ignore
+```text
 This is the left column.
 
 This is the center column.
@@ -215,3 +216,11 @@ cargo run --bin textest --features clap -d directory/ -f filename.tex
 ```
 
 The `-d` argument is optional and defaults to `logs/`.
+
+To run a very rudimentary benchmark:
+
+```bash
+cargo run --bin benchmark --release
+```
+
+Current benchmark: 131 seconds
