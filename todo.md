@@ -8,6 +8,7 @@
 - [x] Update comments in `table` and `config`
 - [ ] Windows
 - [ ] MacOS
+- [ ] Ubuntu
 - [x] Without default features
 - [x] Rename config
 - [x] Sanitize md for tex
