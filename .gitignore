@@ -4,3 +4,4 @@ logs/
 *.pdf
 out.tex
 bad.tex
+venv/

@@ -10,10 +10,6 @@ fn main() {
     let talmudifier = Talmudifier::default();
     let s = to_string_pretty(&talmudifier).unwrap();
     write("example_talmudifier.json", s).unwrap();
-
-    let fonts = Fonts::default();
-    let s = to_string_pretty(&fonts).unwrap();
-    write("example_fonts.json", s).unwrap();
 }
 
 #[cfg(not(feature = "default-fonts"))]

@@ -3,7 +3,7 @@ pub mod cosmic_fonts;
 #[cfg(feature = "default-fonts")]
 mod default_fonts;
 #[cfg(feature = "default-fonts")]
-pub(crate) mod default_tex_fonts;
+pub mod default_tex_fonts;
 pub mod font_metrics;
 pub mod font_paths;
 pub mod fonts;

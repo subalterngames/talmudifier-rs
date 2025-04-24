@@ -4,10 +4,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::Error,
-    prelude::{DefaultTexFonts, FontMetrics},
+    prelude::FontMetrics,
 };
 
-use super::{cosmic_fonts::CosmicFonts, tex_fonts::TexFonts, Font, DEFAULT_ROOT_DIRECTORY};
+use super::{cosmic_fonts::CosmicFonts, default_tex_fonts::DefaultTexFonts, tex_fonts::TexFonts, Font, DEFAULT_ROOT_DIRECTORY};
 
 /// Fonts for the left, center, and right columns.
 #[derive(Deserialize, Serialize)]
@@ -75,19 +75,5 @@ impl Default for Fonts {
             #[cfg(feature = "default-fonts")]
             default: true,
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::fs::read;
-
-    use serde_json::from_slice;
-
-    use super::Fonts;
-
-    #[test]
-    fn test_default_fonts() {
-        from_slice::<Fonts>(&read("example_fonts.json").unwrap()).unwrap();
     }
 }

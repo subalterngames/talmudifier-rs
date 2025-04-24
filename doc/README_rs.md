@@ -84,7 +84,7 @@ Many of the values in the config file are measurements of lengths. The following
 
 ### Fonts
 
-`"fonts"` has a default value of `null`, in which case default fonts embedded in the executable are used. You can set this to use other fonts. See `example_fonts.json`; you can replace `null` with the text in `example_fonts.json` (assuming that the files actually exist).
+You can also optionally set the per-column `"fonts"`. If you don't, and if you've included the `default-features` feature, default fonts will be used.
 
 Limitations:
 

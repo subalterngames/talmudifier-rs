@@ -1,3 +1,5 @@
+from pdf2image import convert_from_path
+
 from pathlib import Path
 import re
 
@@ -51,3 +53,7 @@ output_directory.joinpath("left.md").write_text(left.strip())
 # Right.
 right = to_daf(how, strip_code=False)
 output_directory.joinpath("right.md").write_text(right.strip())
+
+# Regenerate the daf image.
+images = convert_from_path("../out.pdf")
+images[0].resize((850, 1100)).save("../images/daf.jpg")
