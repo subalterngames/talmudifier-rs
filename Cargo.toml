@@ -25,7 +25,7 @@ embed-doc-image = "0.1.4"
 
 [target.'cfg(unix)'.dependencies]
 pdf-extract = "0.8.0"
-tectonic = { git = "https://github.com/tectonic-typesetting/tectonic.git", branch = "master", default-features = false, features = ["geturl-curl"] }
+tectonic = { git = "https://github.com/tectonic-typesetting/tectonic.git", branch = "master", default-features = false, features = ["geturl-reqwest"] }
 
 [[bin]]
 name = "talmudify"
