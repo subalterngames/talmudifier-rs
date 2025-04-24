@@ -621,7 +621,7 @@ mod tests {
         let span = Span::from_md(lorem).unwrap();
         assert_eq!(span.0.len(), 402);
         let cosmic_font = CosmicFont::default_left();
-        let tex_fonts = TexFonts::default().unwrap();
+        let tex_fonts = TexFonts::new().unwrap();
         let mut column = SpanColumn::new(span, cosmic_font, &tex_fonts.left.command);
         let page = Page::default();
         let mut table = Table::new(
@@ -651,7 +651,7 @@ mod tests {
         let (left, _, _) = get_test_md();
         let span = Span::from_md(&left).unwrap();
         let cosmic_font = CosmicFont::default_left();
-        let tex_fonts = TexFonts::default().unwrap();
+        let tex_fonts = TexFonts::new().unwrap();
         let mut column = SpanColumn::new(span, cosmic_font, &tex_fonts.left.command);
         let page = Page::default();
         let table = Table::new(
@@ -676,7 +676,7 @@ mod tests {
         let center = Span::from_md(&center).unwrap();
         let right = Span::from_md(&right).unwrap();
 
-        let tex_fonts = TexFonts::default().unwrap();
+        let tex_fonts = TexFonts::new().unwrap();
 
         let mut left_span =
             SpanColumn::new(left, CosmicFont::default_left(), &tex_fonts.left.command);

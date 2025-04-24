@@ -95,7 +95,7 @@ impl Default for Page {
         let font_metrics = FontMetrics::default();
 
         let preamble = Page::get_preamble(
-            &TexFonts::default().unwrap(),
+            &TexFonts::new().unwrap(),
             &paper_size,
             &margins,
             &tables,
@@ -115,7 +115,7 @@ impl Default for Page {
 #[cfg(feature = "default-fonts")]
 fn get_default_preamble() -> String {
     Page::get_preamble(
-        &TexFonts::default().unwrap(),
+        &TexFonts::new().unwrap(),
         &PaperSize::default(),
         &Margins::default(),
         &Tables::default(),

@@ -1,4 +1,5 @@
 pub mod cosmic_font;
+pub mod cosmic_fonts;
 #[cfg(feature = "default-fonts")]
 mod default_fonts;
 #[cfg(feature = "default-fonts")]

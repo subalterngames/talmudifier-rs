@@ -20,7 +20,7 @@ use tectonic::latex_to_pdf;
 use text::{Daf, SourceText};
 
 use crate::{
-    font::{cosmic_font::CosmicFont, fonts::Fonts, tex_fonts::TexFonts},
+    font::fonts::Fonts,
     page::Page,
     span::Span,
     table::{maybe_span_column::MaybeSpanColumn, span_column::SpanColumn, OptionalColumn, Table},
@@ -50,19 +50,14 @@ macro_rules! tex {
     };
 }
 
-type CosmicFonts = Result<(CosmicFont, CosmicFont, CosmicFont), Error>;
-
 /// Set config data for the page and then generate it.
 #[cfg_attr(feature = "default-fonts", derive(Default))]
 #[derive(Deserialize, Serialize)]
 pub struct Talmudifier {
     /// The size of the page, margins, etc.
     page: Page,
-    /// The fonts per column. If None, default fonts will be used.
-    #[cfg(feature = "default-fonts")]
-    fonts: Option<Fonts>,
     /// The fonts per column.
-    #[cfg(not(feature = "default-fonts"))]
+    #[cfg_attr(feature = "default-fonts", serde(default = "Fonts::default"))]
     fonts: Fonts,
     /// Raw markdown text that will be talmudified.
     source_text: SourceText,
@@ -91,14 +86,6 @@ impl Talmudifier {
     }
 
     /// Set the fonts.
-    #[cfg(feature = "default-fonts")]
-    pub fn fonts(mut self, fonts: Fonts) -> Self {
-        self.fonts = Some(fonts);
-        self
-    }
-
-    /// Set the fonts.
-    #[cfg(not(feature = "default-fonts"))]
     pub fn fonts(mut self, fonts: Fonts) -> Self {
         self.fonts = fonts;
         self
@@ -133,7 +120,7 @@ impl Talmudifier {
     /// Returns a `Daf` containing the TeX string and the PDF.
     pub fn talmudify(&self) -> Result<Daf, Error> {
         // Get the TeX fonts.
-        let tex_fonts = self.get_tex_fonts()?;
+        let tex_fonts = self.fonts.tex_fonts()?;
 
         // Clone the page.
         let mut page = self.page.clone();
@@ -150,12 +137,13 @@ impl Talmudifier {
         let right_span = Span::from_md(&raw_text.right)?;
 
         // Get the cosmic fonts.
-        let (left_cosmic, center_cosmic, right_cosmic) = self.get_cosmic_fonts()?;
+        let cosmic_fonts = self.fonts.cosmic_fonts(&self.page.font_metrics)?;
 
         // Get the columns.
-        let mut left = SpanColumn::new(left_span, left_cosmic, &tex_fonts.left.command);
-        let mut center = SpanColumn::new(center_span, center_cosmic, &tex_fonts.center.command);
-        let mut right = SpanColumn::new(right_span, right_cosmic, &tex_fonts.right.command);
+        let mut left = SpanColumn::new(left_span, cosmic_fonts.left, &tex_fonts.left.command);
+        let mut center =
+            SpanColumn::new(center_span, cosmic_fonts.center, &tex_fonts.center.command);
+        let mut right = SpanColumn::new(right_span, cosmic_fonts.right, &tex_fonts.right.command);
 
         let mut tables = vec![];
 
@@ -298,19 +286,6 @@ impl Talmudifier {
         Ok(Daf { tex, pdf })
     }
 
-    fn get_tex_fonts_internal(fonts: &Fonts) -> TexFonts {
-        let left = fonts.left.to_tex("leftfont");
-        let center = fonts.center.to_tex("centerfont");
-        let right = fonts.right.to_tex("rightfont");
-        TexFonts {
-            left,
-            center,
-            right,
-            #[cfg(feature = "default-fonts")]
-            _default_tex_fonts: None,
-        }
-    }
-
     fn get_column(span_column: &mut SpanColumn) -> OptionalColumn<'_> {
         if span_column.done() {
             None
@@ -329,48 +304,6 @@ impl Talmudifier {
         } else {
             Some(MaybeSpanColumn::Span(span_column))
         }
-    }
-
-    fn get_cosmic_fonts_internal(&self, fonts: &Fonts) -> CosmicFonts {
-        let left = fonts.left.to_cosmic(&self.page.font_metrics)?;
-        let center = fonts.center.to_cosmic(&self.page.font_metrics)?;
-        let right = fonts.right.to_cosmic(&self.page.font_metrics)?;
-        Ok((left, center, right))
-    }
-}
-
-#[cfg(feature = "default-fonts")]
-impl Talmudifier {
-    fn get_cosmic_fonts(&self) -> CosmicFonts {
-        match &self.fonts {
-            Some(fonts) => self.get_cosmic_fonts_internal(fonts),
-            None => Ok((
-                CosmicFont::default_left(),
-                CosmicFont::default_center(),
-                CosmicFont::default_right(),
-            )),
-        }
-    }
-
-    fn get_tex_fonts(&self) -> Result<TexFonts, Error> {
-        match &self.fonts {
-            Some(fonts) => Ok(Self::get_tex_fonts_internal(fonts)),
-            None => match TexFonts::default() {
-                Ok(tex_fonts) => Ok(tex_fonts),
-                Err(error) => Err(Error::TexFonts(error)),
-            },
-        }
-    }
-}
-
-#[cfg(not(feature = "default-fonts"))]
-impl Talmudifier {
-    pub fn get_cosmic_fonts(&self) -> CosmicFonts {
-        self.get_cosmic_fonts_internal(&self.fonts)
-    }
-
-    pub fn get_tex_fonts(&self) -> Result<TexFonts, Error> {
-        Ok(Self::get_tex_fonts_internal(&self.fonts))
     }
 }
 
