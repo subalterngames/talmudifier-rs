@@ -1,13 +1,16 @@
 use column::Column;
 use cosmic_text::{Buffer, Shaping};
 use maybe_span_column::MaybeSpanColumn;
+use num_lines::NumLines;
 use para_column::ParaColumn;
+use pdf_extract::extract_text_from_mem_by_pages;
 use position::Position;
 
 use crate::{error::Error, get_pdf, page::Page, tex};
 
 mod column;
 pub(crate) mod maybe_span_column;
+mod num_lines;
 mod para_column;
 mod position;
 pub(crate) mod span_column;
@@ -120,7 +123,7 @@ impl<'t> Table<'t> {
     /// Returns the [`Position`] of the column with the least remaining number of lines.
     /// To get the number of lines, we need to render a PDF and extract the text, which is slow.
     /// However, if there is only 1 column with text, we skip the render and this returns `(position, None)`.
-    pub fn get_min_num_lines(&self) -> Result<(Position, Option<usize>), Error> {
+    pub fn get_min_num_lines(&self) -> Result<(Option<usize>, Position), Error> {
         // If there is only one column, skip the render.
         let tex = [Position::Left, Position::Center, Position::Right]
             .into_iter()
@@ -134,24 +137,16 @@ impl<'t> Table<'t> {
             })
             .collect::<Vec<(Position, String)>>();
         if tex.len() == 1 {
-            Ok((tex[0].0, None))
+            Ok((None, tex[0].0))
         } else {
-            // Get the number of lines per position.
-            let mut num_lines = vec![];
-            [Position::Left, Position::Center, Position::Right]
+            // Convert each column into a table.
+            let paracols = [Position::Left, Position::Center, Position::Right]
                 .into_iter()
-                .map(|position| (position, self.get_num_lines_tex(position, None)))
-                .try_for_each(|(position, num)| match num {
-                    Ok(num) => {
-                        if let Some(num) = num {
-                            num_lines.push((position, num));
-                        }
-                        Ok(())
-                    }
-                    Err(error) => Err(error),
-                })?;
-            match num_lines.into_iter().min_by(|a, b| a.1.cmp(&b.1)) {
-                Some(min) => Ok((min.0, Some(min.1))),
+                .map(|position| self.get_paracolumns_for_num_lines(position, None))
+                .collect::<Vec<[ParaColumn; 3]>>();
+
+            match self.get_num_lines_tex(&paracols)? {
+                Some(num_lines) => num_lines.get_min(),
                 None => Err(Error::NoColumns),
             }
         }
@@ -354,20 +349,12 @@ impl<'t> Table<'t> {
         }
     }
 
-    /// Get the number of lines in a column.
-    ///
-    /// - `position` is used to specify the column.
-    /// - `end` is the end index. If None, `end` is set to the total number of words in the column.
-    ///
-    /// This is slow because it needs to render a PDF, extract the PDF to plaintext, and count the number of lines.
-    ///
-    /// Returns None if no columns have remaining text.
-    fn get_num_lines_tex(
+    fn get_paracolumns_for_num_lines(
         &self,
         position: Position,
         end: Option<usize>,
-    ) -> Result<Option<usize>, Error> {
-        let para_columns = match position {
+    ) -> [ParaColumn; 3] {
+        match position {
             Position::Left => [
                 ParaColumn::new(&self.left, end, false),
                 ParaColumn::new_empty(&self.center),
@@ -383,25 +370,77 @@ impl<'t> Table<'t> {
                 ParaColumn::new_empty(&self.center),
                 ParaColumn::new(&self.right, end, false),
             ],
-        };
+        }
+    }
 
-        if Self::para_columns_done(&para_columns) {
+    /// Get the number of lines in a column.
+    ///
+    /// - `position` is used to specify the column.
+    /// - `end` is the end index. If None, `end` is set to the total number of words in the column.
+    ///
+    /// This is slow because it needs to render a PDF, extract the PDF to plaintext, and count the number of lines.
+    ///
+    /// Returns None if no columns have remaining text.
+    fn get_num_lines_tex(
+        &self,
+        para_columns: &[[ParaColumn; 3]],
+    ) -> Result<Option<NumLines>, Error> {
+        fn get_extracted_num_lines(
+            position: Position,
+            positions: &[Position],
+            num_lines: &[usize],
+        ) -> Option<usize> {
+            match positions.iter().position(|p| *p == position) {
+                Some(index) => Some(num_lines[index]),
+                None => None,
+            }
+        }
+
+        if para_columns.iter().all(|p| Self::para_columns_done(p)) {
             Ok(None)
         } else {
-            match self.get_paracol(&para_columns) {
-                Some(paracol) => {
-                    // Get the preamble.
-                    let mut tex = self.page.preamble.clone();
+            // Get the preamble.
+            let mut tex = self.page.preamble.clone();
 
-                    // Add the paracol.
-                    tex.push_str(&paracol);
-
-                    // End the document.
-                    tex.push_str(Page::END_DOCUMENT);
-
-                    Ok(Some(get_pdf(&tex, self.log, true)?.1.unwrap()))
+            // Convert to paracols.
+            let mut paracols = vec![];
+            let mut positions = vec![];
+            for (para_columns, position) in
+                para_columns
+                    .into_iter()
+                    .zip([Position::Left, Position::Center, Position::Right])
+            {
+                // Add the paracol.
+                if let Some(paracol) = self.get_paracol(para_columns) {
+                    paracols.push(paracol);
+                    positions.push(position);
                 }
-                None => Ok(None),
+            }
+
+            // Add the paracols, separated by new lines.
+            tex.push_str(&paracols.join("\\newpage"));
+            // End the document.
+            tex.push_str(Page::END_DOCUMENT);
+
+            // Render the PDF.
+            let pdf = get_pdf(&tex, self.log)?;
+
+            // Extract text per-page.
+            match extract_text_from_mem_by_pages(&pdf) {
+                Ok(pages) => {
+                    // Get the number of lines per-page.
+                    let num_lines = pages
+                        .into_iter()
+                        .map(|page| page.split('\n').filter(|s| !s.is_empty()).count())
+                        .collect::<Vec<usize>>();
+                    // Get the number of lines.
+                    Ok(Some(NumLines {
+                        left: get_extracted_num_lines(Position::Left, &positions, &num_lines),
+                        center: get_extracted_num_lines(Position::Center, &positions, &num_lines),
+                        right: get_extracted_num_lines(Position::Right, &positions, &num_lines),
+                    }))
+                }
+                Err(error) => Err(Error::Extract(error)),
             }
         }
     }

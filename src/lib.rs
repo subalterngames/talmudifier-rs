@@ -307,11 +307,7 @@ impl Talmudifier {
     }
 }
 
-pub(crate) fn get_pdf(
-    tex: &str,
-    log: bool,
-    count_lines: bool,
-) -> Result<(Vec<u8>, Option<usize>), Error> {
+pub(crate) fn get_pdf(tex: &str, log: bool) -> Result<Vec<u8>, Error> {
     const LOG_DIRECTORY: &str = "logs";
 
     let log_directory = PathBuf::from_str(LOG_DIRECTORY).unwrap();
@@ -322,7 +318,7 @@ pub(crate) fn get_pdf(
 
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
 
-    let pdf = if log {
+    Ok(if log {
         // Write the tex file.
         write(log_directory.join(format!("{}.tex", &timestamp)), tex).unwrap();
 
@@ -335,24 +331,7 @@ pub(crate) fn get_pdf(
         pdf
     } else {
         get_pdf_internal(tex)?
-    };
-
-    if count_lines {
-        match extract_text_from_mem(&pdf) {
-            Ok(text) => {
-                // Log the extracted text.
-                if log {
-                    write(log_directory.join(format!("{}.txt", &timestamp)), &text).unwrap();
-                }
-                let num_lines = Some(text.split('\n').filter(|s| !s.is_empty()).count());
-                // Return the number of lines.
-                Ok((pdf, num_lines))
-            }
-            Err(error) => Err(Error::Extract(error)),
-        }
-    } else {
-        Ok((pdf, None))
-    }
+    })
 }
 
 fn get_pdf_internal(tex: &str) -> Result<Vec<u8>, Error> {
