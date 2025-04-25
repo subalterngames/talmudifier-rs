@@ -2,12 +2,12 @@ use std::{path::PathBuf, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    error::Error,
-    prelude::FontMetrics,
-};
+use crate::{error::Error, prelude::FontMetrics};
 
-use super::{cosmic_fonts::CosmicFonts, default_tex_fonts::DefaultTexFonts, tex_fonts::TexFonts, Font, DEFAULT_ROOT_DIRECTORY};
+use super::{
+    cosmic_fonts::CosmicFonts, default_tex_fonts::DefaultTexFonts, tex_fonts::TexFonts, Font,
+    DEFAULT_ROOT_DIRECTORY,
+};
 
 /// Fonts for the left, center, and right columns.
 #[derive(Deserialize, Serialize)]

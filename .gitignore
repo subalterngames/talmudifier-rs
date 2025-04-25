@@ -3,5 +3,5 @@ talmudifier_fonts/
 logs/
 *.pdf
 out.tex
-bad.tex
+extracted_text.txt
 venv/
