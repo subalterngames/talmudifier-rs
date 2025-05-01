@@ -9,11 +9,11 @@ use super::length::Length;
 pub struct Margins {
     /// The distance from the left edge of the page to the text.
     pub left: Length,
-     /// The distance from the right edge of the page to the text.
+    /// The distance from the right edge of the page to the text.
     pub right: Length,
     /// The distance from the top edge of the page to the text.
     pub top: Length,
-     /// The distance from the bottom edge of the page to the text.
+    /// The distance from the bottom edge of the page to the text.
     pub bottom: Length,
     /// The separation distance of the last line of text and the footer.
     pub foot_skip: Length,

@@ -68,10 +68,10 @@ impl Page {
         preamble.push_str(&Length::pt(0.).to_string());
         preamble.push('}');
 
-        for (keyword, length) in ["\\columnsep", "\\parfillskip"].iter().zip([
-            column_separation,
-            &Length::pt(0.),
-        ]) {
+        for (keyword, length) in ["\\columnsep", "\\parfillskip"]
+            .iter()
+            .zip([column_separation, &Length::pt(0.)])
+        {
             preamble += &Self::set_length(keyword, length)
         }
         preamble.push('\n');

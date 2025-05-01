@@ -469,57 +469,6 @@ impl<'t> Table<'t> {
                 MaybeSpanColumn::Span(span_column) => {
                     let len = span_column.span.0.len();
 
-                    // First, try subtracting words.
-                    let mut done_subtract = false;
-                    let mut end_subtract = cosmic_index;
-                    let mut got_min = false;
-                    while !done_subtract {
-                        // Try to set the min at the increment.
-                        let min = match end_subtract.checked_sub(INCREMENT) {
-                            Some(min) => {
-                                if min > span_column.start + 1 {
-                                    min
-                                }
-                                // We went below the start index. This ends here.
-                                else {
-                                    done_subtract = true;
-                                    span_column.start + 1
-                                }
-                            }
-                            None => {
-                                done_subtract = true;
-                                span_column.start + 1
-                            }
-                        };
-
-                        let extracted_line_counts =
-                            self.get_extracted_line_counts_in_range(position, min..end_subtract)?;
-
-                        // We're below the threshold.
-                        if extracted_line_counts.iter().any(|n| *n < num_lines) {
-                            done_subtract = true;
-                        }
-                        // Get the minimum number of lines and check if any are the expected number of lines.
-                        match extracted_line_counts
-                            .into_iter()
-                            .enumerate()
-                            .filter(|(_, n)| *n == num_lines)
-                            .map(|(i, _)| i)
-                            .max()
-                        {
-                            Some(index) => {
-                                got_min = true;
-                                end_subtract -= index;
-                            }
-                            // Continue the iteration.
-                            None => {
-                                if !done_subtract {
-                                    end_subtract = min;
-                                }
-                            }
-                        }
-                    }
-
                     // Add.
                     let mut done_add = false;
                     let mut end = cosmic_index;
@@ -560,15 +509,67 @@ impl<'t> Table<'t> {
                         }
                     }
 
-                    end = match (got_min, got_max) {
-                        // If got an index by incrementing, use that value.
-                        (_, true) => end,
-                        // If we got an end index by decrementing but not incrementing, use the decremented value.
-                        (true, false) => end_subtract,
-                        // If we failed to get anything, use all the words.
-                        (false, false) => len,
-                    };
+                    // No need to subtract if we've got a max because we're never going to get more words than we already have.
+                    if !got_max {
+                        // First, try subtracting words.
+                        let mut done_subtract = false;
+                        let mut end_subtract = cosmic_index;
+                        let mut got_min = false;
+                        while !done_subtract {
+                            // Try to set the min at the increment.
+                            let min = match end_subtract.checked_sub(INCREMENT) {
+                                Some(min) => {
+                                    if min > span_column.start + 1 {
+                                        min
+                                    }
+                                    // We went below the start index. This ends here.
+                                    else {
+                                        done_subtract = true;
+                                        span_column.start + 1
+                                    }
+                                }
+                                None => {
+                                    done_subtract = true;
+                                    span_column.start + 1
+                                }
+                            };
 
+                            let extracted_line_counts = self
+                                .get_extracted_line_counts_in_range(position, min..end_subtract)?;
+
+                            // We're below the threshold.
+                            if extracted_line_counts.iter().any(|n| *n < num_lines) {
+                                done_subtract = true;
+                            }
+                            // Get the minimum number of lines and check if any are the expected number of lines.
+                            match extracted_line_counts
+                                .into_iter()
+                                .enumerate()
+                                .filter(|(_, n)| *n == num_lines)
+                                .map(|(i, _)| i)
+                                .max()
+                            {
+                                Some(index) => {
+                                    got_min = true;
+                                    end_subtract -= index;
+                                }
+                                // Continue the iteration.
+                                None => {
+                                    if !done_subtract {
+                                        end_subtract = min;
+                                    }
+                                }
+                            }
+                        }
+                        // Set the end index.
+                        end = if got_min {
+                            end_subtract
+                        }
+                        // Just use all the words.
+                        else {
+                            len
+                        };
+                    }
                     Ok(self.get_column_tex(position, Some(end), true))
                 }
             },
@@ -629,8 +630,7 @@ impl<'t> Table<'t> {
     /// Use Cosmic Text to guess the initial end index that will be used to fill a TeX column.
     fn get_cosmic_index(&mut self, position: Position, num_lines: usize) -> Option<usize> {
         let page_width = self.page.table_width;
-        let separation =
-            (self.num_columns - 1) as f32 * self.page.column_separation.get_pts();
+        let separation = (self.num_columns - 1) as f32 * self.page.column_separation.get_pts();
 
         match self.get_mut_column(position) {
             Column::Column { column, width } => {
