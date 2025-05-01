@@ -13,7 +13,6 @@ use std::{
 
 use chrono::Utc;
 use error::Error;
-use pdf_extract::extract_text_from_mem;
 use serde::{Deserialize, Serialize};
 use serde_json::from_slice;
 use tectonic::latex_to_pdf;
@@ -231,7 +230,7 @@ impl Talmudifier {
             );
 
             // Get the minimum number of lines.
-            let (position, num_lines) = table.get_min_num_lines()?;
+            let (num_lines, position) = table.get_min_num_lines()?;
             match num_lines {
                 Some(num_lines) =>
                 // Generate the table.
@@ -282,7 +281,7 @@ impl Talmudifier {
         tex.push_str(Page::END_DOCUMENT);
 
         // Generate the final PDF.
-        let (pdf, _) = get_pdf(&tex, self.log, false)?;
+        let pdf = get_pdf(&tex, self.log)?;
         Ok(Daf { tex, pdf })
     }
 
@@ -371,7 +370,7 @@ mod tests {
         .iter()
         .zip(["hello_world", "minimal_daf", "paracol", "daf"])
         {
-            if let Err(error) = get_pdf(&tex.replace("\r", ""), false, false) {
+            if let Err(error) = get_pdf(&tex.replace("\r", ""), false) {
                 panic!("Tex error: {} {}", error, path)
             }
         }

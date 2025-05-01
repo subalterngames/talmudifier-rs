@@ -1,4 +1,4 @@
-use super::{maybe_span_column::MaybeSpanColumn, width::Width};
+use super::{maybe_span_column::MaybeSpanColumn, span_column::SpanColumn, width::Width};
 
 /// A column, possibly with text, and a width.
 pub enum Column<'t> {
@@ -45,6 +45,16 @@ impl<'t> Column<'t> {
     /// Returns true if there are more words to add to the page.
     pub fn done(&self) -> bool {
         matches!(self, Self::None)
+    }
+
+    pub fn get_span_column(&self) -> Option<&&'t mut SpanColumn> {
+        match self {
+            Self::None => None,
+            Self::Column { column, width: _ } => match column {
+                MaybeSpanColumn::Span(column) => Some(column),
+                MaybeSpanColumn::Empty => None,
+            },
+        }
     }
 }
 

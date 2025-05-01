@@ -1,7 +1,8 @@
+use std::ops::Range;
+
 use column::Column;
 use cosmic_text::{Buffer, Shaping};
 use maybe_span_column::MaybeSpanColumn;
-use num_lines::NumLines;
 use para_column::ParaColumn;
 use pdf_extract::extract_text_from_mem_by_pages;
 use position::Position;
@@ -10,7 +11,6 @@ use crate::{error::Error, get_pdf, page::Page, tex};
 
 mod column;
 pub(crate) mod maybe_span_column;
-mod num_lines;
 mod para_column;
 mod position;
 pub(crate) mod span_column;
@@ -128,28 +128,99 @@ impl<'t> Table<'t> {
         let tex = [Position::Left, Position::Center, Position::Right]
             .into_iter()
             .zip([&self.left, &self.center, &self.right])
-            .filter_map(|(p, c)| match c {
-                Column::Column { column, width: _ } => match column {
-                    MaybeSpanColumn::Span(column) => Some((p, column.to_tex(None, false))),
-                    MaybeSpanColumn::Empty => Some((p, String::default())),
-                },
-                Column::None => None,
+            .filter_map(|(p, c)| {
+                c.get_span_column()
+                    .map(|column| (p, column.to_tex(None, false)))
             })
             .collect::<Vec<(Position, String)>>();
         if tex.len() == 1 {
             Ok((None, tex[0].0))
         } else {
             // Convert each column into a table.
-            let paracols = [Position::Left, Position::Center, Position::Right]
+            let para_columns = [Position::Left, Position::Center, Position::Right]
                 .into_iter()
                 .map(|position| self.get_paracolumns_for_num_lines(position, None))
                 .collect::<Vec<[ParaColumn; 3]>>();
 
-            match self.get_num_lines_tex(&paracols)? {
-                Some(num_lines) => num_lines.get_min(),
-                None => Err(Error::NoColumns),
+            if para_columns.iter().all(Self::para_columns_done) {
+                Err(Error::NoColumns)
+            } else {
+                // Convert to paracols.
+                let mut paracols = vec![];
+                // We KNOW that the positions vec will match the extracted pages.
+                let mut positions = vec![];
+                for (para_columns, position) in para_columns.into_iter().zip([
+                    Position::Left,
+                    Position::Center,
+                    Position::Right,
+                ]) {
+                    // Add the paracol.
+                    if let Some(paracol) = self.get_paracol(&para_columns) {
+                        paracols.push(paracol);
+                        positions.push(position);
+                    }
+                }
+
+                // Get the preamble.
+                let mut tex = self.page.preamble.clone();
+
+                // Add the paracols, separated by new lines.
+                tex.push_str(&paracols.join("\\newpage"));
+
+                // End the document.
+                tex.push_str(Page::END_DOCUMENT);
+
+                // Render the PDF.
+                let pdf = get_pdf(&tex, self.log)?;
+
+                // Get the number of lines per page (which is the same as per column).
+                let num_lines = Self::get_extracted_line_counts(&pdf)?;
+                // Get the minimum number of lines
+                Ok(match num_lines.into_iter().enumerate().min_by(|a, b| a.1.cmp(&b.1)) {
+                    Some((index, min_lines)) => (Some(min_lines), positions[index]),
+                    None => unreachable!("We already checked that at least column has words, yet we didn't get a minimum number of lines.")
+                })
             }
         }
+    }
+
+    fn get_extracted_line_counts(pdf: &[u8]) -> Result<Vec<usize>, Error> {
+        // Extract text per-page.
+        match extract_text_from_mem_by_pages(pdf) {
+            Ok(pages) => {
+                // Get the number of lines per-page.
+                Ok(pages
+                    .into_iter()
+                    .map(|page| page.split('\n').filter(|s| !s.is_empty()).count())
+                    .collect::<Vec<usize>>())
+            }
+            Err(error) => Err(Error::Extract(error)),
+        }
+    }
+
+    fn get_extracted_line_counts_in_range(
+        &self,
+        position: Position,
+        range: Range<usize>,
+    ) -> Result<Vec<usize>, Error> {
+        // Get the preamble.
+        let mut tex = self.page.preamble.clone();
+
+        let paracols = range
+            .map(|end| self.get_paracolumns_for_num_lines(position, Some(end)))
+            .filter_map(|para_columns| self.get_paracol(&para_columns))
+            .collect::<Vec<String>>();
+
+        // Add the paracols, separated by new lines.
+        tex.push_str(&paracols.join("\\newpage"));
+
+        // End the document.
+        tex.push_str(Page::END_DOCUMENT);
+
+        // Render the PDF.
+        let pdf = get_pdf(&tex, self.log)?;
+
+        Self::get_extracted_line_counts(&pdf)
     }
 
     /// Given a target `num_lines`, generate a TeX string of the table.
@@ -192,12 +263,9 @@ impl<'t> Table<'t> {
             .into_iter()
             .zip(para_columns.iter_mut())
         {
-            *para_column = match self.get_column(pos) {
-                Column::Column { column, width: _ } => match column {
-                    MaybeSpanColumn::Span(column) => ParaColumn::Text(column.to_tex(None, true)),
-                    MaybeSpanColumn::Empty => ParaColumn::Empty,
-                },
-                Column::None => ParaColumn::None,
+            *para_column = match self.get_column(pos).get_span_column() {
+                Some(column) => ParaColumn::Text(column.to_tex(None, true)),
+                None => ParaColumn::None,
             };
         }
         self.get_paracol(&para_columns).unwrap()
@@ -373,78 +441,6 @@ impl<'t> Table<'t> {
         }
     }
 
-    /// Get the number of lines in a column.
-    ///
-    /// - `position` is used to specify the column.
-    /// - `end` is the end index. If None, `end` is set to the total number of words in the column.
-    ///
-    /// This is slow because it needs to render a PDF, extract the PDF to plaintext, and count the number of lines.
-    ///
-    /// Returns None if no columns have remaining text.
-    fn get_num_lines_tex(
-        &self,
-        para_columns: &[[ParaColumn; 3]],
-    ) -> Result<Option<NumLines>, Error> {
-        fn get_extracted_num_lines(
-            position: Position,
-            positions: &[Position],
-            num_lines: &[usize],
-        ) -> Option<usize> {
-            match positions.iter().position(|p| *p == position) {
-                Some(index) => Some(num_lines[index]),
-                None => None,
-            }
-        }
-
-        if para_columns.iter().all(|p| Self::para_columns_done(p)) {
-            Ok(None)
-        } else {
-            // Get the preamble.
-            let mut tex = self.page.preamble.clone();
-
-            // Convert to paracols.
-            let mut paracols = vec![];
-            let mut positions = vec![];
-            for (para_columns, position) in
-                para_columns
-                    .into_iter()
-                    .zip([Position::Left, Position::Center, Position::Right])
-            {
-                // Add the paracol.
-                if let Some(paracol) = self.get_paracol(para_columns) {
-                    paracols.push(paracol);
-                    positions.push(position);
-                }
-            }
-
-            // Add the paracols, separated by new lines.
-            tex.push_str(&paracols.join("\\newpage"));
-            // End the document.
-            tex.push_str(Page::END_DOCUMENT);
-
-            // Render the PDF.
-            let pdf = get_pdf(&tex, self.log)?;
-
-            // Extract text per-page.
-            match extract_text_from_mem_by_pages(&pdf) {
-                Ok(pages) => {
-                    // Get the number of lines per-page.
-                    let num_lines = pages
-                        .into_iter()
-                        .map(|page| page.split('\n').filter(|s| !s.is_empty()).count())
-                        .collect::<Vec<usize>>();
-                    // Get the number of lines.
-                    Ok(Some(NumLines {
-                        left: get_extracted_num_lines(Position::Left, &positions, &num_lines),
-                        center: get_extracted_num_lines(Position::Center, &positions, &num_lines),
-                        right: get_extracted_num_lines(Position::Right, &positions, &num_lines),
-                    }))
-                }
-                Err(error) => Err(Error::Extract(error)),
-            }
-        }
-    }
-
     /// Generate a TeX string from a column. The string will fill `num_lines` on the page.
     ///
     /// - `position` is used to specify the column.
@@ -459,6 +455,8 @@ impl<'t> Table<'t> {
         cosmic_index: usize,
         num_lines: usize,
     ) -> Result<Option<String>, Error> {
+        const INCREMENT: usize = 10;
+
         // Get the target column.
         let column = self.get_column(position);
 
@@ -466,59 +464,85 @@ impl<'t> Table<'t> {
         if column.done() {
             Ok(None)
         } else {
-            // Get the total number of words.
-            let len = match column {
-                Column::Column { column, width: _ } => match column {
-                    MaybeSpanColumn::Span(column) => column.span.0.len(),
-                    // Stop here.
-                    MaybeSpanColumn::Empty => return Ok(None),
-                },
-                Column::None => unreachable!(),
-            };
+            let span_column = column.get_span_column().unwrap();
+            let len = span_column.span.0.len();
 
-            // Set the initial end estimate to the index returned by Cosmic.
-            let mut end = cosmic_index;
+            let mut done = false;
 
-            // Get the current number of lines.
-            match self.get_num_lines_tex(position, Some(end))? {
-                Some(mut current_num_lines) => {
-                    if current_num_lines > num_lines {
-                        // Decrement until we have enough lines.
-                        while end > 0 && current_num_lines > num_lines {
-                            end -= 1;
-                            match self.get_num_lines_tex(position, Some(end))? {
-                                Some(n) => {
-                                    current_num_lines = n;
-                                    if current_num_lines < num_lines {
-                                        end += 1
-                                    }
+            // First, try subtracting words.
+            let mut done_subtract = false;
+            let mut end_subtract = cosmic_index;
+            while !done_subtract {
+                // Clamp the minimum increment.
+                match end_subtract.checked_sub(INCREMENT) {
+                    Some(min) => {
+                        if min > span_column.start {
+                            let extracted_line_counts = self
+                                .get_extracted_line_counts_in_range(position, min..end_subtract)?;
+
+                            // Get the minimum number of lines and check if any are the expected number of lines.
+                            match extracted_line_counts
+                                .into_iter()
+                                .enumerate()
+                                .filter(|(_, n)| *n == num_lines)
+                                .max_by(|a, b| a.1.cmp(&b.1))
+                            {
+                                Some((index, _)) => {
+                                    done_subtract = true;
+                                    done = true;
+                                    end_subtract -= index;
                                 }
-                                None => return Ok(None),
+                                // Continue iterating.
+                                None => end_subtract = min,
                             }
                         }
-                    } else {
-                        // Increment until we go over.
-                        while end < len - 1 && current_num_lines <= num_lines {
-                            end += 1;
-                            match self.get_num_lines_tex(position, Some(end))? {
-                                Some(n) => {
-                                    current_num_lines = n;
-                                    if current_num_lines > num_lines {
-                                        end -= 1
-                                    }
-                                }
-                                None => return Ok(None),
-                            }
+                        // Don't decrement past the start.
+                        else {
+                            done_subtract = true;
                         }
                     }
-
-                    Ok(if end == 0 {
-                        None
-                    } else {
-                        self.get_column_tex(position, Some(end), true)
-                    })
+                    None => done_subtract = true,
                 }
-                None => Ok(None),
+            }
+
+            // Did we get a minimum via subtraction?
+            if done {
+                Ok(self.get_column_tex(position, Some(end_subtract), true))
+            }
+            // Add.
+            else {
+                let mut done_add = false;
+                let mut end_add = cosmic_index;
+
+                while !done_add {
+                    // Clamp the maximum increment.
+                    let end = end_add + INCREMENT;
+                    // Clamp.
+                    if end > len {
+                        end_add = len;
+                        done_add = true;
+                    } else {
+                        let extracted_line_counts =
+                            self.get_extracted_line_counts_in_range(position, end_add..end)?;
+
+                        // Get the maximum number of lines and check if any are the expected number of lines.
+                        match extracted_line_counts
+                            .into_iter()
+                            .enumerate()
+                            .filter(|(_, n)| *n == num_lines)
+                            .min_by(|a, b| a.1.cmp(&b.1))
+                        {
+                            Some((index, _)) => {
+                                done_add = true;
+                                end_add += index;
+                            }
+                            // Continue iterating.
+                            None => end_add = end,
+                        }
+                    }
+                }
+
+                Ok(self.get_column_tex(position, Some(end_add), true))
             }
         }
     }
@@ -686,29 +710,6 @@ mod tests {
     }
 
     #[test]
-    fn test_num_lines_tex() {
-        let (left, _, _) = get_test_md();
-        let span = Span::from_md(&left).unwrap();
-        let cosmic_font = CosmicFont::default_left();
-        let tex_fonts = TexFonts::new().unwrap();
-        let mut column = SpanColumn::new(span, cosmic_font, &tex_fonts.left.command);
-        let page = Page::default();
-        let table = Table::new(
-            Some(MaybeSpanColumn::Span(&mut column)),
-            None,
-            Some(MaybeSpanColumn::Empty),
-            &page,
-            false,
-        );
-
-        let num_lines = table
-            .get_num_lines_tex(Position::Left, None)
-            .unwrap()
-            .unwrap();
-        assert_eq!(num_lines, 25);
-    }
-
-    #[test]
     fn test_min_num_lines() {
         let (left, center, right) = get_test_md();
         let left = Span::from_md(&left).unwrap();
@@ -737,6 +738,6 @@ mod tests {
         );
 
         let min_num_lines = table.get_min_num_lines().unwrap();
-        assert_eq!(min_num_lines.1.unwrap(), 11);
+        assert_eq!(min_num_lines.0.unwrap(), 11);
     }
 }
