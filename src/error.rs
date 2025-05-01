@@ -4,11 +4,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    #[cfg(target_os = "linux")]
     #[error("Error creating PDF: {0}")]
     Pdf(tectonic::Error),
     #[error("Error extracting text from PDF: {0}")]
-    #[cfg(target_os = "linux")]
     Extract(pdf_extract::OutputError),
     #[error("Markdown parsing error: {0}")]
     Md(markdown::message::Message),

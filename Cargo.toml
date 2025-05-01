@@ -34,3 +34,10 @@ required-features = ["clap"]
 
 [[bin]]
 name = "benchmark"
+
+[package.metadata.vcpkg]
+git = "https://github.com/microsoft/vcpkg"
+rev = "e2bb93a35f70851c2bfb60006f1f7659cd1637d1"
+
+[package.metadata.vcpkg.target]
+x86_64-pc-windows-msvc = { triplet = "x64-windows-static", dependencies = [] }
