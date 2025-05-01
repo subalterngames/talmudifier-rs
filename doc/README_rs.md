@@ -190,7 +190,6 @@ Traditionally, this process would be sped up by experienced typesetters because 
 ## Feature flags
 
 - `default-fonts` embeds default fonts into the executable. You might want to remove this if you want to use other fonts because the default fonts make the binary bigger.
-- `ffi` is required by the underlying PDF generator (`tectonic`). *Always include this feature.*
 - `clap` is required for some of the executables. If you're using Talmudifier as a library, you can ignore this.
 
 ## Changes from Python
