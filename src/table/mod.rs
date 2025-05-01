@@ -461,89 +461,93 @@ impl<'t> Table<'t> {
         let column = self.get_column(position);
 
         // If we know that the column is already done, stop here.
-        if column.done() {
-            Ok(None)
-        } else {
-            let span_column = column.get_span_column().unwrap();
-            let len = span_column.span.0.len();
+        match column {
+            Column::None => Ok(None),
+            Column::Column { column, width: _ } => match column {
+                MaybeSpanColumn::Empty => Ok(None),
+                MaybeSpanColumn::Span(span_column) => {
+                    let len = span_column.span.0.len();
 
-            let mut done = false;
+                    // First, try subtracting words.
+                    let mut done_subtract = false;
+                    let mut end_subtract = cosmic_index;
+                    let mut got_end = false;
+                    while !done_subtract {
+                        // Clamp the minimum increment.
+                        match end_subtract.checked_sub(INCREMENT) {
+                            Some(mut min) => {
+                                // We went below the start index. This ends here.
+                                if min <= span_column.start + 1 {
+                                    done_subtract = true;
+                                    min = span_column.start + 1;
+                                }
+                                
+                                let extracted_line_counts = self
+                                    .get_extracted_line_counts_in_range(
+                                        position,
+                                        min..end_subtract,
+                                    )?;
 
-            // First, try subtracting words.
-            let mut done_subtract = false;
-            let mut end_subtract = cosmic_index;
-            while !done_subtract {
-                // Clamp the minimum increment.
-                match end_subtract.checked_sub(INCREMENT) {
-                    Some(min) => {
-                        if min > span_column.start {
-                            let extracted_line_counts = self
-                                .get_extracted_line_counts_in_range(position, min..end_subtract)?;
+                                // Get the minimum number of lines and check if any are the expected number of lines.
+                                match extracted_line_counts
+                                    .into_iter()
+                                    .enumerate()
+                                    .filter(|(_, n)| *n == num_lines)
+                                    .max_by(|a, b| a.1.cmp(&b.1))
+                                {
+                                    Some((index, _)) => {
+                                        done_subtract = true;
+                                        got_end = true;
+                                        end_subtract -= index;
+                                    }
+                                    // Continue iterating.
+                                    None => end_subtract = min,
+                                }
+                            }
+                            None => done_subtract = true,
+                        }
+                    }
 
-                            // Get the minimum number of lines and check if any are the expected number of lines.
+                    // Did we get a minimum via subtraction?
+                    if got_end {
+                        Ok(self.get_column_tex(position, Some(end_subtract), true))
+                    }
+                    // Add.
+                    else {
+                        let mut done_add = false;
+                        let mut end_add = cosmic_index;
+
+                        while !done_add {
+                            // Clamp the maximum increment.
+                            let mut max = end_add + INCREMENT;
+                            // When over the true maximum. This ends here.
+                            if max > len {
+                                max = len;
+                                done_add = true;
+                            }
+                            let extracted_line_counts =
+                                self.get_extracted_line_counts_in_range(position, end_add..max)?;
+
+                            // Get the maximum number of lines and check if any are the expected number of lines.
                             match extracted_line_counts
                                 .into_iter()
                                 .enumerate()
                                 .filter(|(_, n)| *n == num_lines)
-                                .max_by(|a, b| a.1.cmp(&b.1))
+                                .min_by(|a, b| a.1.cmp(&b.1))
                             {
                                 Some((index, _)) => {
-                                    done_subtract = true;
-                                    done = true;
-                                    end_subtract -= index;
+                                    done_add = true;
+                                    end_add += index;
                                 }
                                 // Continue iterating.
-                                None => end_subtract = min,
+                                None => end_add = max,
                             }
                         }
-                        // Don't decrement past the start.
-                        else {
-                            done_subtract = true;
-                        }
-                    }
-                    None => done_subtract = true,
-                }
-            }
 
-            // Did we get a minimum via subtraction?
-            if done {
-                Ok(self.get_column_tex(position, Some(end_subtract), true))
-            }
-            // Add.
-            else {
-                let mut done_add = false;
-                let mut end_add = cosmic_index;
-
-                while !done_add {
-                    // Clamp the maximum increment.
-                    let end = end_add + INCREMENT;
-                    // Clamp.
-                    if end > len {
-                        end_add = len;
-                        done_add = true;
-                    } else {
-                        let extracted_line_counts =
-                            self.get_extracted_line_counts_in_range(position, end_add..end)?;
-
-                        // Get the maximum number of lines and check if any are the expected number of lines.
-                        match extracted_line_counts
-                            .into_iter()
-                            .enumerate()
-                            .filter(|(_, n)| *n == num_lines)
-                            .min_by(|a, b| a.1.cmp(&b.1))
-                        {
-                            Some((index, _)) => {
-                                done_add = true;
-                                end_add += index;
-                            }
-                            // Continue iterating.
-                            None => end_add = end,
-                        }
+                        Ok(self.get_column_tex(position, Some(end_add.min(len)), true))
                     }
                 }
-
-                Ok(self.get_column_tex(position, Some(end_add), true))
-            }
+            },
         }
     }
 
