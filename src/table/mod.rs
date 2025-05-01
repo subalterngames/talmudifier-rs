@@ -630,7 +630,7 @@ impl<'t> Table<'t> {
     fn get_cosmic_index(&mut self, position: Position, num_lines: usize) -> Option<usize> {
         let page_width = self.page.table_width;
         let separation =
-            (self.num_columns - 1) as f32 * self.page.tables.column_separation.get_pts();
+            (self.num_columns - 1) as f32 * self.page.column_separation.get_pts();
 
         match self.get_mut_column(position) {
             Column::Column { column, width } => {

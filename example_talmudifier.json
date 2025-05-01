@@ -31,23 +31,9 @@
         "unit": "In"
       }
     },
-    "tables": {
-      "paragraph_indent": {
-        "length": 0.0,
-        "unit": "Pt"
-      },
-      "column_separation": {
-        "length": 0.25,
-        "unit": "In"
-      },
-      "paragraph_fill_skip": {
-        "length": 0.0,
-        "unit": "Pt"
-      },
-      "tabular_column_separation": {
-        "length": 1.0,
-        "unit": "Em"
-      }
+    "column_separation": {
+      "length": 0.25,
+      "unit": "In"
     },
     "font_metrics": {
       "size": 11.0,

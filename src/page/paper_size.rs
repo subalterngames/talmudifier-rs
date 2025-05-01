@@ -2,6 +2,7 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
+/// The size of the page.
 #[derive(Default, Clone, Deserialize, Serialize)]
 pub enum PaperSize {
     #[default]

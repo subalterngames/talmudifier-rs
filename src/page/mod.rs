@@ -4,29 +4,33 @@ pub use length::Length;
 pub use margins::Margins;
 pub use paper_size::PaperSize;
 use serde::{Deserialize, Serialize};
-pub use tables::Tables;
 pub use unit::Unit;
 
 mod length;
 mod margins;
 mod paper_size;
-mod tables;
 mod unit;
 
 /// Page layout parameters.
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Page {
+    /// The overall size of the page.
     pub paper_size: PaperSize,
+    /// Margin distances.
     pub margins: Margins,
-    pub tables: Tables,
+    /// The horizontal distance between columns.
+    pub column_separation: Length,
+    /// The font size and line skip.
     pub font_metrics: FontMetrics,
+    /// The width of the text portion of the page.
     #[serde(skip, default = "get_default_table_width")]
-    pub table_width: f32,
+    pub(crate) table_width: f32,
+    /// The preamble text.
     #[cfg_attr(
         feature = "default-fonts",
         serde(skip, default = "get_default_preamble")
     )]
-    pub preamble: String,
+    pub(crate) preamble: String,
 }
 
 impl Page {
@@ -37,7 +41,7 @@ impl Page {
             fonts,
             &self.paper_size,
             &self.margins,
-            &self.tables,
+            &self.column_separation,
             &self.font_metrics,
         );
     }
@@ -46,7 +50,7 @@ impl Page {
         fonts: &TexFonts,
         paper_size: &PaperSize,
         margins: &Margins,
-        tables: &Tables,
+        column_separation: &Length,
         font_metrics: &FontMetrics,
     ) -> String {
         let mut preamble = format!("\\documentclass[11pt, {}, openany]{{scrbook}}", paper_size);
@@ -61,13 +65,12 @@ impl Page {
             .join("\n");
 
         preamble += "\n\n\\allsectionsfont{\\centering}\n\\setlength\\parindent{";
-        preamble.push_str(&tables.paragraph_indent.to_string());
+        preamble.push_str(&Length::pt(0.).to_string());
         preamble.push('}');
 
-        for (keyword, length) in ["\\columnsep", "\\parfillskip", "\\tabcolsep"].iter().zip([
-            &tables.column_separation,
-            &tables.paragraph_fill_skip,
-            &tables.tabular_column_separation,
+        for (keyword, length) in ["\\columnsep", "\\parfillskip"].iter().zip([
+            column_separation,
+            &Length::pt(0.),
         ]) {
             preamble += &Self::set_length(keyword, length)
         }
@@ -83,6 +86,11 @@ impl Page {
     fn set_length(keyword: &str, length: &Length) -> String {
         format!("\n{}", tex!("setlength", keyword, length))
     }
+
+    #[cfg(feature = "default-fonts")]
+    fn default_column_separation() -> Length {
+        Length::inches(0.25)
+    }
 }
 
 #[cfg(feature = "default-fonts")]
@@ -90,21 +98,21 @@ impl Default for Page {
     fn default() -> Self {
         let margins = Margins::default();
         let table_width = margins.get_table_width();
-        let tables = Tables::default();
         let paper_size = PaperSize::default();
         let font_metrics = FontMetrics::default();
+        let column_separation = Self::default_column_separation();
 
         let preamble = Page::get_preamble(
             &TexFonts::new().unwrap(),
             &paper_size,
             &margins,
-            &tables,
+            &column_separation,
             &font_metrics,
         );
         Self {
             paper_size,
             margins,
-            tables,
+            column_separation,
             table_width,
             preamble,
             font_metrics,
@@ -118,7 +126,7 @@ fn get_default_preamble() -> String {
         &TexFonts::new().unwrap(),
         &PaperSize::default(),
         &Margins::default(),
-        &Tables::default(),
+        &Page::default_column_separation(),
         &FontMetrics::default(),
     )
 }

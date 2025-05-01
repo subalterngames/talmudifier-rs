@@ -7,7 +7,9 @@ use super::unit::Unit;
 /// A length, in a given unit.
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Length {
+    /// The scalar length.
     pub length: f32,
+    /// The unit of measurement.
     pub unit: Unit,
 }
 
