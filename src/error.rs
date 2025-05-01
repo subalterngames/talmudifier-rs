@@ -12,8 +12,6 @@ pub enum Error {
     Extract(pdf_extract::OutputError),
     #[error("Markdown parsing error: {0}")]
     Md(markdown::message::Message),
-    #[error("Tried to create a table but there are no words.")]
-    NoMoreWords,
     #[error("Cosmic font error: {0}")]
     CosmicFont(io::Error),
     #[error("Font not found: {0}")]
