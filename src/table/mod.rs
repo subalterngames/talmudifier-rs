@@ -503,14 +503,19 @@ impl<'t> Table<'t> {
                             .into_iter()
                             .enumerate()
                             .filter(|(_, n)| *n == num_lines)
-                            .max_by(|a, b| a.1.cmp(&b.1))
+                            .map(|(i, _)| i)
+                            .max()
                         {
-                            Some((index, _)) => {
+                            Some(index) => {
                                 got_min = true;
                                 end_subtract -= index;
                             }
                             // Continue the iteration.
-                            None => end_subtract = min,
+                            None => {
+                                if !done_subtract {
+                                    end_subtract = min;
+                                }
+                            }
                         }
                     }
 
@@ -530,7 +535,7 @@ impl<'t> Table<'t> {
                             self.get_extracted_line_counts_in_range(position, end..max)?;
 
                         // We exceeeded the threshold so stop iterating here.
-                        if extracted_line_counts.iter().all(|n| *n > num_lines) {
+                        if extracted_line_counts.iter().any(|n| *n > num_lines) {
                             done_add = true;
                         }
                         // Get the maximum number of lines and check if any are the expected number of lines.
@@ -538,19 +543,24 @@ impl<'t> Table<'t> {
                             .into_iter()
                             .enumerate()
                             .filter(|(_, n)| *n == num_lines)
-                            .min_by(|a, b| a.1.cmp(&b.1))
+                            .map(|(i, _)| i)
+                            .max()
                         {
-                            Some((index, _)) => {
+                            Some(index) => {
                                 got_max = true;
                                 end += index;
                             }
                             // Continue the iteration.
-                            None => end = max,
+                            None => {
+                                if !done_add {
+                                    end = max;
+                                }
+                            }
                         }
                     }
 
                     end = match (got_min, got_max) {
-                        // If we got an end index by incrementing, use that value.
+                        // If got an index by incrementing, use that value.
                         (_, true) => end,
                         // If we got an end index by decrementing but not incrementing, use the decremented value.
                         (true, false) => end_subtract,
