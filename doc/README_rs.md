@@ -1,10 +1,10 @@
 # Talmudifier
 
-**Generate PDFs with page layouts similar to the Talmud.**
+**Generate PDFs with page layouts similar to the [Talmud](https://en.wikipedia.org/wiki/Talmud#/media/File:First_page_of_the_first_tractate_of_the_Talmud_(Daf_Beis_of_Maseches_Brachos).jpg).**
 
 Given three paragraphs of markdown text, Talmudifier will generate a .pdf file using XeTeX (via Rust's tectonic crate). You can also include a title, basic styling (bold, italic, etc.) and marginalia.
 
-This is a Rust port of my Talmudifier Python module. It's faster now.
+This is a Rust port of my [Talmudifier Python module](https://github.com/subalterngames/talmudifier). It's faster now.
 
 
 ![A PDF that Talmudifier generated. There are three columns of text, and of varying widths. The text is pulled from this README.][daf]
@@ -43,8 +43,8 @@ write("out.pdf", &daf.pdf).unwrap();
 **If you're not a programmer, I promise that you're capable of installing and using Talmudifier. If you run into trouble, please [contact me](mailto:subalterngames@gmail.com).**
 
 1. Download this repo. There's a green `<> Code` button on this page. Click it, download a .zip file, and extract the zip file.
-2. Install Rust
-3. Install git
+2. [Install Rust](https://www.rust-lang.org/tools/install)
+3. [Install git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 4. Compile the C++ libraries
 5. Compile as an executable
 6. Create a valid talmudifier.json file
@@ -271,8 +271,8 @@ This is a Rust port of my `talmudifier` Python module. Major differences include
 - No external TeX engine needed. Talmudifier has its own internal TeX engine.
 - No need to manually download any TeX packages. Talmudifier will download the required packages for you.
 - Two major performance improvements to the *algorithm*:
- - Python Talmudifier uses hard-coded values to guess the maximum number of words that can fit in a cell, and then uses that guess as the start index for finding the actual number. Rust Talmudifier also guesses the start index, but uses Cosmic Text, a crate normally used for GUI text, to dynamically calculate the guess. Because the Cosmic Text guess can vary depending on font parameters, Rust Talmudifier's guess is more flexible and more accurate.
- - When trying to fill a cell with words, Python Talmudifier increments or decrements one word at a time. This always works, but there is overhead to rendering many single pages vs. a single multi-page render. Rust Talmudifier renders multiple pages of incrementing/decrementing guesses. The resulting process is roughly 2.5 times faster than it would've been if Rust Talmudifier rendered separate PDFs.
+ - Python Talmudifier uses hard-coded values to guess the maximum number of words that can fit in a cell, and then uses that guess as the start index for finding the actual number. Rust Talmudifier also guesses the start index, but uses Cosmic Text, which is more flexible and accurate.
+ - When trying to fill a cell with words, Python Talmudifier increments or decrements one word at a time. This always works, but there is overhead to rendering many single pages vs. a single multi-page render. Rust Talmudifier renders multiple pages of incrementing/decrementing guesses. The resulting process is roughly four times faster than it would've been if Rust Talmudifier rendered separate PDFs.
 
 - Default fonts are embedded in the executable
 - Simplified the config file

@@ -40,7 +40,6 @@ readme = template.replace("@OVERVIEW@", overview).replace("@CONFIG@", config).re
 Path("../README.md").write_text(readme)
 
 # README for rustdoc.
-readme = RE_LINK.sub(r"\1", readme[:])
 readme = RE_RELATIVE_LINK.sub(r"\1", readme)
 readme = RE_IMAGE.sub(r"\n![\2][\4]\n", readme).strip()
 readme = RE_MULTI_SPACE.sub(" ", readme)
