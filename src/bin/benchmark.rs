@@ -1,9 +1,11 @@
+#[cfg(feature = "default-fonts")]
 use std::{path::PathBuf, str::FromStr, time::Instant};
-
+#[cfg(feature = "default-fonts")]
 use talmudifier::prelude::*;
 
 /// We're not using a proper benchmarking crate because Talmudifier is slow.
 /// We don't want or need multiple iterations.  
+#[cfg(feature = "default-fonts")]
 fn main() {
     let directory = PathBuf::from_str("example_text").unwrap();
 
@@ -23,3 +25,6 @@ fn main() {
     let _ = talmudifier.talmudify();
     println!("{} seconds", (Instant::now() - t0).as_secs());
 }
+
+#[cfg(not(feature = "default-fonts"))]
+fn main() {}

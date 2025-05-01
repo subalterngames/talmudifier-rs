@@ -21,19 +21,26 @@ use crate::{
     prelude::FontMetrics,
 };
 
+#[cfg(feature = "default-fonts")]
 const DEFAULT_ROOT_DIRECTORY: &str = "talmudifier_fonts";
 
 /// The paths to the font files.
 #[derive(Deserialize, Serialize)]
 pub struct Font {
+    /// The directory that the fonts are in.
     pub directory: PathBuf,
+    /// The filename of the regular-style .ttf file.
     pub regular: String,
+    /// The filename of the italicized .ttf file. If None, `regular` is used.
     pub italic: Option<String>,
+    /// The filename of the bold .ttf file. If None, `italic` is used.
     pub bold: Option<String>,
+    /// The filename of the bold italic .ttf file. If None, `bold` is used.
     pub bold_italic: Option<String>,
 }
 
 impl Font {
+    #[cfg(feature = "default-fonts")]
     pub(super) fn new(fonts_directory: &Path, folder: &str) -> Self {
         Self {
             directory: fonts_directory.join(folder),
@@ -43,6 +50,7 @@ impl Font {
             bold_italic: Some("bold_italic.ttf".to_string()),
         }
     }
+
     /// Create a `CosmicFont` from the font files.
     pub(super) fn to_cosmic(&self, metrics: &FontMetrics) -> Result<CosmicFont, Error> {
         let font_paths = self.font_paths()?;

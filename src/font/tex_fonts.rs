@@ -1,3 +1,4 @@
+#[cfg(feature = "default-fonts")]
 use std::io;
 
 #[cfg(feature = "default-fonts")]
