@@ -223,4 +223,4 @@ To run a very rudimentary benchmark:
 cargo run --bin benchmark --release
 ```
 
-Current benchmark: 57 seconds
+Current benchmark: 53 seconds

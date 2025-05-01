@@ -455,7 +455,8 @@ impl<'t> Table<'t> {
         cosmic_index: usize,
         num_lines: usize,
     ) -> Result<Option<String>, Error> {
-        const INCREMENT: usize = 10;
+        // This is a magic number I derived via benchmarking other values.
+        const INCREMENT: usize = 20;
 
         // Get the target column.
         let column = self.get_column(position);
