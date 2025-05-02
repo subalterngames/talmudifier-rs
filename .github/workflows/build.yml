@@ -36,18 +36,21 @@ jobs:
           matrix:
             include:
               - os: ubuntu-latest
+                packages: sudo apt install autoconf automake autoconf-archive
                 extension:
                 rust-flags:
                 archive: tar -czvf talmudifier_linux.tar.gz talmudifier
                 archive-name: talmudifier_linux.tar.gz
                 move: mv
               - os: macos-latest
+                packages: brew install autoconf automake autoconf-archive
                 extension:
                 rust-flags:
                 archive: tar -czvf talmudifier_macos.tar.gz talmudifier
                 archive-name: talmudifier_macos.tar.gz
                 move: mv
               - os: windows-latest
+                packages: echo "anyway..."
                 extension: .exe
                 rust-flags: "-Ctarget-feature=+crt-static"
                 archive: Compress-Archive -Path talmudifier -DestinationPath talmudifier_windows.zip
@@ -58,6 +61,8 @@ jobs:
         if: needs.create-release.outputs.tag-exists == 'false'
         steps:
             - uses: actions/checkout@v4
+            - name: Install packages
+              run: ${{ matrix.packages }}
             - name: Install vcpkg
               run: cargo install cargo-vcpkg
             - name: vcpkg build
