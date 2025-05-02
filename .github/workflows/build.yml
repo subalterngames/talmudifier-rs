@@ -1,0 +1,95 @@
+name: build
+
+on:
+    workflow_dispatch:
+jobs:
+    check-tag:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with: 
+                fetch-depth: 0
+            
+    create-release:
+        runs-on: ubuntu-latest
+        needs: check-tag
+        outputs:
+            created-release: ${{ steps.check-tag.outputs.TAG_EXISTS == 'false' }}
+            release-url: ${{ steps.tag-release.outputs.html_url }}
+        steps:
+            - uses: actions/checkout@v4
+            - name: Get project version
+              id: project-version
+              run: echo "PROJECT_VERSION=$(cargo pkgid | sed 's/.*@//')" >> "$GITHUB_OUTPUT"
+            - uses: mukunku/tag-exists-action@v1.6.0
+              id: check-tag
+              with: 
+                  tag: ${{ steps.project-version.outputs.PROJECT_VERSION }}
+            - name: output
+              run: echo "TAG_EXISTS=${{ steps.check-tag.outputs.exists }}" >> "$GITHUB_OUTPUT"
+            - name: Tag and release
+              id: tag-release
+              uses: actions/create-release@latest
+              env:
+                TAG_EXISTS: ${{ steps.check-tag.outputs.TAG_EXISTS }}
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              if: env.TAG_EXISTS == 'true'
+              with:
+                tag_name: ${{ env.TAG_EXISTS }}
+                release_name: ${{ env.TAG_EXISTS }}
+                draft: false
+                prerelease: false
+    build-linux:
+        strategy:
+          matrix:
+            include:
+              - os: ubuntu-latest
+                extension:
+                rust-flags:
+                archive: tar -czvf talmudifier_linux.tar.gz talmudifier
+                archive-name: talmudifier_linux.tar.gz
+                move: mv
+              - os: macos-latest
+                extension:
+                rust-flags:
+                archive: tar -czvf talmudifier_macos.tar.gz talmudifier
+                archive-name: talmudifier_macos.tar.gz
+                move: mv
+              - os: windows-latest
+                extension: .exe
+                rust-flags: "-Ctarget-feature=+crt-static"
+                archive: Compress-Archive -Path talmudifier -DestinationPath talmudifier_windows.zip
+                archive-name: talmudifier.zip
+                move: move /Y
+        runs-on: ${{ matrix.os }}
+        needs: create-release
+        if: needs.create-release.outputs.created-release == 'true'
+        steps:
+            - uses: actions/checkout@v4
+            - name: Install vcpkg
+              run: cargo install cargo-vcpkg
+            - name: vcpkg build
+              run: cargo vcpkg build
+            - name: Build
+              env:
+                TECTONIC_DEP_BACKEND: "vcpkg"
+                RUST_FLAGS: ${{ matrix.rust-flags }}
+              run: cargo build --bin talmudify --features clap --release
+            - name: Rename
+              working-directory: target/release
+              env:
+                FILENAME: talmudify${{ matrix.extension }}
+              run: ${{ matrix.move }} ${{ env.FILENAME }} talmudifier${{ matrix.extension }}
+            - name: Archive
+              working-directory: target/release
+              run: ${{ matrix.archive }}
+            - name: Upload
+              uses: actions/upload-release-asset@latest
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                FILENAME: ${{ matrix.archive-name }}
+              with:
+                upload_url: ${{ needs.create-release.outputs.release-url }}
+                asset_path: target/release/${{ env.FILENAME }}
+                asset_name: ${{ env.FILENAME }}
+                asset_content_type: application/octet-stream

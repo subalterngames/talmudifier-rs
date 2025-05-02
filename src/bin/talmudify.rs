@@ -7,7 +7,7 @@ use clap::Parser;
 use talmudifier::prelude::*;
 
 #[derive(Parser, Debug)]
-#[command(author, version, about)]
+#[command(version, about, arg_required_else_help = true)]
 struct Args {
     /// The path to a talmudifier json file. If this arg is not included, and if the default-fonts feature is enabled, then default values will be used.
     #[arg(short, long, default_value = "talmudifier.json")]

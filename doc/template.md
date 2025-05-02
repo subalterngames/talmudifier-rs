@@ -30,35 +30,58 @@ write("out.tex", &daf.tex).unwrap();
 write("out.pdf", &daf.pdf).unwrap();
 ```
 
-## If you're not a programmer
+## Download talmudifier
 
-**If you're not a programmer, I promise that you're capable of installing and using Talmudifier. If you run into trouble, please [contact me](mailto:subalterngames@gmail.com).**
+On this webpage, there is a **Releases** sidebar. Click that, and download Talmudifier.
 
-1. Download this repo. There's a green `<> Code` button on this page. Click it, download a .zip file, and extract the zip file.
-2. [Install Rust](https://www.rust-lang.org/tools/install)
-3. [Install git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
-4. [Compile the C++ libraries](#compile-the-c++-libraries)
-5. [Compile as an executable](#compile-as-an-executable)
-6. [Create a valid talmudifier.json file](#talmudifierjson)
+Open a terminal. You first need to change directory to Downloads (or wherever Talmudifier actually is), so:
 
 ```text
-Whenever you see text like this, it means: 
-1. Open a terminal
-2. Type in the command
-3. Press enter
+cd ~/Downloads
 ```
 
-Most of the commands require your *current directory* to be `talmudifier-rs`. We need to *cd* to the *current directory.*
-
-Let's say you downloaded Talmudifier and now it's in Downloads. You need to do this:
+*MacOS:* The app might not be marked as an executable. Run this in the same terminal window:
 
 ```text
-cd ~/Downloads/talmudifier-rs
+chmod +x talmudifier
 ```
 
-You will need to run this command every time you open a new terminal window.
+*MacOS:* If that didn't work, move `talmudifier` to your home directory, and then run this:
 
-## Compile the C++ libraries
+```text
+cd ~ && chmod +x talmudifier
+```
+
+*MacOS and Linux:* Run Talmudifier:
+
+```text
+./talmudifier 
+```
+
+*Windows:* Run Talmudifier:
+
+```text
+./talmudifier.exe
+```
+
+*All platforms:* When you run Talmudifier, you'll see a list of command line options.
+
+You now need to actually write some words for the page, and then [create a valid talmudifier.json file](#talmudifierjson).
+
+Save `talmudifier.json` wherever you want. Assuming that:
+
+- The current directory is your home directory (`/home/<username>/`)
+- `talmudify` is in `Downloads/`
+- `talmudifier.json` is in `Documents/`
+- You want to output the PDF to `Documents/`
+
+...Then you would do this:
+
+```text
+./talmudify -t Documents/talmudifier.json -o Documents/out.pdf
+```
+
+## Add Talmudifier to your project
 
 The underlying `tectonic` TeX engine uses some C++ libraries, so compiling requires a few more steps than `cargo build`.
 
@@ -100,14 +123,6 @@ If you don't want to install system packages, or if you're not using Linux, then
 ```text
 cargo build --release --bin talmudify --features clap
 ```
-
-The compiled executable is in `target/release/`. To get a list of options, run:
-
-```text
-./talmudifier --help
-```
-
-On Windows, it's `./talmudifier.exe` instead of `./talmudifier`
 
 Then, create a `talmudifier.json` file.
 
