@@ -23,6 +23,8 @@ jobs:
               run: echo "PROJECT_VERSION=$(cargo pkgid | sed 's/.*@//')" >> "$GITHUB_OUTPUT"
             - uses: mukunku/tag-exists-action@v1.6.0
               id: check-tag
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with: 
                   tag: ${{ steps.project-version.outputs.PROJECT_VERSION }}
             - name: output
