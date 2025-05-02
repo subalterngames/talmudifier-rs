@@ -3,11 +3,6 @@ name: build
 on:
     workflow_dispatch:
 jobs:
-    test:
-      runs-on: windows-latest
-      steps:
-        - uses: actions/checkout@v4
-        - run: mv Cargo.toml aaa
     create-release:
         runs-on: ubuntu-latest
         outputs:
@@ -46,21 +41,18 @@ jobs:
                 rust-flags:
                 archive: tar -czvf talmudifier_linux.tar.gz talmudifier
                 archive-name: talmudifier_linux.tar.gz
-                move: mv
               - os: macos-latest
                 packages: brew install autoconf automake autoconf-archive
                 extension:
                 rust-flags:
                 archive: tar -czvf talmudifier_macos.tar.gz talmudifier
                 archive-name: talmudifier_macos.tar.gz
-                move: mv
               - os: windows-latest
                 packages: echo "anyway..."
                 extension: .exe
                 rust-flags: "-Ctarget-feature=+crt-static"
                 archive: Compress-Archive -Path talmudifier -DestinationPath talmudifier_windows.zip
                 archive-name: talmudifier.zip
-                move: move /Y
         runs-on: ${{ matrix.os }}
         needs: create-release
         if: needs.create-release.outputs.tag-exists == 'false'
@@ -81,7 +73,7 @@ jobs:
               working-directory: target/release
               env:
                 FILENAME: talmudify${{ matrix.extension }}
-              run: ${{ matrix.move }} ${{ env.FILENAME }} talmudifier${{ matrix.extension }}
+              run: mv ${{ env.FILENAME }} talmudifier${{ matrix.extension }}
             - name: Archive
               working-directory: target/release
               run: ${{ matrix.archive }}
