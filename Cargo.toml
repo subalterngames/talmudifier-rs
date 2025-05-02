@@ -4,6 +4,12 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Esther Alter <subalterngames@gmail.com>"]
 description = "Convert markdown text into Talmud-like PDFs"
+readme = "README.md"
+repository = "https://github.com/subalterngames/talmudifier-rs"
+license = "MIT"
+keywords = ["jewish", "tex", "typesetting", "pdf", "font"]
+categories = ["command-line-interface", "multimedia", "value-formatting", "visualization"]
+
 
 [features]
 default = ["default-fonts"]
