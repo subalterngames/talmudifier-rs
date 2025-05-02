@@ -6,7 +6,7 @@ jobs:
     create-release:
         runs-on: ubuntu-latest
         outputs:
-            created-release: ${{ steps.check-tag.outputs.exists == 'false' }}
+            tag-exists: ${{ steps.check-tag.outputs.exists }}
             release-url: ${{ steps.tag-release.outputs.html_url }}
         steps:
             - uses: actions/checkout@v4
@@ -56,7 +56,7 @@ jobs:
                 move: move /Y
         runs-on: ${{ matrix.os }}
         needs: create-release
-        if: needs.create-release.outputs.created-release == 'true'
+        if: needs.create-release.outputs.tag-tag-exists == 'false'
         steps:
             - uses: actions/checkout@v4
             - name: Install vcpkg
