@@ -6,7 +6,7 @@ jobs:
     create-release:
         runs-on: ubuntu-latest
         outputs:
-            created-release: ${{ steps.check-tag.outputs.TAG_EXISTS == 'false' }}
+            created-release: ${{ steps.check-tag.outputs.exists == 'false' }}
             release-url: ${{ steps.tag-release.outputs.html_url }}
         steps:
             - uses: actions/checkout@v4
@@ -19,13 +19,11 @@ jobs:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with: 
                   tag: ${{ steps.project-version.outputs.PROJECT_VERSION }}
-            - name: output
-              run: echo "TAG_EXISTS=${{ steps.check-tag.outputs.exists }}" >> "$GITHUB_OUTPUT"
             - name: Tag and release
               id: tag-release
               uses: actions/create-release@latest
               env:
-                TAG_EXISTS: ${{ steps.check-tag.outputs.TAG_EXISTS }}
+                TAG_EXISTS: ${{ steps.check-tag.outputs.exists }}
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                 TAG: ${{ steps.project-version.outputs.PROJECT_VERSION }}
               if: env.TAG_EXISTS == 'false'
