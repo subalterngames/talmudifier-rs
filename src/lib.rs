@@ -49,7 +49,7 @@ macro_rules! tex {
     };
 }
 
-/// Set config data for the page and then generate it.
+/// Generate a Talmud-like page.
 #[cfg_attr(feature = "default-fonts", derive(Default))]
 #[derive(Deserialize, Serialize)]
 pub struct Talmudifier {
