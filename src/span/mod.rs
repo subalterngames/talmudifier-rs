@@ -13,6 +13,7 @@ mod word;
 
 type LatexCommand = (Option<&'static str>, Option<&'static str>);
 
+/// A vec of words derived from a Markdown string.
 pub struct Span(pub Vec<Word>);
 
 impl Span {

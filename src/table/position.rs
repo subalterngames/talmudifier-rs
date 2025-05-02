@@ -5,3 +5,5 @@ pub enum Position {
     Center,
     Right,
 }
+
+pub const POSITIONS: [Position; 3] = [Position::Left, Position::Center, Position::Right];

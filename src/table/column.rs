@@ -47,6 +47,7 @@ impl<'t> Column<'t> {
         matches!(self, Self::None)
     }
 
+    /// Try to get the underlying [`SpanColumn`].
     pub fn get_span_column(&self) -> Option<&&'t mut SpanColumn> {
         match self {
             Self::None => None,

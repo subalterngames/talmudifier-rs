@@ -5,7 +5,7 @@ use cosmic_text::{Buffer, Shaping};
 use maybe_span_column::MaybeSpanColumn;
 use para_column::ParaColumn;
 use pdf_extract::extract_text_from_mem_by_pages;
-use position::Position;
+use position::{Position, POSITIONS};
 
 use crate::{error::Error, get_pdf, page::Page, tex};
 
@@ -61,7 +61,8 @@ impl<'t> Table<'t> {
         // Get the paracol begin command.
         let begin_paracol = tex!("begin", "paracol", num_columns);
 
-        // Convert the columns into columns with widths. `ratio` will be used for TeX and in some cases it's a magic number.
+        // Convert the columns with spans into columns with widths.
+        // Some of these ratios are magic numbers to appease paracol.
         let (left, center, right, ratio) = match (left, center, right) {
             (Some(left), Some(center), Some(right)) => (
                 Column::third(left),
@@ -120,12 +121,15 @@ impl<'t> Table<'t> {
         }
     }
 
-    /// Returns the [`Position`] of the column with the least remaining number of lines.
-    /// To get the number of lines, we need to render a PDF and extract the text, which is slow.
-    /// However, if there is only 1 column with text, we skip the render and this returns `(position, None)`.
+    /// Given my current columns, return:
+    ///
+    /// - The least number of lines (if any) from each columns starting at their respective `self.start` word index values.
+    /// - The [`Position`] of the columns with the least number of lines.
+    ///
+    /// This requires us to run TeX, except for when there is only one column.
     pub fn get_min_num_lines(&self) -> Result<(Option<usize>, Position), Error> {
         // If there is only one column, skip the render.
-        let tex = [Position::Left, Position::Center, Position::Right]
+        let tex = POSITIONS
             .into_iter()
             .zip([&self.left, &self.center, &self.right])
             .filter_map(|(p, c)| {
@@ -136,25 +140,24 @@ impl<'t> Table<'t> {
         if tex.len() == 1 {
             Ok((None, tex[0].0))
         } else {
-            // Convert each column into a table.
-            let para_columns = [Position::Left, Position::Center, Position::Right]
+            // Convert each column into paracolumns, which will become separate tables.
+            let para_columns = POSITIONS
                 .into_iter()
                 .map(|position| self.get_paracolumns_for_num_lines(position, None))
                 .collect::<Vec<[ParaColumn; 3]>>();
-
+            // We've checked elsewhere to make sure that at least one column has text.
             if para_columns.iter().all(Self::para_columns_done) {
                 Err(Error::NoColumns)
             } else {
                 // Convert to paracols.
                 let mut paracols = vec![];
-                // We KNOW that the positions vec will match the extracted pages.
+                // We KNOW that the order of the positions in this vec will match the extracted pages vec below.
                 let mut positions = vec![];
                 for (para_columns, position) in para_columns.into_iter().zip([
                     Position::Left,
                     Position::Center,
                     Position::Right,
                 ]) {
-                    // Add the paracol.
                     if let Some(paracol) = self.get_paracol(&para_columns) {
                         paracols.push(paracol);
                         positions.push(position);
@@ -175,7 +178,8 @@ impl<'t> Table<'t> {
 
                 // Get the number of lines per page (which is the same as per column).
                 let num_lines = Self::get_extracted_line_counts(&pdf)?;
-                // Get the minimum number of lines
+
+                // Get the minimum number of lines.
                 Ok(match num_lines.into_iter().enumerate().min_by(|a, b| a.1.cmp(&b.1)) {
                     Some((index, min_lines)) => (Some(min_lines), positions[index]),
                     None => unreachable!("We already checked that at least column has words, yet we didn't get a minimum number of lines.")
@@ -184,6 +188,7 @@ impl<'t> Table<'t> {
         }
     }
 
+    /// Extract text from a PDF and count the number of lines per page.
     fn get_extracted_line_counts(pdf: &[u8]) -> Result<Vec<usize>, Error> {
         // Extract text per-page.
         match extract_text_from_mem_by_pages(pdf) {
@@ -198,6 +203,12 @@ impl<'t> Table<'t> {
         }
     }
 
+    /// Given a `range` of end index values (in the underlying vec of words), generate a PDF.
+    /// This PDF will have multiple columns, with words starting at `self.start` and ending at `range`.
+    /// For example, if `self.start == 2` and `range == 16..30`, this will add columns:
+    /// `[words[self.start..16], words[self.start..17] .. words[self.start..30]]`
+    /// Each of these columns is on a separate page.
+    /// We then generate the PDF and extract the line counts.
     fn get_extracted_line_counts_in_range(
         &self,
         position: Position,
@@ -237,10 +248,7 @@ impl<'t> Table<'t> {
         num_lines: usize,
     ) -> Result<Option<String>, Error> {
         let mut para_columns: [ParaColumn; 3] = Default::default();
-        for (pos, para_column) in [Position::Left, Position::Center, Position::Right]
-            .into_iter()
-            .zip(para_columns.iter_mut())
-        {
+        for (pos, para_column) in POSITIONS.into_iter().zip(para_columns.iter_mut()) {
             *para_column = self.get_para_column(pos, position, num_lines)?;
         }
 
@@ -259,10 +267,7 @@ impl<'t> Table<'t> {
     /// TL;DR this is an optimization that saves one PDF iteration.
     pub fn get_tex_table_one_column(&self) -> String {
         let mut para_columns: [ParaColumn; 3] = Default::default();
-        for (pos, para_column) in [Position::Left, Position::Center, Position::Right]
-            .into_iter()
-            .zip(para_columns.iter_mut())
-        {
+        for (pos, para_column) in POSITIONS.into_iter().zip(para_columns.iter_mut()) {
             *para_column = match self.get_column(pos).get_span_column() {
                 Some(column) => ParaColumn::Text(column.to_tex(None, true)),
                 None => ParaColumn::None,
@@ -298,6 +303,11 @@ impl<'t> Table<'t> {
             .all(|c| c.done())
     }
 
+    /// Given a `position`, convert a column into a `ParaColumn` of `num_lines`.
+    ///
+    /// - `position` is the position of the column.
+    /// - `target_position` is the position of the column with the least number of lines.
+    /// - `num_lines` is the target number of lines.
     fn get_para_column(
         &mut self,
         position: Position,
@@ -305,6 +315,8 @@ impl<'t> Table<'t> {
         num_lines: usize,
     ) -> Result<ParaColumn, Error> {
         Ok(
+            // If the column is at the `target_position`, this is the column with the least amount of words.
+            // No need to measure anything. Just fill it with all remaining text.
             if target_position.is_some() && position == target_position.unwrap() {
                 // Include all words.
                 match self.get_column_tex(position, None, true) {
@@ -312,8 +324,10 @@ impl<'t> Table<'t> {
                     None => ParaColumn::None,
                 }
             } else {
+                // Guess the starting index.
                 match self.get_cosmic_index(position, num_lines) {
                     Some(cosmic_index) => {
+                        // Calculate how many words fit in the column.
                         match self.get_tex_words(position, cosmic_index, num_lines)? {
                             Some(text) => ParaColumn::Text(text),
                             None => ParaColumn::Empty,
@@ -417,6 +431,8 @@ impl<'t> Table<'t> {
         }
     }
 
+    /// Returns three [`ParaColumn`]s that can be used to calculate a column's number of lines.
+    /// This function preserves the width of the target column while removing text from the other columns.
     fn get_paracolumns_for_num_lines(
         &self,
         position: Position,
@@ -579,6 +595,7 @@ impl<'t> Table<'t> {
     /// Convert a column at `position` to a TeX including words from the column's start index to an `end` index.
     /// If `end` is None, it's set to the number of words in the column.
     /// Returns None if there aren't any remaining words in the column.
+    /// If `marginalia`, include marginalia (this is unwanted when trying to get the number of lines).
     fn get_column_tex(
         &mut self,
         position: Position,
