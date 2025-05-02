@@ -23,10 +23,9 @@ jobs:
               id: tag-release
               uses: actions/create-release@latest
               env:
-                TAG_EXISTS: ${{ steps.check-tag.outputs.exists }}
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                 TAG: ${{ steps.project-version.outputs.PROJECT_VERSION }}
-              if: env.TAG_EXISTS == 'false'
+              if: steps.check-tag.outputs.exists == 'false'
               with:
                 tag_name: ${{ env.TAG }}
                 release_name: ${{ env.TAG }}
