@@ -70,7 +70,7 @@ jobs:
             - name: Build
               env:
                 TECTONIC_DEP_BACKEND: "vcpkg"
-                RUST_FLAGS: ${{ matrix.rust-flags }}
+                RUSTFLAGS: ${{ matrix.rust-flags }}
               run: cargo build --bin talmudify --features clap --release
             - name: Rename
               working-directory: target/release
