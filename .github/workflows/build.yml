@@ -56,7 +56,7 @@ jobs:
                 move: move /Y
         runs-on: ${{ matrix.os }}
         needs: create-release
-        if: needs.create-release.outputs.tag-tag-exists == 'false'
+        if: needs.create-release.outputs.tag-exists == 'false'
         steps:
             - uses: actions/checkout@v4
             - name: Install vcpkg
