@@ -31,7 +31,7 @@ jobs:
                 release_name: ${{ env.TAG }}
                 draft: false
                 prerelease: false
-    build-linux:
+    build:
         strategy:
           matrix:
             include:
@@ -61,7 +61,7 @@ jobs:
             - name: Install vcpkg
               run: cargo install cargo-vcpkg
             - name: vcpkg build
-              run: cargo vcpkg build
+              run: cargo vcpkg -v build
             - name: Build
               env:
                 TECTONIC_DEP_BACKEND: "vcpkg"
