@@ -36,7 +36,7 @@ jobs:
           matrix:
             include:
               - os: ubuntu-latest
-                packages: sudo apt install autoconf automake autoconf-archive
+                packages: sudo apt install autoconf automake autoconf-archive -y
                 extension:
                 rust-flags:
                 archive: tar -czvf talmudifier_linux.tar.gz talmudifier
