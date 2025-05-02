@@ -7,7 +7,7 @@ jobs:
         runs-on: ubuntu-latest
         outputs:
             tag-exists: ${{ steps.check-tag.outputs.exists }}
-            release-url: ${{ steps.tag-release.outputs.html_url }}
+            tag: ${{ steps.project-version.outputs.PROJECT_VERSION }}
         steps:
             - uses: actions/checkout@v4
             - name: Get project version
@@ -81,12 +81,7 @@ jobs:
               working-directory: target/release
               run: ${{ matrix.archive }}
             - name: Upload
-              uses: actions/upload-release-asset@latest
-              env:
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                FILENAME: ${{ matrix.archive-name }}
+              uses: softprops/action-gh-release@v2
               with:
-                upload_url: ${{ needs.create-release.outputs.release-url }}
-                asset_path: target/release/${{ env.FILENAME }}
-                asset_name: ${{ env.FILENAME }}
-                asset_content_type: application/octet-stream
+                files: target/release/${{ matrix.archive-name }}
+                tag_name: ${{ needs.create-release.outputs.tag }}
