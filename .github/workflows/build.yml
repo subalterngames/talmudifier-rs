@@ -66,7 +66,7 @@ jobs:
             - name: Install vcpkg
               run: cargo install cargo-vcpkg
             - name: vcpkg build
-              run: cargo vcpkg -v build
+              run: cargo vcpkg build
             - name: Build
               env:
                 TECTONIC_DEP_BACKEND: "vcpkg"
