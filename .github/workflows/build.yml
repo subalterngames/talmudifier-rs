@@ -71,9 +71,7 @@ jobs:
               run: cargo build --bin talmudify --features clap --release
             - name: Rename
               working-directory: target/release
-              env:
-                FILENAME: talmudify${{ matrix.extension }}
-              run: mv ${{ env.FILENAME }} talmudifier${{ matrix.extension }}
+              run: mv talmudify${{ matrix.extension }} talmudifier${{ matrix.extension }}
             - name: Archive
               working-directory: target/release
               run: ${{ matrix.archive }}
