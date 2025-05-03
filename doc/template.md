@@ -83,42 +83,43 @@ Save `talmudifier.json` wherever you want. Assuming that:
 
 ## Add Talmudifier to your project
 
-The underlying `tectonic` TeX engine uses some C++ libraries, so compiling requires a few more steps than `cargo build`.
+The underlying `tectonic` TeX engine uses some C++ libraries which are compiled via vcpkg.
 
-On Debian,  you can run `./tectonic.sh` to install the C++ libraries, and skip steps 1-4. I haven't tested this script on other distros but you can make your own version as needed.
-
-If you don't want to install system packages, or if you're not using Linux, then you're going to compile via vcpkg[^1]:
+First time only:
 
 1. Download and install a C++ compiler
-
 2. Run:
 
-   ```text
-   cargo install cargo-vcpkg
-   ```
+```text
+cargo install cargo-vcpkg
+```
 
-3. Run:[^2]
+First time only or whenever you `cargo clean`:[^1]
 
-   ```text
-    cargo vcpkg build
-   ```
+```text
+cargo vcpkg build
+```
 
-4. Set environment flags (do this every time you open a new terminal window):
+Every time you want to build your project, set the following environment flags:
 
-   - *Linux and MacOS:* 
-     
-     ```text
-     export TECTONIC_DEP_BACKEND="vcpkg"
-     ```
-     
-   - *Windows:* 
+*Linux and MacOS:*
 
-     ```text
-     $Env:TECTONIC_DEP_BACKEND="vcpkg"
-     $Env:RUSTFLAGS="-Ctarget-feature=+crt-static"
-     ```
+```text
+export TECTONIC_DEP_BACKEND="vcpkg"
+```
+
+*Windows:*
+
+```text
+$Env:TECTONIC_DEP_BACKEND="vcpkg"
+$Env:RUSTFLAGS="-Ctarget-feature=+crt-static"
+```
+
+Then, create a `talmudifier.json` file.
 
 ## Compile as an executable
+
+Follow steps for adding Talmudifier to your project. Then, run:
 
 ```text
 cargo build --release --bin talmudify --features clap
@@ -206,13 +207,13 @@ Set `"log": true` to enable logging. This will generated intermediary files per 
 
 ## Benchmark
 
-To run a very rudimentary benchmark:[^3]
+To run a very rudimentary benchmark:[^2]
 
 ```text
 cargo run --bin benchmark --release
 ```
 
-Current benchmark: 35 seconds
+Current benchmark: 21 seconds
 
 ## Other executables
 
@@ -234,7 +235,7 @@ The `-d` argument is optional and defaults to `logs/`.
 
 This is a Rust port of my `talmudifier` Python module. Major differences include:
 
-- It's over six times faster.[^4]
+- It's over six times faster.[^3]
 - No external TeX engine needed. Talmudifier has its own internal TeX engine.
 - No need to manually download any TeX packages. Talmudifier will download the required packages for you.
 - Two major performance improvements to the *algorithm*:
@@ -249,7 +250,6 @@ This is a Rust port of my `talmudifier` Python module. Major differences include
 
 ***
 
-[^1]: Tested on Windows, but vcpkg should work the same on Linux and MacOS.
-[^2]: If `cargo vcpkg build` fails when trying to compile `icu`, it's probably because you've got a whitespace in the root file path. To fix: Move `target/vcpkg` to a directory without white spaces, such as: `C:/vcpkg`. Then: `cd C:/vcpkg` Then: `vcpkg install icu` on MacOS and Linux, or `vcpkg install icu --triplet x64-windows-static` on Windows. Then: Move `vcpkg/` back to `<project>/target/` The Internet implies that a newer compiler than what I'm using might fix the problem. Or maybe it won't. Sorry.
-[^3]: There's no need for anything more complicated than this because Talmudifier is so slow.
-[^4]: See the benchmark. With Python Talmudifier, a similar benchmark takes 216 seconds.
+[^1]: If `cargo vcpkg build` fails, it's probably because you've got a whitespace in the root file path. To fix: Move `target/vcpkg` to a directory without white spaces, such as: `C:/vcpkg`. Then: `cd C:/vcpkg` Then: `vcpkg install icu` on MacOS and Linux, or `vcpkg install icu --triplet x64-windows-static` on Windows. Then: Move `vcpkg/` back to `<project>/target/` The Internet implies that a newer compiler than what I'm using might fix the problem. Or maybe it won't. Sorry.
+[^2]: There's no need for anything more complicated than this because Talmudifier is so slow.
+[^3]: See the benchmark. With Python Talmudifier, a similar benchmark takes 216 seconds.

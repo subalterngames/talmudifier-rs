@@ -1,1 +1,0 @@
-sudo apt install libgraphite2-dev libfreetype-dev libharfbuzz-dev libfontconfig-dev libicu-dev libssl-dev g++

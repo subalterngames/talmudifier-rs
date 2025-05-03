@@ -36,84 +36,100 @@ write("out.tex", &daf.tex).unwrap();
 write("out.pdf", &daf.pdf).unwrap();
 ```
 
-## If you're not a programmer
+## Download talmudifier
 
-**If you're not a programmer, I promise that you're capable of installing and using Talmudifier. If you run into trouble, please [contact me](mailto:subalterngames@gmail.com).**
+On this webpage, there is a **Releases** sidebar. Click that, and download Talmudifier.
 
-1. Download this repo. There's a green `<> Code` button on this page. Click it, download a .zip file, and extract the zip file.
-2. [Install Rust](https://www.rust-lang.org/tools/install)
-3. [Install git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
-4. [Compile the C++ libraries](#compile-the-c++-libraries)
-5. [Compile as an executable](#compile-as-an-executable)
-6. [Create a valid talmudifier.json file](#talmudifierjson)
+Open a terminal. You first need to change directory to Downloads (or wherever Talmudifier actually is), so:
 
 ```text
-Whenever you see text like this, it means: 
-1. Open a terminal
-2. Type in the command
-3. Press enter
+cd ~/Downloads
 ```
 
-Most of the commands require your *current directory* to be `talmudifier-rs`. We need to *cd* to the *current directory.*
-
-Let's say you downloaded Talmudifier and now it's in Downloads. You need to do this:
+*MacOS:* The app might not be marked as an executable. Run this in the same terminal window:
 
 ```text
-cd ~/Downloads/talmudifier-rs
+chmod +x talmudifier
 ```
 
-You will need to run this command every time you open a new terminal window.
+*MacOS:* If that didn't work, move `talmudifier` to your home directory, and then run this:
 
-## Compile the C++ libraries
+```text
+cd ~ && chmod +x talmudifier
+```
 
-The underlying `tectonic` TeX engine uses some C++ libraries, so compiling requires a few more steps than `cargo build`.
+*MacOS and Linux:* Run Talmudifier:
 
-On Debian,  you can run `./tectonic.sh` to install the C++ libraries, and skip steps 1-4. I haven't tested this script on other distros but you can make your own version as needed.
+```text
+./talmudifier 
+```
 
-If you don't want to install system packages, or if you're not using Linux, then you're going to compile via vcpkg[^1]:
+*Windows:* Run Talmudifier:
+
+```text
+./talmudifier.exe
+```
+
+*All platforms:* When you run Talmudifier, you'll see a list of command line options.
+
+You now need to actually write some words for the page, and then [create a valid talmudifier.json file](#talmudifierjson).
+
+Save `talmudifier.json` wherever you want. Assuming that:
+
+- The current directory is your home directory (`/home/<username>/`)
+- `talmudify` is in `Downloads/`
+- `talmudifier.json` is in `Documents/`
+- You want to output the PDF to `Documents/`
+
+...Then you would do this:
+
+```text
+./talmudify -t Documents/talmudifier.json -o Documents/out.pdf
+```
+
+## Add Talmudifier to your project
+
+The underlying `tectonic` TeX engine uses some C++ libraries which are compiled via vcpkg.
+
+First time only:
 
 1. Download and install a C++ compiler
-
 2. Run:
 
-   ```text
-   cargo install cargo-vcpkg
-   ```
+```text
+cargo install cargo-vcpkg
+```
 
-3. Run:[^2]
+First time only or whenever you `cargo clean`:[^1]
 
-   ```text
-    cargo vcpkg build
-   ```
+```text
+cargo vcpkg build
+```
 
-4. Set environment flags (do this every time you open a new terminal window):
+Every time you want to build your project, set the following environment flags:
 
-   - *Linux and MacOS:* 
-     
-     ```text
-     export TECTONIC_DEP_BACKEND="vcpkg"
-     ```
-     
-   - *Windows:* 
+*Linux and MacOS:*
 
-     ```text
-     $Env:TECTONIC_DEP_BACKEND="vcpkg"
-     $Env:RUSTFLAGS="-Ctarget-feature=+crt-static"
-     ```
+```text
+export TECTONIC_DEP_BACKEND="vcpkg"
+```
+
+*Windows:*
+
+```text
+$Env:TECTONIC_DEP_BACKEND="vcpkg"
+$Env:RUSTFLAGS="-Ctarget-feature=+crt-static"
+```
+
+Then, create a `talmudifier.json` file.
 
 ## Compile as an executable
+
+Follow steps for adding Talmudifier to your project. Then, run:
 
 ```text
 cargo build --release --bin talmudify --features clap
 ```
-
-The compiled executable is in `target/release/`. To get a list of options, run:
-
-```text
-./talmudifier --help
-```
-
-On Windows, it's `./talmudifier.exe` instead of `./talmudifier`
 
 Then, create a `talmudifier.json` file.
 
@@ -233,13 +249,13 @@ Traditionally, this process would be sped up by experienced typesetters because 
 
 ## Benchmark
 
-To run a very rudimentary benchmark:[^3]
+To run a very rudimentary benchmark:[^2]
 
 ```text
 cargo run --bin benchmark --release
 ```
 
-Current benchmark: 35 seconds
+Current benchmark: 21 seconds
 
 ## Other executables
 
@@ -261,7 +277,7 @@ The `-d` argument is optional and defaults to `logs/`.
 
 This is a Rust port of my `talmudifier` Python module. Major differences include:
 
-- It's over six times faster.[^4]
+- It's over six times faster.[^3]
 - No external TeX engine needed. Talmudifier has its own internal TeX engine.
 - No need to manually download any TeX packages. Talmudifier will download the required packages for you.
 - Two major performance improvements to the *algorithm*:
@@ -276,7 +292,6 @@ This is a Rust port of my `talmudifier` Python module. Major differences include
 
 ***
 
-[^1]: Tested on Windows, but vcpkg should work the same on Linux and MacOS.
-[^2]: If `cargo vcpkg build` fails when trying to compile `icu`, it's probably because you've got a whitespace in the root file path. To fix: Move `target/vcpkg` to a directory without white spaces, such as: `C:/vcpkg`. Then: `cd C:/vcpkg` Then: `vcpkg install icu` on MacOS and Linux, or `vcpkg install icu --triplet x64-windows-static` on Windows. Then: Move `vcpkg/` back to `<project>/target/` The Internet implies that a newer compiler than what I'm using might fix the problem. Or maybe it won't. Sorry.
-[^3]: There's no need for anything more complicated than this because Talmudifier is so slow.
-[^4]: See the benchmark. With Python Talmudifier, a similar benchmark takes 216 seconds.
+[^1]: If `cargo vcpkg build` fails, it's probably because you've got a whitespace in the root file path. To fix: Move `target/vcpkg` to a directory without white spaces, such as: `C:/vcpkg`. Then: `cd C:/vcpkg` Then: `vcpkg install icu` on MacOS and Linux, or `vcpkg install icu --triplet x64-windows-static` on Windows. Then: Move `vcpkg/` back to `<project>/target/` The Internet implies that a newer compiler than what I'm using might fix the problem. Or maybe it won't. Sorry.
+[^2]: There's no need for anything more complicated than this because Talmudifier is so slow.
+[^3]: See the benchmark. With Python Talmudifier, a similar benchmark takes 216 seconds.
