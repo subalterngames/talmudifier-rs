@@ -283,7 +283,7 @@ The `-d` argument is optional and defaults to `logs/`.
 
 This is a Rust port of my `talmudifier` Python module. Major differences include:
 
-- It's over six times faster.[^3]
+- It's ten times faster.[^3]
 - No external TeX engine needed. Talmudifier has its own internal TeX engine.
 - No need to manually download any TeX packages. Talmudifier will download the required packages for you.
 - Two major performance improvements to the *algorithm*:
