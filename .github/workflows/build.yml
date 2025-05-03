@@ -51,7 +51,7 @@ jobs:
                 packages: echo "anyway..."
                 extension: .exe
                 rust-flags: "-Ctarget-feature=+crt-static"
-                archive: Compress-Archive -Path talmudifier -DestinationPath talmudifier_windows.zip
+                archive: Compress-Archive -Path talmudifier.exe -DestinationPath talmudifier_windows.zip
                 archive-name: talmudifier_windows.zip
         runs-on: ${{ matrix.os }}
         needs: create-release
