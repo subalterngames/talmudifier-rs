@@ -93,22 +93,23 @@ Save `talmudifier.json` wherever you want. Assuming that:
 
 The underlying `tectonic` TeX engine uses some C++ libraries which are compiled via vcpkg.
 
-First time only:
+**First time only:**
 
 1. Download and install a C++ compiler
-2. Run:
+2. Install some required packages:
+ - *MacOS:* `brew install autoconf automake autoconf-archive`
+ - *Linux (Debian or Ubuntu):* `sudo apt install autoconf automake autoconf-archive`
+ - *Linux (something else):* Same packages, different package manager, probably
+ - *Windows:* No need to download anything extra
+3. Run: `cargo install cargo-vcpkg`
 
-```text
-cargo install cargo-vcpkg
-```
-
-First time only or whenever you `cargo clean`:[^1]
+**First time only or whenever you `cargo clean`:**[^1]
 
 ```text
 cargo vcpkg build
 ```
 
-Every time you want to build your project, set the following environment flags:
+**Every time you want to build your project, set the following environment flags:**
 
 *Linux and MacOS:*
 
