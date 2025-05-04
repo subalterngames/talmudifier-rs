@@ -24,7 +24,7 @@ fn main() {
     let args = Args::parse();
 
     // Get the output drectory.
-    create_dir_all(&args.out).unwrap();
+    create_dir_all(&args.out).expect(&format!("Failed to create directory: {:?}", &args.out));
 
     // Load the talmudifier.
     let mut talmudifier = Talmudifier::new(&args.talmudifier).unwrap();

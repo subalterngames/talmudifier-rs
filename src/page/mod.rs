@@ -36,6 +36,11 @@ pub struct Page {
 impl Page {
     pub(crate) const END_DOCUMENT: &str = "\n\\end{sloppypar}\\end{document}";
 
+    pub(crate) fn set_table_width(&mut self) {
+        self.table_width =
+            self.paper_size.width() - (self.margins.left.get_pts() + self.margins.right.get_pts());
+    }
+
     pub(crate) fn set_preamble(&mut self, fonts: &TexFonts) {
         self.preamble = Self::get_preamble(
             fonts,
@@ -97,10 +102,10 @@ impl Page {
 impl Default for Page {
     fn default() -> Self {
         let margins = Margins::default();
-        let table_width = margins.get_table_width();
         let paper_size = PaperSize::default();
         let font_metrics = FontMetrics::default();
         let column_separation = Self::default_column_separation();
+        let table_width = get_default_table_width();
 
         let preamble = Page::get_preamble(
             &TexFonts::new().unwrap(),
@@ -132,5 +137,6 @@ fn get_default_preamble() -> String {
 }
 
 fn get_default_table_width() -> f32 {
-    Margins::default().get_table_width()
+    let margins = Margins::default();
+    PaperSize::Letter.width() - (margins.left.get_pts() + margins.right.get_pts())
 }

@@ -23,12 +23,6 @@ pub struct Margins {
     pub binding_offset: Length,
 }
 
-impl Margins {
-    pub(crate) fn get_table_width(&self) -> f32 {
-        614.295 - (self.left.get_pts() + self.right.get_pts())
-    }
-}
-
 impl Default for Margins {
     fn default() -> Self {
         Self {

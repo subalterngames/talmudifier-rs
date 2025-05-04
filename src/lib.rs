@@ -124,6 +124,9 @@ impl Talmudifier {
         // Clone the page.
         let mut page = self.page.clone();
 
+        // Set the table width.
+        page.set_table_width();
+
         // Set the preamble.
         page.set_preamble(&tex_fonts);
 
