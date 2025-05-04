@@ -60,17 +60,10 @@ jobs:
             - uses: actions/checkout@v4
             - name: Install packages
               run: ${{ matrix.packages }}
-            - name: Cache vcpkg
-              id: cache-vcpkg
-              uses: actions/cache@v4
-              with:
-                path: target/vcpkg
-                key: ${{ matrix.os }}-vcpkg
-            - name: vcpkg
-              if: ${{ steps.cache-vcpkg.outputs.cache-hit == 'false' }}
-              run: |
-                cargo install cargo-vcpkg
-                cargo vcpkg build
+            - name: Install vcpkg
+              run: cargo install cargo-vcpkg
+            - name: vcpkg build
+              run: cargo vcpkg build
             - name: Build
               env:
                 TECTONIC_DEP_BACKEND: "vcpkg"
