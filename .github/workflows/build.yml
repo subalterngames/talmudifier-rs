@@ -66,11 +66,11 @@ jobs:
               with:
                 path: target/vcpkg
                 key: ${{ matrix.os }}-vcpkg
-            - name: Install vcpkg
-              run: cargo install cargo-vcpkg
-            - name: vcpkg build
+            - name: vcpkg
               if: ${{ steps.cache-vcpkg.outputs.cache-hit == 'false' }}
-              run: cargo vcpkg build
+              run: |
+                cargo install cargo-vcpkg
+                cargo vcpkg build
             - name: Build
               env:
                 TECTONIC_DEP_BACKEND: "vcpkg"
