@@ -91,22 +91,23 @@ Save `talmudifier.json` wherever you want. Assuming that:
 
 The underlying `tectonic` TeX engine uses some C++ libraries which are compiled via vcpkg.
 
-First time only:
+**First time only:**
 
 1. Download and install a C++ compiler
-2. Run:
+2. Install some required packages:
+   - *MacOS:* `brew install autoconf automake autoconf-archive`
+   - *Linux (Debian or Ubuntu):* `sudo apt install autoconf automake autoconf-archive`
+   - *Linux (something else):* Same packages, different package manager, probably
+   - *Windows:* No need to download anything extra
+3. Run: `cargo install cargo-vcpkg`
 
-```text
-cargo install cargo-vcpkg
-```
-
-First time only or whenever you `cargo clean`:[^1]
+**First time only or whenever you `cargo clean`:**[^1]
 
 ```text
 cargo vcpkg build
 ```
 
-Every time you want to build your project, set the following environment flags:
+**Every time you want to build your project, set the following environment flags:**
 
 *Linux and MacOS:*
 
@@ -277,7 +278,7 @@ The `-d` argument is optional and defaults to `logs/`.
 
 This is a Rust port of my `talmudifier` Python module. Major differences include:
 
-- It's over six times faster.[^3]
+- It's ten times faster.[^3]
 - No external TeX engine needed. Talmudifier has its own internal TeX engine.
 - No need to manually download any TeX packages. Talmudifier will download the required packages for you.
 - Two major performance improvements to the *algorithm*:
