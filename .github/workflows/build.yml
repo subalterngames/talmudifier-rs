@@ -67,7 +67,6 @@ jobs:
                 path: target/vcpkg
                 key: ${{ matrix.os }}-vcpkg
             - name: Install vcpkg
-              if: ${{ steps.cache-vcpkg.outputs.cache-hit == 'false' }}
               run: cargo install cargo-vcpkg
             - name: vcpkg build
               if: ${{ steps.cache-vcpkg.outputs.cache-hit == 'false' }}
