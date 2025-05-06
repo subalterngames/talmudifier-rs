@@ -2,7 +2,7 @@
 talmudifier_fonts/
 logs/
 *.pdf
-out.tex
+out.*
 extracted_text.txt
 bad.tex
 venv/

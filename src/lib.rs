@@ -15,7 +15,13 @@ use chrono::Utc;
 use error::Error;
 use serde::{Deserialize, Serialize};
 use serde_json::from_slice;
-use tectonic::latex_to_pdf;
+use tectonic::{
+    config::PersistentConfig,
+    ctry,
+    driver::{OutputFormat, ProcessingSessionBuilder},
+    errmsg, latex_to_pdf,
+    status::NoopStatusBackend,
+};
 use text::{Daf, SourceText};
 
 use crate::{
@@ -334,6 +340,48 @@ pub(crate) fn get_pdf(tex: &str, log: bool) -> Result<Vec<u8>, Error> {
     } else {
         get_pdf_internal(tex)?
     })
+}
+
+pub fn latex_to_xdv<T: AsRef<str>>(latex: T) -> tectonic::Result<Vec<u8>> {
+    let mut status = NoopStatusBackend::default();
+
+    let auto_create_config_file = false;
+    let config = ctry!(PersistentConfig::open(auto_create_config_file);
+                       "failed to open the default configuration file");
+
+    let only_cached = false;
+    let bundle = ctry!(config.default_bundle(only_cached, &mut status);
+                       "failed to load the default resource bundle");
+
+    let format_cache_path = ctry!(config.format_cache_path();
+                                  "failed to set up the format cache");
+
+    let mut files = {
+        // Looking forward to non-lexical lifetimes!
+        let mut sb = ProcessingSessionBuilder::default();
+        sb.bundle(bundle)
+            .primary_input_buffer(latex.as_ref().as_bytes())
+            .tex_input_name("texput.tex")
+            .format_name("latex")
+            .format_cache_path(format_cache_path)
+            .keep_logs(false)
+            .keep_intermediates(false)
+            .print_stdout(false)
+            .output_format(OutputFormat::Xdv)
+            .do_not_write_output_files();
+
+        let mut sess =
+            ctry!(sb.create(&mut status); "failed to initialize the LaTeX processing session");
+        ctry!(sess.run(&mut status); "the LaTeX engine failed");
+        sess.into_file_data()
+    };
+
+    match files.remove("texput.xdv") {
+        Some(file) => Ok(file.data),
+        None => Err(errmsg!(
+            "LaTeX didn't report failure, but no PDF was created (??)"
+        )),
+    }
 }
 
 fn get_pdf_internal(tex: &str) -> Result<Vec<u8>, Error> {
