@@ -1,14 +1,32 @@
-//! I figured out how to do this from reading the code of dvi (Rust) and dvisvgm (C++)
+//! XDV is an intermediary file format in XeTeX.
+//!
+//! DVI is an ancient file format that no one uses anymore except by pdflatex, internally.
+//! A .tex is converted into a .dvi file, which is converted into a .pdf file.
+//! This may sound cumbersome, but a) it is and b) it's OK because DVI is simple and fast to create.
+//!
+//! XDV is an Xtension of DVI for XeTeX. So: .tex -> .xdv -> .pdf
+//! This file doesn't attempt to actually parse an XDV file because we don't need to.
+//! Talmudifier just wants to know the line counts per page.
+//! Checking the line counts of the XDV file is much faster than checking the line counts of the final PDF file.
+//!
+//! I learned out how to do this from reading the code of dvi (Rust) and dvisvgm (C++)
 //! https://github.com/mgieseki/dvisvgm/
 //! https://github.com/richard-uk1/dvi-rs/
-
-use std::fs::read;
 
 use nom::{
     bytes::streaming::tag,
     error::ErrorKind,
     number::streaming::{be_u16, be_u24, be_u32, be_u8},
 };
+use tectonic::{
+    config::PersistentConfig,
+    ctry,
+    driver::{OutputFormat, ProcessingSessionBuilder},
+    errmsg,
+    status::NoopStatusBackend,
+};
+
+use crate::error::Error;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 enum DviVersion {
@@ -19,25 +37,25 @@ enum DviVersion {
 }
 
 /// A partial .xdv parser.
-pub struct Xdv<'t> {
+struct Xdv<'t> {
     data: &'t [u8],
     version: DviVersion,
 }
 
 impl<'t> Xdv<'t> {
-    pub fn new(data: &'t Vec<u8>) -> Self {
+    fn new(data: &'t Vec<u8>) -> Self {
         // https://github.com/mgieseki/dvisvgm/blob/ef6a9e03e72a46a41bede2d406810e0e9b9fab61/src/BasicDVIReader.hpp#L50
         const OP_PRE: u8 = 247;
 
-        let mut x = Self {
-            data: &data,
+        let mut xdv = Self {
+            data,
             version: DviVersion::Dvi,
         };
 
         // Parse the preamble.
-        if x.read_u8() == OP_PRE {
+        if xdv.read_u8() == OP_PRE {
             // https://github.com/mgieseki/dvisvgm/blob/ef6a9e03e72a46a41bede2d406810e0e9b9fab61/src/DVIReader.cpp#L180
-            x.version = match x.read_u8() {
+            xdv.version = match xdv.read_u8() {
                 0..5 => DviVersion::Dvi,
                 5 => DviVersion::Xdv5,
                 6 => DviVersion::Xdv6,
@@ -46,18 +64,18 @@ impl<'t> Xdv<'t> {
             };
 
             // num[4] + dem[4] + mag[4]
-            x.advance(12);
+            xdv.advance(12);
 
             // Comment.
-            let k = x.read_u8() as usize;
-            x.advance(k);
+            let k = xdv.read_u8() as usize;
+            xdv.advance(k);
         }
 
-        x
+        xdv
     }
 
     /// Count the number of line breaks, separated by page breaks.
-    pub fn get_num_lines(mut self) -> Vec<usize> {
+    fn get_num_lines(mut self) -> Vec<usize> {
         let mut num_lines_per_page = vec![];
         let mut num_lines = 1;
         let mut down = false;
@@ -149,9 +167,9 @@ impl<'t> Xdv<'t> {
                     self.parse_223()
                 }
                 // ???
-                250 => unreachable!("Code 250"),
+                250 => unreachable!("Code 250 is never used."),
                 // https://github.com/mgieseki/dvisvgm/blob/ef6a9e03e72a46a41bede2d406810e0e9b9fab61/src/DVIReader.cpp#L578
-                251 => todo!("pic"),
+                251 => unreachable!("Code 251 is pic but there are none in Talmudifier."),
                 // Font def (XeTeX).
                 // See: https://github.com/mgieseki/dvisvgm/blob/ef6a9e03e72a46a41bede2d406810e0e9b9fab61/src/DVIReader.cpp#L591
                 252 => {
@@ -271,6 +289,56 @@ impl<'t> Xdv<'t> {
     }
 }
 
+/// This is mostly copied from tectonic's latex_to_pdf
+fn latex_to_xdv<T: AsRef<str>>(latex: T) -> tectonic::Result<Vec<u8>> {
+    let mut status = NoopStatusBackend::default();
+
+    let auto_create_config_file = false;
+    let config = ctry!(PersistentConfig::open(auto_create_config_file);
+                       "failed to open the default configuration file");
+
+    let only_cached = false;
+    let bundle = ctry!(config.default_bundle(only_cached, &mut status);
+                       "failed to load the default resource bundle");
+
+    let format_cache_path = ctry!(config.format_cache_path();
+                                  "failed to set up the format cache");
+
+    let mut files = {
+        // Looking forward to non-lexical lifetimes!
+        let mut sb = ProcessingSessionBuilder::default();
+        sb.bundle(bundle)
+            .primary_input_buffer(latex.as_ref().as_bytes())
+            .tex_input_name("texput.tex")
+            .format_name("latex")
+            .format_cache_path(format_cache_path)
+            .keep_logs(false)
+            .keep_intermediates(false)
+            .print_stdout(false)
+            .output_format(OutputFormat::Xdv)
+            .do_not_write_output_files();
+
+        let mut sess =
+            ctry!(sb.create(&mut status); "failed to initialize the LaTeX processing session");
+        ctry!(sess.run(&mut status); "the LaTeX engine failed");
+        sess.into_file_data()
+    };
+
+    match files.remove("texput.xdv") {
+        Some(file) => Ok(file.data),
+        None => Err(errmsg!(
+            "LaTeX didn't report failure, but no PDF was created (??)"
+        )),
+    }
+}
+
+pub fn get_num_lines<T: AsRef<str>>(latex: T) -> Result<Vec<usize>, Error> {
+    match latex_to_xdv(latex) {
+        Ok(data) => Ok(Xdv::new(&data).get_num_lines()),
+        Err(error) => Err(Error::Xdv(error)),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::xdv::Xdv;
@@ -281,8 +349,11 @@ mod tests {
         let xdv = Xdv::new(&data);
         let lines = xdv.get_num_lines();
         assert_eq!(lines.len(), 20);
-        [4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7].into_iter().enumerate().for_each(|(i, n)| {
-            assert_eq!(lines[i], n);
-        });
+        [4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7]
+            .into_iter()
+            .enumerate()
+            .for_each(|(i, n)| {
+                assert_eq!(lines[i], n);
+            });
     }
 }

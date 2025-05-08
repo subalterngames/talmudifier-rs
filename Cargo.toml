@@ -24,7 +24,6 @@ embed-doc-image = "0.1.4"
 lazy_static = "1.5.0"
 markdown = "1.0.0-alpha.22"
 nom = "5.1.1"
-pdf-extract = "0.8.0"
 regex = "1.11.1"
 serde = { version = "1.0.218", features = ["derive"] }
 serde_json = "1.0.139"

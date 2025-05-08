@@ -4,10 +4,14 @@ use column::Column;
 use cosmic_text::{Buffer, Shaping};
 use maybe_span_column::MaybeSpanColumn;
 use para_column::ParaColumn;
-use pdf_extract::extract_text_from_mem_by_pages;
 use position::{Position, POSITIONS};
 
-use crate::{error::Error, get_pdf, page::Page, tex};
+use crate::{
+    error::Error,
+    page::Page,
+    tex,
+    xetex::{get_num_lines, log_tex},
+};
 
 mod column;
 pub(crate) mod maybe_span_column;
@@ -173,11 +177,13 @@ impl<'t> Table<'t> {
                 // End the document.
                 tex.push_str(Page::END_DOCUMENT);
 
-                // Render the PDF.
-                let pdf = get_pdf(&tex, self.log)?;
+                // Log.
+                if self.log {
+                    log_tex(&tex);
+                }
 
                 // Get the number of lines per page (which is the same as per column).
-                let num_lines = Self::get_extracted_line_counts(&pdf)?;
+                let num_lines = get_num_lines(&tex)?;
 
                 // Get the minimum number of lines.
                 Ok(match num_lines.into_iter().enumerate().min_by(|a, b| a.1.cmp(&b.1)) {
@@ -185,21 +191,6 @@ impl<'t> Table<'t> {
                     None => unreachable!("We already checked that at least column has words, yet we didn't get a minimum number of lines.")
                 })
             }
-        }
-    }
-
-    /// Extract text from a PDF and count the number of lines per page.
-    fn get_extracted_line_counts(pdf: &[u8]) -> Result<Vec<usize>, Error> {
-        // Extract text per-page.
-        match extract_text_from_mem_by_pages(pdf) {
-            Ok(pages) => {
-                // Get the number of lines per-page.
-                Ok(pages
-                    .into_iter()
-                    .map(|page| page.split('\n').filter(|s| !s.is_empty()).count())
-                    .collect::<Vec<usize>>())
-            }
-            Err(error) => Err(Error::Extract(error)),
         }
     }
 
@@ -228,10 +219,7 @@ impl<'t> Table<'t> {
         // End the document.
         tex.push_str(Page::END_DOCUMENT);
 
-        // Render the PDF.
-        let pdf = get_pdf(&tex, self.log)?;
-
-        Self::get_extracted_line_counts(&pdf)
+        get_num_lines(&tex)
     }
 
     /// Given a target `num_lines`, generate a TeX string of the table.

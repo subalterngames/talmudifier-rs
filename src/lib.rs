@@ -5,24 +5,13 @@ doc = embed_doc_image::embed_image!("daf", "images/daf.jpg"),
 doc = embed_doc_image::embed_image!("four_rows", "images/four_rows.jpg"),
 doc = embed_doc_image::embed_image!("center", "images/center.jpg"))]
 
-use std::{
-    fs::{create_dir_all, read, write},
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::{fs::read, path::Path};
 
-use chrono::Utc;
 use error::Error;
 use serde::{Deserialize, Serialize};
 use serde_json::from_slice;
-use tectonic::{
-    config::PersistentConfig,
-    ctry,
-    driver::{OutputFormat, ProcessingSessionBuilder},
-    errmsg, latex_to_pdf,
-    status::NoopStatusBackend,
-};
 use text::{Daf, SourceText};
+use xetex::get_pdf;
 
 use crate::{
     font::fonts::Fonts,
@@ -38,7 +27,7 @@ pub mod prelude;
 mod span;
 mod table;
 mod text;
-mod xdv;
+pub(crate) mod xetex;
 
 /// Short hand for simple TeX commands.
 /// Example input: `tex!("begin", "document")`
@@ -291,7 +280,7 @@ impl Talmudifier {
         tex.push_str(Page::END_DOCUMENT);
 
         // Generate the final PDF.
-        let pdf = get_pdf(&tex, self.log)?;
+        let pdf = get_pdf(&tex)?;
         Ok(Daf { tex, pdf })
     }
 
@@ -312,87 +301,6 @@ impl Talmudifier {
             }
         } else {
             Some(MaybeSpanColumn::Span(span_column))
-        }
-    }
-}
-
-pub(crate) fn get_pdf(tex: &str, log: bool) -> Result<Vec<u8>, Error> {
-    const LOG_DIRECTORY: &str = "logs";
-
-    let log_directory = PathBuf::from_str(LOG_DIRECTORY).unwrap();
-    if log {
-        // Create the log directory.
-        create_dir_all(LOG_DIRECTORY).unwrap();
-    }
-
-    let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
-
-    Ok(if log {
-        // Write the tex file.
-        write(log_directory.join(format!("{}.tex", &timestamp)), tex).unwrap();
-
-        // Get the pdf.
-        let pdf = get_pdf_internal(tex)?;
-
-        // Write the PDF.
-        write(log_directory.join(format!("{}.pdf", &timestamp)), &pdf).unwrap();
-
-        pdf
-    } else {
-        get_pdf_internal(tex)?
-    })
-}
-
-pub fn latex_to_xdv<T: AsRef<str>>(latex: T) -> tectonic::Result<Vec<u8>> {
-    let mut status = NoopStatusBackend::default();
-
-    let auto_create_config_file = false;
-    let config = ctry!(PersistentConfig::open(auto_create_config_file);
-                       "failed to open the default configuration file");
-
-    let only_cached = false;
-    let bundle = ctry!(config.default_bundle(only_cached, &mut status);
-                       "failed to load the default resource bundle");
-
-    let format_cache_path = ctry!(config.format_cache_path();
-                                  "failed to set up the format cache");
-
-    let mut files = {
-        // Looking forward to non-lexical lifetimes!
-        let mut sb = ProcessingSessionBuilder::default();
-        sb.bundle(bundle)
-            .primary_input_buffer(latex.as_ref().as_bytes())
-            .tex_input_name("texput.tex")
-            .format_name("latex")
-            .format_cache_path(format_cache_path)
-            .keep_logs(false)
-            .keep_intermediates(false)
-            .print_stdout(false)
-            .output_format(OutputFormat::Xdv)
-            .do_not_write_output_files();
-
-        let mut sess =
-            ctry!(sb.create(&mut status); "failed to initialize the LaTeX processing session");
-        ctry!(sess.run(&mut status); "the LaTeX engine failed");
-        sess.into_file_data()
-    };
-
-    match files.remove("texput.xdv") {
-        Some(file) => Ok(file.data),
-        None => Err(errmsg!(
-            "LaTeX didn't report failure, but no PDF was created (??)"
-        )),
-    }
-}
-
-fn get_pdf_internal(tex: &str) -> Result<Vec<u8>, Error> {
-    // Try to generate the PDF.
-    match latex_to_pdf(tex) {
-        Ok(pdf) => Ok(pdf),
-        Err(error) => {
-            // Dump the TeX string.
-            let _ = write("bad.tex", tex);
-            Err(Error::Pdf(error))
         }
     }
 }
@@ -422,7 +330,7 @@ mod tests {
         .iter()
         .zip(["hello_world", "minimal_daf", "paracol", "daf"])
         {
-            if let Err(error) = get_pdf(&tex.replace("\r", ""), false) {
+            if let Err(error) = get_pdf(&tex.replace("\r", "")) {
                 panic!("Tex error: {} {}", error, path)
             }
         }
