@@ -38,6 +38,7 @@ pub mod prelude;
 mod span;
 mod table;
 mod text;
+mod xdv;
 
 /// Short hand for simple TeX commands.
 /// Example input: `tex!("begin", "document")`
