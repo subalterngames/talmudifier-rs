@@ -214,7 +214,7 @@ To run a very rudimentary benchmark:[^2]
 cargo run --bin benchmark --release
 ```
 
-Current benchmark: 21 seconds
+Current benchmark: 18 seconds
 
 ## Other executables
 

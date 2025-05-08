@@ -21,7 +21,6 @@ let directory = PathBuf::from_str("example_text").unwrap();
 let talmudifier = Talmudifier::default()
  // Add a title to the page.
  .title("Talmudifier")
- .log()
  // Set the source text as three Markdown files.
  .source_text(SourceText::Files {
  left: directory.join("left.md"),
@@ -263,7 +262,7 @@ To run a very rudimentary benchmark:[^2]
 cargo run --bin benchmark --release
 ```
 
-Current benchmark: 21 seconds
+Current benchmark: 18 seconds
 
 ## Other executables
 
