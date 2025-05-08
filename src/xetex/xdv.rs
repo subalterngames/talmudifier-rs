@@ -78,7 +78,7 @@ impl<'t> Xdv<'t> {
     fn get_num_lines(mut self) -> Vec<usize> {
         let mut num_lines_per_page = vec![];
         let mut num_lines = 1;
-        let mut down = false;
+        let mut got_words = false;
         while self.data.len() > 1 {
             // https://github.com/richard-uk1/dvi-rs/blob/c8078c37065fe7b72b09586c10ee220a7c91d99b/src/parser.rs#L12
             // Get the op code.
@@ -102,7 +102,7 @@ impl<'t> Xdv<'t> {
                 140 => {
                     num_lines_per_page.push(num_lines);
                     num_lines = 1;
-                    down = false;
+                    got_words = false;
                 }
                 // Push and Pop
                 141 | 142 => (),
@@ -116,13 +116,11 @@ impl<'t> Xdv<'t> {
                 157..=160 => self.advance4(op, 160),
                 // Down and set Y
                 161..=165 => {
-                    down = true;
                     num_lines += 1;
                     self.advance4(op, 165)
                 }
                 // Down and set Z
                 166..=170 => {
-                    down = true;
                     num_lines += 1;
                     self.advance4(op, 170)
                 }
@@ -212,6 +210,7 @@ impl<'t> Xdv<'t> {
                 // https://github.com/mgieseki/dvisvgm/blob/ef6a9e03e72a46a41bede2d406810e0e9b9fab61/src/DVIReader.cpp#L653
                 253 => {
                     if self.version == DviVersion::Xdv7 {
+                        got_words = true;
                         // w[4]
                         self.advance(4);
                         let n = self.read_u16();
@@ -223,6 +222,7 @@ impl<'t> Xdv<'t> {
                 // https://github.com/mgieseki/dvisvgm/blob/ef6a9e03e72a46a41bede2d406810e0e9b9fab61/src/DVIReader.cpp#L671
                 254 => {
                     if self.version == DviVersion::Xdv5 {
+                        got_words = true;
                         // l[2]
                         let l = self.read_u16();
                         // chars[2 * l]
@@ -238,7 +238,7 @@ impl<'t> Xdv<'t> {
                 255 => (),
             };
         }
-        if down {
+        if got_words {
             num_lines_per_page.push(num_lines);
         }
         num_lines_per_page
@@ -341,11 +341,11 @@ pub fn get_num_lines<T: AsRef<str>>(latex: T) -> Result<Vec<usize>, Error> {
 
 #[cfg(test)]
 mod tests {
-    use crate::xdv::Xdv;
+    use super::Xdv;
 
     #[test]
     fn test_xdv() {
-        let data = include_bytes!("../test_text/out.xdv").to_vec();
+        let data = include_bytes!("../../test_text/out.xdv").to_vec();
         let xdv = Xdv::new(&data);
         let lines = xdv.get_num_lines();
         assert_eq!(lines.len(), 20);
