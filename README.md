@@ -231,22 +231,20 @@ There are rules defining how to typeset a Talmud page. The Vilna Shas predates t
 
 For more information, read: `Printing the Talmud : a history of the earliest printed editions of the Talmud by Martin Heller`
 
-There is a fundamental problem in the typesetting algorithm: We need to iteratively get the number of lines in a column. In LaTeX, there's no way to know the number of lines in a column until it's rendered. Therefore, Talmudifier uses the following algorithm:
+There is a fundamental problem in the typesetting algorithm: We need to iteratively get the number of lines in a column. Traditionally, this process would be sped up by experienced typesetters because they'd be able to eyeball how many character blocks would fit in a rectangle. Talmudifier emulates this heurisitic with the following algorithm:
 
 1. Create a table that has text only in one column (the one we're trying to measure).
-2. Generate a PDF with XeTeX in-memory.
-3. Extract the text from the PDF.
-4. Count the number of lines.
+2. Using Cosmic Text, a crate normally meant for GUI text, add words to the column until we've reach the the target line count. This will be used as an initial guess in the next step for guessing the number of words that might fit on the PDF page. Cosmic Text is significantly faster than XeTeX.
+3. Generate an XDV file with XeTeX in-memory. Normally, XeTeX generates an XDV file from a TeX string and then converts the XDV file to a PDF. We skip the final step because right now we just need the line counts.
+4. Extract the line count per page from the XDV file.
 5. Add or subtract a word as needed, and repeat the process until the column is filled up to the target number of lines.
-
-This process is *slow* and it's why Talmudifier takes so long to render a page.
-
-Traditionally, this process would be sped up by experienced typesetters because they'd be able to eyeball how many character blocks would fit in a rectangle. Talmudifier also uses a heuristic to speed things up: Cosmic Text, a Rust crate meant for formatting text in a GUI app, renders the text, using the same algorithm as described above. Cosmic Text is *fast* and this algorithm returns a guess as to the total number of words in a column that Talmudifier then uses to start the TeX portion of the algorithm. Cosmic Text's guess is rarely exactly correct because Cosmic Text isn't TeX and will typeset blocks of text differently.
+6. Render the final PDF.
 
 ## Feature flags
 
 - `default-fonts` embeds default fonts into the executable. You might want to remove this if you want to use other fonts because the default fonts make the binary bigger.
 - `clap` is required for some of the executables. If you're using Talmudifier as a library, you can ignore this.
+- `textest` is only used for the `textest` binary; it makes some extra functions and structs public.
 
 ## Benchmark
 
@@ -256,7 +254,7 @@ To run a very rudimentary benchmark:[^2]
 cargo run --bin benchmark --release
 ```
 
-Current benchmark: 21 seconds
+Current benchmark: 18 seconds
 
 ## Other executables
 
@@ -269,20 +267,22 @@ cargo run --bin example_config
 To convert an arbitrary .tex file into a .pdf (useful for debugging):
 
 ```text
-cargo run --bin textest --features clap -d directory/ -f filename.tex
+cargo run --bin textest --features textest -d directory/ -f filename.tex
 ```
 
 The `-d` argument is optional and defaults to `logs/`.
+You can also, optionally, add `-x` to create a .xdv file instead of a .pdf, which is useful for debugging line counts.
 
 ## Changes from Python
 
 This is a Rust port of my `talmudifier` Python module. Major differences include:
 
-- It's ten times faster.[^3]
+- It's twelve times faster.[^3]
 - No external TeX engine needed. Talmudifier has its own internal TeX engine.
 - No need to manually download any TeX packages. Talmudifier will download the required packages for you.
 - Two major performance improvements to the *algorithm*:
   - Python Talmudifier uses hard-coded values to guess the maximum number of words that can fit in a cell, and then uses that guess as the start index for finding the actual number. Rust Talmudifier also guesses the start index, but uses Cosmic Text, which is more flexible and accurate.
+  - When counting lines, Python Talmudifier extracted text from a pdf that was saved to disk. Rust Talmudifier parses a .xdv file in-memory.
   - When trying to fill a cell with words, Python Talmudifier increments or decrements one word at a time. This always works, but there is overhead to rendering many single pages vs. a single multi-page render. Rust Talmudifier renders multiple pages of incrementing/decrementing guesses. The resulting process is roughly four times faster than it would've been if Rust Talmudifier rendered separate PDFs.
 
 - Default fonts are embedded in the executable

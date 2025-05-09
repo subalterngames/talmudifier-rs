@@ -4,8 +4,7 @@ use std::{
 };
 
 use clap::Parser;
-use pdf_extract::extract_text_from_mem;
-use talmudifier::prelude::*;
+use talmudifier::{xetex::latex_to_xdv, DefaultTexFonts};
 use tectonic::latex_to_pdf;
 
 /// Generate a PDF from a .tex file. This is useful for debugging.
@@ -22,24 +21,23 @@ struct Args {
     /// The filename.
     #[arg(short, long)]
     filename: String,
-    /// If included, extract text.
+    /// If included, create an .xdv file instead of a .pdf
     #[arg(short, long)]
-    text: bool,
+    xdv: bool,
 }
 
 fn main() {
     let args = Args::parse();
     let d = DefaultTexFonts::new().unwrap();
-    let pdf = latex_to_pdf(read_to_string(&args.directory.join(&args.filename)).unwrap()).unwrap();
+    let latex = read_to_string(&args.directory.join(&args.filename)).unwrap();
 
-    // Extract text.
-    if args.text {
-        let text = extract_text_from_mem(&pdf).unwrap();
-        write("extracted_text.txt", text).unwrap();
-    }
-
+    let (path, data) = if args.xdv {
+        ("out.xdv", latex_to_xdv(&latex).unwrap())
+    } else {
+        ("out.pdf", latex_to_pdf(&latex).unwrap())
+    };
     // Write the PDF.
-    write("out.pdf", pdf).unwrap();
+    write(path, data).unwrap();
 
     // Remove the temporary fonts.
     drop(d);

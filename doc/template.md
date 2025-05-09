@@ -205,6 +205,7 @@ Set `"log": true` to enable logging. This will generated intermediary files per 
 
 - `default-fonts` embeds default fonts into the executable. You might want to remove this if you want to use other fonts because the default fonts make the binary bigger.
 - `clap` is required for some of the executables. If you're using Talmudifier as a library, you can ignore this.
+- `textest` is only used for the `textest` binary; it makes some extra functions and structs public.
 
 ## Benchmark
 
@@ -214,7 +215,7 @@ To run a very rudimentary benchmark:[^2]
 cargo run --bin benchmark --release
 ```
 
-Current benchmark: 21 seconds
+Current benchmark: 18 seconds
 
 ## Other executables
 
@@ -227,20 +228,22 @@ cargo run --bin example_config
 To convert an arbitrary .tex file into a .pdf (useful for debugging):
 
 ```text
-cargo run --bin textest --features clap -d directory/ -f filename.tex
+cargo run --bin textest --features textest -d directory/ -f filename.tex
 ```
 
 The `-d` argument is optional and defaults to `logs/`.
+You can also, optionally, add `-x` to create a .xdv file instead of a .pdf, which is useful for debugging line counts.
 
 ## Changes from Python
 
 This is a Rust port of my `talmudifier` Python module. Major differences include:
 
-- It's ten times faster.[^3]
+- It's twelve times faster.[^3]
 - No external TeX engine needed. Talmudifier has its own internal TeX engine.
 - No need to manually download any TeX packages. Talmudifier will download the required packages for you.
 - Two major performance improvements to the *algorithm*:
   - Python Talmudifier uses hard-coded values to guess the maximum number of words that can fit in a cell, and then uses that guess as the start index for finding the actual number. Rust Talmudifier also guesses the start index, but uses Cosmic Text, which is more flexible and accurate.
+  - When counting lines, Python Talmudifier extracted text from a pdf that was saved to disk. Rust Talmudifier parses a .xdv file in-memory.
   - When trying to fill a cell with words, Python Talmudifier increments or decrements one word at a time. This always works, but there is overhead to rendering many single pages vs. a single multi-page render. Rust Talmudifier renders multiple pages of incrementing/decrementing guesses. The resulting process is roughly four times faster than it would've been if Rust Talmudifier rendered separate PDFs.
 
 - Default fonts are embedded in the executable

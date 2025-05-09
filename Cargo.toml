@@ -1,6 +1,6 @@
 [package]
 name = "talmudifier"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Esther Alter <subalterngames@gmail.com>"]
 description = "Convert markdown text into Talmud-like PDFs"
@@ -14,6 +14,7 @@ categories = ["command-line-interface", "multimedia", "value-formatting", "visua
 [features]
 default = ["default-fonts"]
 default-fonts = []
+textest = ["clap"]
 clap = ["dep:clap"]
 
 [dependencies]
@@ -23,7 +24,7 @@ cosmic-text = { version = "0.12.1", default-features = false, features = ["std",
 embed-doc-image = "0.1.4"
 lazy_static = "1.5.0"
 markdown = "1.0.0-alpha.22"
-pdf-extract = "0.8.0"
+nom = "5.1.1"
 regex = "1.11.1"
 serde = { version = "1.0.218", features = ["derive"] }
 serde_json = "1.0.139"
@@ -36,7 +37,7 @@ required-features = ["clap"]
 
 [[bin]]
 name = "textest"
-required-features = ["clap"]
+required-features = ["textest"]
 
 [[bin]]
 name = "benchmark"

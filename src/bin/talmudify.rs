@@ -15,7 +15,7 @@ struct Args {
     /// The path to the output directory.
     #[arg(short, long, default_value = "out")]
     out: PathBuf,
-    /// If included, write intermediate .tex and .pdf files to logs/. This is useful for debugging but slow.
+    /// If included, write intermediate .tex files to logs/. This is useful for debugging but slow.
     #[arg(short, long)]
     log: bool,
 }

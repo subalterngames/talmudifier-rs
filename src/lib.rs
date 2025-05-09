@@ -5,18 +5,13 @@ doc = embed_doc_image::embed_image!("daf", "images/daf.jpg"),
 doc = embed_doc_image::embed_image!("four_rows", "images/four_rows.jpg"),
 doc = embed_doc_image::embed_image!("center", "images/center.jpg"))]
 
-use std::{
-    fs::{create_dir_all, read, write},
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::{fs::read, path::Path};
 
-use chrono::Utc;
 use error::Error;
 use serde::{Deserialize, Serialize};
 use serde_json::from_slice;
-use tectonic::latex_to_pdf;
 use text::{Daf, SourceText};
+use xetex::get_pdf;
 
 use crate::{
     font::fonts::Fonts,
@@ -32,6 +27,15 @@ pub mod prelude;
 mod span;
 mod table;
 mod text;
+#[cfg(not(feature = "textest"))]
+pub(crate) mod xetex;
+
+// Used by textest to create fonts.
+#[cfg(feature = "textest")]
+pub use crate::font::default_tex_fonts::DefaultTexFonts;
+// Used by textest to output xdv.
+#[cfg(feature = "textest")]
+pub mod xetex;
 
 /// Short hand for simple TeX commands.
 /// Example input: `tex!("begin", "document")`
@@ -284,7 +288,7 @@ impl Talmudifier {
         tex.push_str(Page::END_DOCUMENT);
 
         // Generate the final PDF.
-        let pdf = get_pdf(&tex, self.log)?;
+        let pdf = get_pdf(&tex)?;
         Ok(Daf { tex, pdf })
     }
 
@@ -305,45 +309,6 @@ impl Talmudifier {
             }
         } else {
             Some(MaybeSpanColumn::Span(span_column))
-        }
-    }
-}
-
-pub(crate) fn get_pdf(tex: &str, log: bool) -> Result<Vec<u8>, Error> {
-    const LOG_DIRECTORY: &str = "logs";
-
-    let log_directory = PathBuf::from_str(LOG_DIRECTORY).unwrap();
-    if log {
-        // Create the log directory.
-        create_dir_all(LOG_DIRECTORY).unwrap();
-    }
-
-    let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
-
-    Ok(if log {
-        // Write the tex file.
-        write(log_directory.join(format!("{}.tex", &timestamp)), tex).unwrap();
-
-        // Get the pdf.
-        let pdf = get_pdf_internal(tex)?;
-
-        // Write the PDF.
-        write(log_directory.join(format!("{}.pdf", &timestamp)), &pdf).unwrap();
-
-        pdf
-    } else {
-        get_pdf_internal(tex)?
-    })
-}
-
-fn get_pdf_internal(tex: &str) -> Result<Vec<u8>, Error> {
-    // Try to generate the PDF.
-    match latex_to_pdf(tex) {
-        Ok(pdf) => Ok(pdf),
-        Err(error) => {
-            // Dump the TeX string.
-            let _ = write("bad.tex", tex);
-            Err(Error::Pdf(error))
         }
     }
 }
@@ -373,7 +338,7 @@ mod tests {
         .iter()
         .zip(["hello_world", "minimal_daf", "paracol", "daf"])
         {
-            if let Err(error) = get_pdf(&tex.replace("\r", ""), false) {
+            if let Err(error) = get_pdf(&tex.replace("\r", "")) {
                 panic!("Tex error: {} {}", error, path)
             }
         }

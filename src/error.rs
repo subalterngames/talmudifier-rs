@@ -6,8 +6,8 @@ use thiserror::Error;
 pub enum Error {
     #[error("Error creating PDF: {0}")]
     Pdf(tectonic::Error),
-    #[error("Error extracting text from PDF: {0}")]
-    Extract(pdf_extract::OutputError),
+    #[error("Error creating XDV: {0}")]
+    Xdv(tectonic::Error),
     #[error("Markdown parsing error: {0}")]
     Md(markdown::message::Message),
     #[error("Cosmic font error: {0}")]
