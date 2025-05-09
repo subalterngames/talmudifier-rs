@@ -16,14 +16,11 @@ There are rules defining how to typeset a Talmud page. The Vilna Shas predates t
 
 For more information, read: `Printing the Talmud : a history of the earliest printed editions of the Talmud by Martin Heller`
 
-There is a fundamental problem in the typesetting algorithm: We need to iteratively get the number of lines in a column. In LaTeX, there's no way to know the number of lines in a column until it's rendered. Therefore, Talmudifier uses the following algorithm:
+There is a fundamental problem in the typesetting algorithm: We need to iteratively get the number of lines in a column. Traditionally, this process would be sped up by experienced typesetters because they'd be able to eyeball how many character blocks would fit in a rectangle. Talmudifier emulates this heurisitic with the following algorithm:
 
 1. Create a table that has text only in one column (the one we're trying to measure).
-2. Generate a PDF with XeTeX in-memory.
-3. Extract the text from the PDF.
-4. Count the number of lines.
+2. Using Cosmic Text, a crate normally meant for GUI text, add words to the column until we've reach the the target line count. This will be used as an initial guess in the next step for guessing the number of words that might fit on the PDF page. Cosmic Text is significantly faster than XeTeX.
+3. Generate an XDV file with XeTeX in-memory. Normally, XeTeX generates an XDV file from a TeX string and then converts the XDV file to a PDF. We skip the final step because right now we just need the line counts.
+4. Extract the line count per page from the XDV file.
 5. Add or subtract a word as needed, and repeat the process until the column is filled up to the target number of lines.
-
-This process is *slow* and it's why Talmudifier takes so long to render a page.
-
-Traditionally, this process would be sped up by experienced typesetters because they'd be able to eyeball how many character blocks would fit in a rectangle. Talmudifier also uses a heuristic to speed things up: Cosmic Text, a Rust crate meant for formatting text in a GUI app, renders the text, using the same algorithm as described above. Cosmic Text is *fast* and this algorithm returns a guess as to the total number of words in a column that Talmudifier then uses to start the TeX portion of the algorithm. Cosmic Text's guess is rarely exactly correct because Cosmic Text isn't TeX and will typeset blocks of text differently.
+6. Render the final PDF.

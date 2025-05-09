@@ -1,6 +1,6 @@
 [package]
 name = "talmudifier"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Esther Alter <subalterngames@gmail.com>"]
 description = "Convert markdown text into Talmud-like PDFs"

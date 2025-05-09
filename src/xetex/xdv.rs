@@ -16,7 +16,7 @@
 use nom::{
     bytes::streaming::tag,
     error::ErrorKind,
-    number::streaming::{be_u16, be_u24, be_u32, be_u8},
+    number::streaming::{be_i8, be_i16, be_i24, be_i32, be_u16, be_u24, be_u32, be_u8},
 };
 use tectonic::{
     config::PersistentConfig,
@@ -79,6 +79,7 @@ impl<'t> Xdv<'t> {
         let mut num_lines_per_page = vec![];
         let mut num_lines = 1;
         let mut got_words = false;
+        let mut down = 0;
         while self.data.len() > 1 {
             // https://github.com/richard-uk1/dvi-rs/blob/c8078c37065fe7b72b09586c10ee220a7c91d99b/src/parser.rs#L12
             // Get the op code.
@@ -100,9 +101,15 @@ impl<'t> Xdv<'t> {
                 139 => self.advance(44),
                 // Eop
                 140 => {
+                    // If there was a net down, add another line.
+                    // This seems to happen only when there are 2 lines.
+                    if down > 0 {
+                        num_lines += 1;
+                    }
                     num_lines_per_page.push(num_lines);
                     num_lines = 1;
                     got_words = false;
+                    down = 0;
                 }
                 // Push and Pop
                 141 | 142 => (),
@@ -113,7 +120,18 @@ impl<'t> Xdv<'t> {
                 // RightBy and set X
                 152..=156 => self.advance4(op, 156),
                 // Down
-                157..=160 => self.advance4(op, 160),
+                157 => {
+                    down += self.read_i8() as i32;
+                }
+                158 => {
+                    down += self.read_i16() as i32;
+                }
+                159 => {
+                    down += self.read_i24();
+                }
+                160 => {
+                    down += self.read_i32();
+                }
                 // Down and set Y
                 161..=165 => {
                     num_lines += 1;
@@ -250,14 +268,20 @@ impl<'t> Xdv<'t> {
         v
     }
 
+    fn read_i8(&mut self) -> i8 {
+        let (x, v) = be_i8::<(_, ErrorKind)>(self.data).unwrap();
+        self.data = x;
+        v
+    }
+
     fn read_u16(&mut self) -> u16 {
         let (x, v) = be_u16::<(_, ErrorKind)>(self.data).unwrap();
         self.data = x;
         v
     }
 
-    fn read_i16(&mut self) -> u16 {
-        let (x, v) = be_u16::<(_, ErrorKind)>(self.data).unwrap();
+    fn read_i16(&mut self) -> i16 {
+        let (x, v) = be_i16::<(_, ErrorKind)>(self.data).unwrap();
         self.data = x;
         v
     }
@@ -268,8 +292,20 @@ impl<'t> Xdv<'t> {
         v
     }
 
+    fn read_i24(&mut self) -> i32 {
+        let (x, v) = be_i24::<(_, ErrorKind)>(self.data).unwrap();
+        self.data = x;
+        v
+    }
+
     fn read_u32(&mut self) -> u32 {
         let (x, v) = be_u32::<(_, ErrorKind)>(self.data).unwrap();
+        self.data = x;
+        v
+    }
+
+    fn read_i32(&mut self) -> i32 {
+        let (x, v) = be_i32::<(_, ErrorKind)>(self.data).unwrap();
         self.data = x;
         v
     }
@@ -364,9 +400,11 @@ mod tests {
         let lines = xdv.get_num_lines();
         assert_eq!(lines.len(), 20);
         let q = lines.clone();
-        let expected_line_counts = vec![1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6];
-        expected_line_counts.into_iter().zip(lines).for_each(|(expected, line)| {
-            assert_eq!(expected, line, "{:?}", q);
+        let expected_line_counts = vec![1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 6, 6, 6];
+        assert_eq!(expected_line_counts.len(), q.len());
+
+        expected_line_counts.into_iter().enumerate().zip(lines).for_each(|((i, expected), line)| {
+            assert_eq!(expected, line, "index {} lines {:?}", i, q);
         });
     }
 }
