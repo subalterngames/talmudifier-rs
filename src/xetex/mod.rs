@@ -12,6 +12,9 @@ mod xdv;
 pub use pdf::get_pdf;
 pub use xdv::get_num_lines;
 
+#[cfg(feature = "textest")]
+pub use xdv::latex_to_xdv;
+
 /// Write a .tex file to logs/
 pub fn log_tex(tex: &str) {
     const LOG_DIRECTORY: &str = "logs";
@@ -25,3 +28,4 @@ pub fn log_tex(tex: &str) {
     // Write the tex file.
     write(log_directory.join(format!("{}.tex", &timestamp)), tex).unwrap();
 }
+

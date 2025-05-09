@@ -5,6 +5,3 @@ pub use crate::{
     text::{Daf, SourceText},
     Talmudifier,
 };
-
-#[cfg(feature = "default-fonts")]
-pub use crate::font::default_tex_fonts::DefaultTexFonts;

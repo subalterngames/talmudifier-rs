@@ -14,6 +14,7 @@ categories = ["command-line-interface", "multimedia", "value-formatting", "visua
 [features]
 default = ["default-fonts"]
 default-fonts = []
+textest = ["clap"]
 clap = ["dep:clap"]
 
 [dependencies]
@@ -36,7 +37,7 @@ required-features = ["clap"]
 
 [[bin]]
 name = "textest"
-required-features = ["clap"]
+required-features = ["textest"]
 
 [[bin]]
 name = "benchmark"

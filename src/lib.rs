@@ -27,7 +27,16 @@ pub mod prelude;
 mod span;
 mod table;
 mod text;
+#[cfg(not(feature = "textest"))]
 pub(crate) mod xetex;
+
+
+// Used by textest to create fonts.
+#[cfg(feature = "textest")]
+pub use crate::font::default_tex_fonts::DefaultTexFonts;
+// Used by textest to output xdv.
+#[cfg(feature = "textest")]
+pub mod xetex;
 
 /// Short hand for simple TeX commands.
 /// Example input: `tex!("begin", "document")`

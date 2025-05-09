@@ -290,7 +290,7 @@ impl<'t> Xdv<'t> {
 }
 
 /// This is mostly copied from tectonic's latex_to_pdf
-fn latex_to_xdv<T: AsRef<str>>(latex: T) -> tectonic::Result<Vec<u8>> {
+pub fn latex_to_xdv<T: AsRef<str>>(latex: T) -> tectonic::Result<Vec<u8>> {
     let mut status = NoopStatusBackend::default();
 
     let auto_create_config_file = false;
