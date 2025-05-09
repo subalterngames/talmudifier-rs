@@ -244,6 +244,7 @@ There is a fundamental problem in the typesetting algorithm: We need to iterativ
 
 - `default-fonts` embeds default fonts into the executable. You might want to remove this if you want to use other fonts because the default fonts make the binary bigger.
 - `clap` is required for some of the executables. If you're using Talmudifier as a library, you can ignore this.
+- `textest` is only used for the `textest` binary; it makes some extra functions and structs public.
 
 ## Benchmark
 
