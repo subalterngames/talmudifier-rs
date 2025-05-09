@@ -177,11 +177,6 @@ impl<'t> Table<'t> {
                 // End the document.
                 tex.push_str(Page::END_DOCUMENT);
 
-                // Log.
-                if self.log {
-                    log_tex(&tex);
-                }
-
                 // Get the number of lines per page (which is the same as per column).
                 let num_lines = get_num_lines(&tex)?;
 
@@ -218,6 +213,11 @@ impl<'t> Table<'t> {
 
         // End the document.
         tex.push_str(Page::END_DOCUMENT);
+
+        // Log.
+        if self.log {
+            log_tex(&tex);
+        }
 
         get_num_lines(&tex)
     }

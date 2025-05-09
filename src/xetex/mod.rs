@@ -28,4 +28,3 @@ pub fn log_tex(tex: &str) {
     // Write the tex file.
     write(log_directory.join(format!("{}.tex", &timestamp)), tex).unwrap();
 }
-

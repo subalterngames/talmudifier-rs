@@ -344,8 +344,8 @@ mod tests {
     use super::Xdv;
 
     #[test]
-    fn test_xdv() {
-        let data = include_bytes!("../../test_text/out.xdv").to_vec();
+    fn test_xdv_four_lines() {
+        let data = include_bytes!("../../test_text/four_lines.xdv").to_vec();
         let xdv = Xdv::new(&data);
         let lines = xdv.get_num_lines();
         assert_eq!(lines.len(), 20);
@@ -355,5 +355,18 @@ mod tests {
             .for_each(|(i, n)| {
                 assert_eq!(lines[i], n);
             });
+    }
+
+    #[test]
+    fn test_xdv_one_line() {
+        let data = include_bytes!("../../test_text/one_line.xdv").to_vec();
+        let xdv = Xdv::new(&data);
+        let lines = xdv.get_num_lines();
+        assert_eq!(lines.len(), 20);
+        let q = lines.clone();
+        let expected_line_counts = vec![1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6];
+        expected_line_counts.into_iter().zip(lines).for_each(|(expected, line)| {
+            assert_eq!(expected, line, "{:?}", q);
+        });
     }
 }

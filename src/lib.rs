@@ -30,7 +30,6 @@ mod text;
 #[cfg(not(feature = "textest"))]
 pub(crate) mod xetex;
 
-
 // Used by textest to create fonts.
 #[cfg(feature = "textest")]
 pub use crate::font::default_tex_fonts::DefaultTexFonts;

@@ -23,7 +23,7 @@ struct Args {
     filename: String,
     /// If included, create an .xdv file instead of a .pdf
     #[arg(short, long)]
-    xdv: bool
+    xdv: bool,
 }
 
 fn main() {
@@ -33,8 +33,7 @@ fn main() {
 
     let (path, data) = if args.xdv {
         ("out.xdv", latex_to_xdv(&latex).unwrap())
-    }
-    else {
+    } else {
         ("out.pdf", latex_to_pdf(&latex).unwrap())
     };
     // Write the PDF.
