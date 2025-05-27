@@ -25,7 +25,7 @@ use tectonic::{
     errmsg,
     status::NoopStatusBackend,
 };
-
+use tectonic::driver::PassSetting;
 use crate::error::Error;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
@@ -351,7 +351,10 @@ pub fn latex_to_xdv<T: AsRef<str>>(latex: T) -> tectonic::Result<Vec<u8>> {
             .keep_logs(false)
             .keep_intermediates(false)
             .print_stdout(false)
+            // XDV, not PDF.
             .output_format(OutputFormat::Xdv)
+            // Don't bother with Bibtex.
+            .pass(PassSetting::Tex)
             .do_not_write_output_files();
 
         let mut sess =
