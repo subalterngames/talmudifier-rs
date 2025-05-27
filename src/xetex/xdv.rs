@@ -253,7 +253,7 @@ impl<'t> Xdv<'t> {
                         self.advance(6 * n as usize + 4);
                     }
                 }
-                255 => (),
+                _ => (),
             };
         }
         if got_words {
@@ -356,7 +356,6 @@ pub fn latex_to_xdv<T: AsRef<str>>(latex: T) -> tectonic::Result<Vec<u8>> {
             // Don't bother with Bibtex.
             .pass(PassSetting::Tex)
             .do_not_write_output_files();
-
         let mut sess =
             ctry!(sb.create(&mut status); "failed to initialize the LaTeX processing session");
         ctry!(sess.run(&mut status); "the LaTeX engine failed");
