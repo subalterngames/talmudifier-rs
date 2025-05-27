@@ -254,7 +254,7 @@ To run a very rudimentary benchmark:[^2]
 cargo run --bin benchmark --release
 ```
 
-Current benchmark: 18 seconds
+Current benchmark: 10 seconds
 
 ## Other executables
 
@@ -277,7 +277,7 @@ You can also, optionally, add `-x` to create a .xdv file instead of a .pdf, whic
 
 This is a Rust port of my `talmudifier` Python module. Major differences include:
 
-- It's twelve times faster.[^3]
+- It's 21.6 times faster.[^3]
 - No external TeX engine needed. Talmudifier has its own internal TeX engine.
 - No need to manually download any TeX packages. Talmudifier will download the required packages for you.
 - Two major performance improvements to the *algorithm*:
