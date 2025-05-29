@@ -13,20 +13,19 @@
 //! https://github.com/mgieseki/dvisvgm/
 //! https://github.com/richard-uk1/dvi-rs/
 
+use crate::error::Error;
 use nom::{
     bytes::streaming::tag,
     error::ErrorKind,
-    number::streaming::{be_i8, be_i16, be_i24, be_i32, be_u16, be_u24, be_u32, be_u8},
+    number::streaming::{be_i16, be_i24, be_i32, be_i8, be_u16, be_u24, be_u32, be_u8},
 };
 use tectonic::{
     config::PersistentConfig,
     ctry,
-    driver::{OutputFormat, ProcessingSessionBuilder},
+    driver::{OutputFormat, PassSetting, ProcessingSessionBuilder},
     errmsg,
     status::NoopStatusBackend,
 };
-
-use crate::error::Error;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 enum DviVersion {
@@ -253,7 +252,7 @@ impl<'t> Xdv<'t> {
                         self.advance(6 * n as usize + 4);
                     }
                 }
-                255 => (),
+                _ => (),
             };
         }
         if got_words {
@@ -351,9 +350,11 @@ pub fn latex_to_xdv<T: AsRef<str>>(latex: T) -> tectonic::Result<Vec<u8>> {
             .keep_logs(false)
             .keep_intermediates(false)
             .print_stdout(false)
+            // XDV, not PDF.
             .output_format(OutputFormat::Xdv)
+            // Don't bother with Bibtex.
+            .pass(PassSetting::Tex)
             .do_not_write_output_files();
-
         let mut sess =
             ctry!(sb.create(&mut status); "failed to initialize the LaTeX processing session");
         ctry!(sess.run(&mut status); "the LaTeX engine failed");
@@ -403,8 +404,12 @@ mod tests {
         let expected_line_counts = vec![1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 6, 6, 6];
         assert_eq!(expected_line_counts.len(), q.len());
 
-        expected_line_counts.into_iter().enumerate().zip(lines).for_each(|((i, expected), line)| {
-            assert_eq!(expected, line, "index {} lines {:?}", i, q);
-        });
+        expected_line_counts
+            .into_iter()
+            .enumerate()
+            .zip(lines)
+            .for_each(|((i, expected), line)| {
+                assert_eq!(expected, line, "index {} lines {:?}", i, q);
+            });
     }
 }

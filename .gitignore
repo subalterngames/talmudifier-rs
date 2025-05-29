@@ -6,3 +6,4 @@ out.*
 extracted_text.txt
 bad.tex
 venv/
+.idea/
