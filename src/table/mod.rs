@@ -169,7 +169,7 @@ impl<'t> Table<'t> {
                 }
 
                 // Get the preamble.
-                let mut tex = self.page.preamble.clone();
+                let mut tex = self.page.preamble.clone().ok_or(Error::NoPreamble)?;
 
                 // Add the paracols, separated by new lines.
                 tex.push_str(&paracols.join("\\newpage"));
@@ -201,7 +201,7 @@ impl<'t> Table<'t> {
         range: Range<usize>,
     ) -> Result<Vec<usize>, Error> {
         // Get the preamble.
-        let mut tex = self.page.preamble.clone();
+        let mut tex = self.page.preamble.clone().ok_or(Error::NoPreamble)?;
 
         let paracols = range
             .map(|end| self.get_paracolumns_for_num_lines(position, Some(end)))

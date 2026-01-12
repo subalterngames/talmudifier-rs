@@ -127,6 +127,8 @@ impl Talmudifier {
 
         // Clone the page.
         let mut page = self.page.clone();
+        // Set the preamble using the font definitions.
+        page.set_preamble(&tex_fonts);
 
         // Set the table width.
         page.set_table_width();
@@ -143,7 +145,7 @@ impl Talmudifier {
         let right_span = Span::from_md(&raw_text.right)?;
 
         // Get the cosmic fonts.
-        let cosmic_fonts = self.fonts.cosmic_fonts(&self.page.font_metrics)?;
+        let cosmic_fonts = self.fonts.cosmic_fonts(&page.font_metrics)?;
 
         // Get the columns.
         let mut left = SpanColumn::new(left_span, cosmic_fonts.left, &tex_fonts.left.command);
@@ -158,7 +160,7 @@ impl Talmudifier {
             Some(MaybeSpanColumn::Span(&mut left)),
             None,
             Some(MaybeSpanColumn::Span(&mut right)),
-            &self.page,
+            &page,
             self.log,
         );
 
@@ -181,7 +183,7 @@ impl Talmudifier {
                 Some(MaybeSpanColumn::Span(&mut left)),
                 Some(MaybeSpanColumn::Empty),
                 Some(MaybeSpanColumn::Span(&mut right)),
-                &self.page,
+                &page,
                 self.log,
             );
             match table.get_tex_table(None, 1)? {
@@ -201,7 +203,7 @@ impl Talmudifier {
                     Some(MaybeSpanColumn::Span(&mut left)),
                     Some(MaybeSpanColumn::Empty),
                     Some(MaybeSpanColumn::Span(&mut right)),
-                    &self.page,
+                    &page,
                     self.log,
                 );
                 match table.get_title_table(title)? {
@@ -228,13 +230,7 @@ impl Talmudifier {
                 .collect::<Vec<bool>>();
 
             // Create a table.
-            table = Table::new(
-                left_column,
-                center_column,
-                right_column,
-                &self.page,
-                self.log,
-            );
+            table = Table::new(left_column, center_column, right_column, &page, self.log);
 
             // Get the minimum number of lines.
             let (num_lines, position) = table.get_min_num_lines()?;
@@ -264,7 +260,7 @@ impl Talmudifier {
                     Self::get_skip_column(&mut left, was_done[0]),
                     Self::get_skip_column(&mut center, was_done[1]),
                     Self::get_skip_column(&mut right, was_done[2]),
-                    &self.page,
+                    &page,
                     self.log,
                 );
                 match table.get_tex_table(None, 1)? {
@@ -280,7 +276,7 @@ impl Talmudifier {
         }
 
         // Build the document.
-        let mut tex = self.page.preamble.clone();
+        let mut tex = page.preamble.clone().unwrap();
 
         // Add the tables.
         tex.push_str(&tables.join("\n"));

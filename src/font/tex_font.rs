@@ -29,7 +29,7 @@ impl TexFont {
         let styles = [italic, bold, bold_italic]
             .iter()
             .zip(STYLES)
-            .filter_map(|(f, s)| f.as_ref().map(|f| format!("{}={}.ttf", s, f)))
+            .filter_map(|(f, s)| f.as_ref().map(|f| format!("{}={}", s, f)))
             .collect::<Vec<String>>()
             .join(", ");
         if !styles.is_empty() {
@@ -38,7 +38,7 @@ impl TexFont {
         }
 
         // Add the regular style.
-        font_family.push_str(&format!("]{{{}.ttf}}", regular));
+        font_family.push_str(&format!("]{{{}}}", regular));
 
         // This is the font size plus the font command.
         let command = format!("\\{}", name);

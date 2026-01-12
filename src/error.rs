@@ -4,6 +4,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Error {
+    #[error("Page is missing a preamble")]
+    NoPreamble,
     #[error("Error creating PDF: {0}")]
     Pdf(tectonic::Error),
     #[error("Error creating XDV: {0}")]

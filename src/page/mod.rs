@@ -26,11 +26,8 @@ pub struct Page {
     #[serde(skip, default = "get_default_table_width")]
     pub(crate) table_width: f32,
     /// The preamble text.
-    #[cfg_attr(
-        feature = "default-fonts",
-        serde(skip, default = "get_default_preamble")
-    )]
-    pub(crate) preamble: String,
+    #[serde(skip)]
+    pub(crate) preamble: Option<String>,
 }
 
 impl Page {
@@ -42,13 +39,13 @@ impl Page {
     }
 
     pub(crate) fn set_preamble(&mut self, fonts: &TexFonts) {
-        self.preamble = Self::get_preamble(
+        self.preamble = Some(Self::get_preamble(
             fonts,
             &self.paper_size,
             &self.margins,
             &self.column_separation,
             &self.font_metrics,
-        );
+        ));
     }
 
     fn get_preamble(
@@ -119,21 +116,10 @@ impl Default for Page {
             margins,
             column_separation,
             table_width,
-            preamble,
+            preamble: Some(preamble),
             font_metrics,
         }
     }
-}
-
-#[cfg(feature = "default-fonts")]
-fn get_default_preamble() -> String {
-    Page::get_preamble(
-        &TexFonts::new().unwrap(),
-        &PaperSize::default(),
-        &Margins::default(),
-        &Page::default_column_separation(),
-        &FontMetrics::default(),
-    )
 }
 
 fn get_default_table_width() -> f32 {
