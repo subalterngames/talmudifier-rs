@@ -701,6 +701,7 @@ impl<'t> Table<'t> {
 
 #[cfg(test)]
 mod tests {
+    use crate::font::language::Language;
     use crate::{
         font::{cosmic_font::CosmicFont, tex_fonts::TexFonts},
         page::Page,
@@ -718,7 +719,12 @@ mod tests {
         assert_eq!(span.0.len(), 402);
         let cosmic_font = CosmicFont::default_left();
         let tex_fonts = TexFonts::new().unwrap();
-        let mut column = SpanColumn::new(span, cosmic_font, &tex_fonts.left.command);
+        let mut column = SpanColumn::new(
+            span,
+            cosmic_font,
+            &tex_fonts.left.command,
+            Language::English,
+        );
         let page = Page::default();
         let mut table = Table::new(
             Some(MaybeSpanColumn::Span(&mut column)),
@@ -751,15 +757,24 @@ mod tests {
 
         let tex_fonts = TexFonts::new().unwrap();
 
-        let mut left_span =
-            SpanColumn::new(left, CosmicFont::default_left(), &tex_fonts.left.command);
+        let mut left_span = SpanColumn::new(
+            left,
+            CosmicFont::default_left(),
+            &tex_fonts.left.command,
+            Language::English,
+        );
         let mut center_span = SpanColumn::new(
             center,
             CosmicFont::default_center(),
             &tex_fonts.center.command,
+            Language::English,
         );
-        let mut right_span =
-            SpanColumn::new(right, CosmicFont::default_right(), &tex_fonts.right.command);
+        let mut right_span = SpanColumn::new(
+            right,
+            CosmicFont::default_right(),
+            &tex_fonts.right.command,
+            Language::English,
+        );
 
         let page = Page::default();
         let table = Table::new(

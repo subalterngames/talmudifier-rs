@@ -10,8 +10,8 @@
 //! Checking the line counts of the XDV file is much faster than checking the line counts of the final PDF file.
 //!
 //! I learned out how to do this from reading the code of dvi (Rust) and dvisvgm (C++)
-//! https://github.com/mgieseki/dvisvgm/
-//! https://github.com/richard-uk1/dvi-rs/
+//! <https://github.com/mgieseki/dvisvgm/>
+//! <https://github.com/richard-uk1/dvi-rs/>
 
 use crate::error::Error;
 use nom::{

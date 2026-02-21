@@ -110,7 +110,7 @@ impl Talmudifier {
     /// This will generate intermediary .pdf, .tex, and .txt files per iteration.
     /// The .txt files include the text extracted from the .pdf
     /// This function is useful for debugging because you can identify where a typesetting error occurred.
-    /// However, this function will make [`self.talmudifiy()`] run slower.
+    /// However, this function will make `self.talmudifiy()` run slower.
     pub fn log(mut self) -> Self {
         self.log = true;
         self
@@ -148,10 +148,24 @@ impl Talmudifier {
         let cosmic_fonts = self.fonts.cosmic_fonts(&page.font_metrics)?;
 
         // Get the columns.
-        let mut left = SpanColumn::new(left_span, cosmic_fonts.left, &tex_fonts.left.command);
-        let mut center =
-            SpanColumn::new(center_span, cosmic_fonts.center, &tex_fonts.center.command);
-        let mut right = SpanColumn::new(right_span, cosmic_fonts.right, &tex_fonts.right.command);
+        let mut left = SpanColumn::new(
+            left_span,
+            cosmic_fonts.left,
+            &tex_fonts.left.command,
+            tex_fonts.left.language,
+        );
+        let mut center = SpanColumn::new(
+            center_span,
+            cosmic_fonts.center,
+            &tex_fonts.center.command,
+            tex_fonts.center.language,
+        );
+        let mut right = SpanColumn::new(
+            right_span,
+            cosmic_fonts.right,
+            &tex_fonts.right.command,
+            tex_fonts.right.language,
+        );
 
         let mut tables = vec![];
 

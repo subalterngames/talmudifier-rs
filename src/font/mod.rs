@@ -7,6 +7,7 @@ pub mod default_tex_fonts;
 pub mod font_metrics;
 pub mod font_paths;
 pub mod fonts;
+pub mod language;
 pub mod tex_font;
 pub mod tex_fonts;
 
@@ -20,6 +21,7 @@ use crate::{
     font::{cosmic_font::CosmicFont, font_paths::FontPaths, tex_font::TexFont},
     prelude::FontMetrics,
 };
+use language::Language;
 
 #[cfg(feature = "default-fonts")]
 const DEFAULT_ROOT_DIRECTORY: &str = "talmudifier_fonts";
@@ -37,6 +39,9 @@ pub struct Font {
     pub bold: Option<String>,
     /// The filename of the bold italic .ttf file. If None, `bold` is used.
     pub bold_italic: Option<String>,
+    /// The column's language. Defaults to English.
+    #[serde(default)]
+    pub language: Language,
 }
 
 impl Font {
@@ -48,6 +53,7 @@ impl Font {
             italic: Some("italic.ttf".to_string()),
             bold: Some("bold.ttf".to_string()),
             bold_italic: Some("bold_italic.ttf".to_string()),
+            language: Language::English,
         }
     }
 
@@ -69,6 +75,7 @@ impl Font {
             &self.italic,
             &self.bold,
             &self.bold_italic,
+            self.language,
         )
     }
 

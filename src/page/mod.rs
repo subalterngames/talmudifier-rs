@@ -1,5 +1,6 @@
 use crate::{font::tex_fonts::TexFonts, prelude::FontMetrics, tex};
 
+use crate::font::language::Language;
 pub use length::Length;
 pub use margins::Margins;
 pub use paper_size::PaperSize;
@@ -62,9 +63,37 @@ impl Page {
         );
         preamble += &["marginnote", "sectsty", "ragged2e", "paracol", "fontspec"]
             .iter()
-            .map(|p| crate::tex!("usepackage", p))
+            .map(|p| tex!("usepackage", p))
             .collect::<Vec<String>>()
             .join("\n");
+
+        // Check if we need to include polyglossia.
+        let languages = [
+            fonts.left.language,
+            fonts.center.language,
+            fonts.right.language,
+        ];
+        let polyglossia = languages
+            .iter()
+            .any(|language| *language != Language::English);
+        if polyglossia {
+            preamble.push('\n');
+            preamble += &tex!("usepackage", "polyglossia");
+            preamble.push('\n');
+            preamble += &tex!("setdefaultlanguage", "english");
+            preamble.push('\n');
+            // Add other languages.
+            let other_languages = languages
+                .into_iter()
+                .filter_map(|language| match language {
+                    Language::English => None,
+                    other => Some(other.to_string()),
+                })
+                .collect::<Vec<String>>();
+            if !other_languages.is_empty() {
+                preamble += &tex!("setotherlanguages", other_languages.join(","));
+            }
+        }
 
         preamble += "\n\n\\allsectionsfont{\\centering}\n\\setlength\\parindent{";
         preamble.push_str(&Length::pt(0.).to_string());

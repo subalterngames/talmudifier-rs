@@ -45,6 +45,8 @@ impl ParaColumn {
 
 #[cfg(test)]
 mod tests {
+    use super::ParaColumn;
+    use crate::font::language::Language;
     use crate::{
         font::cosmic_font::CosmicFont,
         span::Span,
@@ -54,12 +56,15 @@ mod tests {
         },
     };
 
-    use super::ParaColumn;
-
     #[test]
     fn test_para_column() {
         let span = Span::from_md("There are so many words in this sentence!").unwrap();
-        let mut span_column = SpanColumn::new(span, CosmicFont::default_left(), "\\font");
+        let mut span_column = SpanColumn::new(
+            span,
+            CosmicFont::default_left(),
+            "\\font",
+            Language::English,
+        );
         span_column.start = 6;
         let full = MaybeSpanColumn::Span(&mut span_column);
         let column = Column::new(full, Width::Half);

@@ -1,3 +1,4 @@
+use crate::font::language::Language;
 use std::path::Path;
 
 pub struct TexFont {
@@ -5,6 +6,8 @@ pub struct TexFont {
     pub font_family: String,
     /// The command used to set the text to the target font, style, and size.
     pub command: String,
+    /// The column's language.
+    pub language: Language,
 }
 
 impl TexFont {
@@ -15,6 +18,7 @@ impl TexFont {
         italic: &Option<String>,
         bold: &Option<String>,
         bold_italic: &Option<String>,
+        language: Language,
     ) -> Self {
         const STYLES: [&str; 3] = ["ItalicFont", "BoldFont", "BoldItalicFont"];
 
@@ -45,6 +49,7 @@ impl TexFont {
         Self {
             command,
             font_family,
+            language,
         }
     }
 }

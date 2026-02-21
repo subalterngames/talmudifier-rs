@@ -1,11 +1,11 @@
+use super::{default_fonts::*, tex_font::TexFont, DEFAULT_ROOT_DIRECTORY};
+use crate::font::language::Language;
 use std::{
     fs::{create_dir_all, write},
     io,
     path::PathBuf,
     str::FromStr,
 };
-
-use super::{default_fonts::*, tex_font::TexFont, DEFAULT_ROOT_DIRECTORY};
 
 /// XeTeX requires fonts to be saved to a path (rather than exist in memory).
 /// When this struct is created, it writes the fonts stored in the binary to disk in a folder.
@@ -44,6 +44,7 @@ impl DefaultTexFonts {
             &Some("italic".to_string()),
             &Some("bold".to_string()),
             &Some("bold_italic".to_string()),
+            Language::English,
         )
     }
 
@@ -62,10 +63,7 @@ impl DefaultTexFonts {
         write(directory.join("regular.ttf"), regular)?;
         write(directory.join("italic.ttf"), italic)?;
         write(directory.join("bold.ttf"), bold)?;
-        let bold_italic = match bold_italic {
-            Some(bold_italic) => bold_italic,
-            None => bold,
-        };
+        let bold_italic = bold_italic.unwrap_or(bold);
         write(directory.join("bold_italic.ttf"), bold_italic)?;
 
         Ok(())
