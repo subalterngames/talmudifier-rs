@@ -6,6 +6,8 @@ use maybe_span_column::MaybeSpanColumn;
 use para_column::ParaColumn;
 use position::{Position, POSITIONS};
 
+use crate::prelude::Language;
+use crate::title::Title;
 use crate::{
     error::Error,
     page::Page,
@@ -265,11 +267,22 @@ impl<'t> Table<'t> {
     }
 
     /// Returns a table with text on the left and right, and the title in the center.
-    pub fn get_title_table(&mut self, title: &str) -> Result<Option<String>, Error> {
+    pub fn get_title_table(&mut self, title: &Title) -> Result<Option<String>, Error> {
         const NUM_LINES: usize = 4;
 
         let left = self.get_para_column(Position::Left, None, NUM_LINES)?;
         let right = self.get_para_column(Position::Right, None, NUM_LINES)?;
+
+        // Set the language of the title.
+        let title = match title.language {
+            Language::English => title.title.clone(),
+            other => {
+                let mut t = tex!("begin", other.to_string());
+                t.push_str(&title.title);
+                t += &tex!("end", other.to_string());
+                t
+            }
+        };
 
         // The center is the title.
         // \begin{center}\centerfont{\huge{Talmudifier}}\end{center}

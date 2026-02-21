@@ -1,10 +1,11 @@
-use crate::{font::tex_fonts::TexFonts, prelude::FontMetrics, tex};
-
 use crate::font::language::Language;
+use crate::title::Title;
+use crate::{font::tex_fonts::TexFonts, prelude::FontMetrics, tex};
 pub use length::Length;
 pub use margins::Margins;
 pub use paper_size::PaperSize;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 pub use unit::Unit;
 
 mod length;
@@ -39,8 +40,9 @@ impl Page {
             self.paper_size.width() - (self.margins.left.get_pts() + self.margins.right.get_pts());
     }
 
-    pub(crate) fn set_preamble(&mut self, fonts: &TexFonts) {
+    pub(crate) fn set_preamble(&mut self, title: &Option<Title>, fonts: &TexFonts) {
         self.preamble = Some(Self::get_preamble(
+            title,
             fonts,
             &self.paper_size,
             &self.margins,
@@ -50,6 +52,7 @@ impl Page {
     }
 
     fn get_preamble(
+        title: &Option<Title>,
         fonts: &TexFonts,
         paper_size: &PaperSize,
         margins: &Margins,
@@ -68,11 +71,13 @@ impl Page {
             .join("\n");
 
         // Check if we need to include polyglossia.
-        let languages = [
-            fonts.left.language,
-            fonts.center.language,
-            fonts.right.language,
-        ];
+        let mut languages = HashSet::new();
+        languages.insert(fonts.left.language);
+        languages.insert(fonts.center.language);
+        languages.insert(fonts.right.language);
+        if let Some(title) = title.as_ref() {
+            languages.insert(title.language);
+        }
         let polyglossia = languages
             .iter()
             .any(|language| *language != Language::English);
@@ -134,6 +139,7 @@ impl Default for Page {
         let table_width = get_default_table_width();
 
         let preamble = Page::get_preamble(
+            &None,
             &TexFonts::new().unwrap(),
             &paper_size,
             &margins,

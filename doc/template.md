@@ -12,7 +12,7 @@ let directory = PathBuf::from_str("example_text").unwrap();
 // Load a default talmudifier.
 let talmudifier = Talmudifier::default()
     // Add a title to the page.
-    .title("Talmudifier")
+    .title(Title::from("Talmudifier"))
     // Set the source text as three Markdown files.
     .source_text(SourceText::Files {
         left: directory.join("left.md"),
@@ -191,7 +191,9 @@ A very subset of markdown is used in Talmudifier:
 
 By default, `"title"` is set to `null`. Set it to something else to add a title to the page:
 
-`"title": "Chapter 1"`
+`"title": {"title": "Chapter 1", "language": "english"}`
+
+For a list of possible languages, [read this](https://texdoc.org/serve/polyglossia/0).
 
 ### Logging
 

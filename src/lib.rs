@@ -27,12 +27,15 @@ pub mod prelude;
 mod span;
 mod table;
 mod text;
+mod title;
 #[cfg(not(feature = "textest"))]
 pub(crate) mod xetex;
 
 // Used by textest to create fonts.
 #[cfg(feature = "textest")]
 pub use crate::font::default_tex_fonts::DefaultTexFonts;
+use crate::title::Title;
+
 // Used by textest to output xdv.
 #[cfg(feature = "textest")]
 pub mod xetex;
@@ -65,7 +68,7 @@ pub struct Talmudifier {
     /// Raw markdown text that will be talmudified.
     source_text: SourceText,
     /// If not None, the title will be at the top of the page.
-    title: Option<String>,
+    title: Option<Title>,
     /// If true, logging is enabled.
     log: bool,
 }
@@ -101,8 +104,8 @@ impl Talmudifier {
     }
 
     /// Set the title text. By default, there is no title.
-    pub fn title<S: ToString>(mut self, title: S) -> Self {
-        self.title = Some(title.to_string());
+    pub fn title(mut self, title: Title) -> Self {
+        self.title = Some(title);
         self
     }
 
@@ -128,13 +131,13 @@ impl Talmudifier {
         // Clone the page.
         let mut page = self.page.clone();
         // Set the preamble using the font definitions.
-        page.set_preamble(&tex_fonts);
+        page.set_preamble(&self.title, &tex_fonts);
 
         // Set the table width.
         page.set_table_width();
 
         // Set the preamble.
-        page.set_preamble(&tex_fonts);
+        page.set_preamble(&self.title, &tex_fonts);
 
         // Get the raw text.
         let raw_text = self.source_text.get_text()?;

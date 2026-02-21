@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
 /// A column's language. See: <https://texdoc.org/serve/polyglossia/0>
-#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Language {
     Afrikaans,

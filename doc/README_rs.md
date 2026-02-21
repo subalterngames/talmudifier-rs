@@ -20,7 +20,7 @@ let directory = PathBuf::from_str("example_text").unwrap();
 // Load a default talmudifier.
 let talmudifier = Talmudifier::default()
  // Add a title to the page.
- .title("Talmudifier")
+ .title(Title::from("Talmudifier"))
  // Set the source text as three Markdown files.
  .source_text(SourceText::Files {
  left: directory.join("left.md"),
@@ -154,6 +154,8 @@ Limitations:
 - A column's font files must all be in the same directory.
 - System fonts are not supported.
 
+**You can optionally set the font's language.** For example to set the font to Hebrew, add: `"language": "hebrew"`. By default, the font is `"english"`. For a list of possible languages, [read this](https://texdoc.org/serve/polyglossia/0). 
+
 
 ### Source text
 
@@ -207,7 +209,9 @@ Links, images, headers, emoji, etc. are not supported.
 
 By default, `"title"` is set to `null`. Set it to something else to add a title to the page:
 
-`"title": "Chapter 1"`
+`"title": {"title": "Chapter 1", "language": "english"}`
+
+For a list of possible languages, [read this](https://texdoc.org/serve/polyglossia/0).
 
 ### Logging
 

@@ -12,7 +12,7 @@ fn main() {
     // Load a default talmudifier.
     let talmudifier = Talmudifier::default()
         // Add a title to the page.
-        .title("Talmudifier")
+        .title(Title::from("Talmudifier"))
         // Set the source text as three Markdown files.
         .source_text(SourceText::Files {
             left: directory.join("left.md"),
