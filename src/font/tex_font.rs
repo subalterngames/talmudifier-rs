@@ -12,7 +12,7 @@ pub struct TexFont {
 
 impl TexFont {
     pub fn new<P: AsRef<Path>>(
-        name: &str,
+        name: String,
         path: P,
         regular: &str,
         italic: &Option<String>,

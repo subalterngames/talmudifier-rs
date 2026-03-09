@@ -1,6 +1,6 @@
 #[cfg(feature = "default-fonts")]
 use std::io;
-
+use crate::table::position::Position;
 #[cfg(feature = "default-fonts")]
 use super::default_tex_fonts::DefaultTexFonts;
 use super::{fonts::Fonts, tex_font::TexFont};
@@ -37,9 +37,9 @@ impl From<DefaultTexFonts> for TexFonts {
 
 impl From<&Fonts> for TexFonts {
     fn from(value: &Fonts) -> Self {
-        let left = value.left.to_tex("leftfont");
-        let center = value.center.to_tex("centerfont");
-        let right = value.right.to_tex("rightfont");
+        let left = value.left.to_tex(Position::Left);
+        let center = value.center.to_tex(Position::Center);
+        let right = value.right.to_tex(Position::Right);
         Self {
             left,
             center,

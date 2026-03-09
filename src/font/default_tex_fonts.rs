@@ -38,7 +38,7 @@ impl DefaultTexFonts {
 
     pub(crate) fn tex_font(&self, folder: &str) -> TexFont {
         TexFont::new(
-            &format!("{}font", folder),
+            format!("{}font", folder),
             self.directory.join(folder),
             "regular",
             &Some("italic".to_string()),

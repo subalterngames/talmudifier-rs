@@ -22,6 +22,7 @@ use crate::{
     prelude::FontMetrics,
 };
 use language::Language;
+use crate::table::position::Position;
 
 #[cfg(feature = "default-fonts")]
 const DEFAULT_ROOT_DIRECTORY: &str = "talmudifier_fonts";
@@ -67,7 +68,11 @@ impl Font {
     }
 
     /// Create a `TexFont` from the font files.
-    pub(super) fn to_tex(&self, name: &str) -> TexFont {
+    pub(super) fn to_tex(&self, position: Position) -> TexFont {
+        let name = match &self.language {
+            Language::English => format!("{position}font"),
+            other => format!("{other}font{position}")
+        };
         TexFont::new(
             name,
             &self.directory,

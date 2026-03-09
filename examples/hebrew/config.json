@@ -1,0 +1,80 @@
+{
+  "page": {
+    "paper_size": "Letter",
+    "margins": {
+      "left": {
+        "length": 1.0,
+        "unit": "In"
+      },
+      "right": {
+        "length": 1.0,
+        "unit": "In"
+      },
+      "top": {
+        "length": 0.5,
+        "unit": "In"
+      },
+      "bottom": {
+        "length": 0.5,
+        "unit": "In"
+      },
+      "foot_skip": {
+        "length": 0.25,
+        "unit": "In"
+      },
+      "margin_paragraph_width": {
+        "length": 5.0,
+        "unit": "Em"
+      },
+      "binding_offset": {
+        "length": 0.21,
+        "unit": "In"
+      }
+    },
+    "column_separation": {
+      "length": 0.25,
+      "unit": "In"
+    },
+    "font_metrics": {
+      "size": 11.0,
+      "skip": 13.0
+    }
+  },
+  "fonts": {
+    "left": {
+      "directory": "examples/hebrew/fonts/TaameyFrankCLM",
+      "regular": "TaameyFrankCLM-Medium.ttf",
+      "italic": "TaameyFrankCLM-MediumOblique.ttf",
+      "bold": "TaameyFrankCLM-Bold.ttf",
+      "bold_italic": "TaameyFrankCLM-BoldOblique.ttf",
+      "language": "hebrew"
+    },
+    "center": {
+      "directory": "examples/hebrew/fonts/Shofar",
+      "regular": "ShofarRegular.ttf",
+      "italic": "ShofarRegularOblique.ttf",
+      "bold": "ShofarDemi-Bold.ttf",
+      "bold_italic": "ShofarDemi-BoldOblique.ttf",
+      "language": "hebrew"
+    },
+    "right": {
+      "directory": "examples/hebrew/fonts/Noto_Rashi_Hebrew",
+      "regular": "NotoRashiHebrew-Regular.ttf",
+      "italic": "NotoRashiHebrew-Light.ttf",
+      "bold": "NotoRashiHebrew-Bold.ttf",
+      "language": "hebrew"
+    }
+  },
+  "source_text": {
+    "Files": {
+      "left": "examples/hebrew/text/left.md",
+      "center": "examples/hebrew/text/center.md",
+      "right": "examples/hebrew/text/right.md"
+    }
+  },
+  "title": {
+    "title": "לורם איפסום",
+    "language": "hebrew"
+  },
+  "log": true
+}

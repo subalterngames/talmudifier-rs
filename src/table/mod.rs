@@ -18,7 +18,7 @@ use crate::{
 mod column;
 pub(crate) mod maybe_span_column;
 mod para_column;
-mod position;
+pub(crate) mod position;
 pub(crate) mod span_column;
 mod width;
 
