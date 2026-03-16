@@ -4,7 +4,7 @@ use std::{
 };
 
 use clap::Parser;
-use talmudifier::{xetex::latex_to_xdv, DefaultTexFonts};
+use talmudifier::xetex::latex_to_xdv;
 use tectonic::latex_to_pdf;
 
 /// Generate a PDF from a .tex file. This is useful for debugging.
@@ -28,7 +28,6 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    let d = DefaultTexFonts::new().unwrap();
     let latex = read_to_string(&args.directory.join(&args.filename)).unwrap();
 
     let (path, data) = if args.xdv {
@@ -38,7 +37,4 @@ fn main() {
     };
     // Write the PDF.
     write(path, data).unwrap();
-
-    // Remove the temporary fonts.
-    drop(d);
 }
