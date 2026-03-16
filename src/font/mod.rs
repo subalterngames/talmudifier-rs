@@ -16,13 +16,13 @@ use std::path::{Path, PathBuf};
 use cosmic_text::FontSystem;
 use serde::{Deserialize, Serialize};
 
+use crate::table::position::Position;
 use crate::{
     error::Error,
     font::{cosmic_font::CosmicFont, font_paths::FontPaths, tex_font::TexFont},
     prelude::FontMetrics,
 };
 use language::Language;
-use crate::table::position::Position;
 
 #[cfg(feature = "default-fonts")]
 const DEFAULT_ROOT_DIRECTORY: &str = "talmudifier_fonts";
@@ -68,19 +68,16 @@ impl Font {
     }
 
     /// Create a `TexFont` from the font files.
-    pub(super) fn to_tex(&self, position: Position) -> TexFont {
-        let name = match &self.language {
-            Language::English => format!("{position}font"),
-            other => format!("{other}font{position}")
-        };
+    pub(super) fn to_tex(&self, position: Position, used_languages: &mut Vec<Language>) -> TexFont {
         TexFont::new(
-            name,
             &self.directory,
             &self.regular,
             &self.italic,
             &self.bold,
             &self.bold_italic,
+            position,
             self.language,
+            used_languages,
         )
     }
 

@@ -6,7 +6,6 @@ use crate::font::language::Language;
 use crate::{
     font::cosmic_font::CosmicFont,
     span::{position::Position, style::Style, Span},
-    tex,
 };
 
 lazy_static! {
@@ -100,10 +99,7 @@ impl SpanColumn {
         };
 
         // Build a column.
-        let mut text = self.tex_font.to_string();
-        if self.language != Language::English {
-            text += &tex!("begin", self.language.to_string());
-        }
+        let mut text = self.tex_font.clone();
         let mut style = Style::default();
         let mut position = Position::default();
         for word in self.span.0[self.start..end].iter() {
@@ -170,7 +166,7 @@ impl SpanColumn {
         }
 
         if self.language != Language::English {
-            text += &tex!("end", self.language.to_string());
+            text += "}";
         }
 
         Self::santitize_tex(&mut text);

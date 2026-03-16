@@ -13,11 +13,10 @@ impl Display for Position {
         let s = match self {
             Self::Left => "left",
             Self::Center => "center",
-            Self::Right => "right"
+            Self::Right => "right",
         };
         write!(f, "{s}")
     }
 }
-
 
 pub const POSITIONS: [Position; 3] = [Position::Left, Position::Center, Position::Right];
