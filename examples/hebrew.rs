@@ -8,4 +8,5 @@ fn main() {
         .talmudify()
         .unwrap();
     write("out.pdf", daf.pdf).unwrap();
+    write("out.tex", daf.tex).unwrap();
 }
