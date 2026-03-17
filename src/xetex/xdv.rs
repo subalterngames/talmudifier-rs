@@ -10,8 +10,8 @@
 //! Checking the line counts of the XDV file is much faster than checking the line counts of the final PDF file.
 //!
 //! I learned out how to do this from reading the code of dvi (Rust) and dvisvgm (C++)
-//! https://github.com/mgieseki/dvisvgm/
-//! https://github.com/richard-uk1/dvi-rs/
+//! <https://github.com/mgieseki/dvisvgm/>
+//! <https://github.com/richard-uk1/dvi-rs/>
 
 use crate::error::Error;
 use nom::{
@@ -26,6 +26,13 @@ use tectonic::{
     errmsg,
     status::NoopStatusBackend,
 };
+
+macro_rules! xxx {
+    ($self:ident, $f:ident) => {{
+         let k = $self.$f() as usize;
+         $self.advance(k);
+    }};
+}
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 enum DviVersion {
@@ -106,6 +113,7 @@ impl<'t> Xdv<'t> {
                         num_lines += 1;
                     }
                     num_lines_per_page.push(num_lines);
+                    // Reset.
                     num_lines = 1;
                     got_words = false;
                     down = 0;
@@ -115,9 +123,11 @@ impl<'t> Xdv<'t> {
                 // Right
                 143..=146 => self.advance4(op, 146),
                 // RightBy and set W
-                147..=151 => self.advance4(op, 151),
+                147 => (),
+                148..=151 => self.advance4(op, 151),
                 // RightBy and set X
-                152..=156 => self.advance4(op, 156),
+                152 => (),
+                153..=156 => self.advance4(op, 156),
                 // Down
                 157 => {
                     down += self.read_i8() as i32;
@@ -131,47 +141,34 @@ impl<'t> Xdv<'t> {
                 160 => {
                     down += self.read_i32();
                 }
-                // Down and set Y
-                161..=165 => {
+                // Down and set Y.
+                161..=164 => {
                     num_lines += 1;
-                    self.advance4(op, 165)
-                }
-                // Down and set Z
+                    self.advance4(op, 164);
+                },
+                // Down and set Z.
                 166..=170 => {
                     num_lines += 1;
-                    self.advance4(op, 170)
+                    self.advance4(op, 170);
                 }
                 // SetFont to i
                 171..=234 => (),
                 // SetFont
                 235..=238 => self.advance4(op, 238),
                 // Xxx
-                239 => {
-                    let k = self.read_u8() as usize;
-                    self.advance(k);
-                }
-                240 => {
-                    let k = self.read_u16() as usize;
-                    self.advance(k);
-                }
-                241 => {
-                    let k = self.read_u24() as usize;
-                    self.advance(k);
-                }
-                242 => {
-                    let k = self.read_u32() as usize;
-                    self.advance(k);
-                }
+                239 => xxx!(self, read_u8),
+                240 => xxx!(self, read_u16),
+                241 => xxx!(self, read_u24),
+                242 => xxx!(self, read_u32),
                 // FontDef
-                243 => self.advance(1),
-                // FontNumberDef
-                244..=246 => self.advance4(op, 246),
+                243..=246 => self.advance4(op, 246),
                 // Pre
                 247 => {
-                    // i[1] + num[4] + den[4] + mag[4]
+                    // Format, numerator, denominator, magnification.
                     self.advance(13);
-                    // k[1] + x[k]
+                    // Comment length.
                     let k = self.read_u8() as usize;
+                    // Comment.
                     self.advance(k);
                 }
                 // Post
@@ -226,30 +223,19 @@ impl<'t> Xdv<'t> {
                 // Glyph IDs and positions.
                 // https://github.com/mgieseki/dvisvgm/blob/ef6a9e03e72a46a41bede2d406810e0e9b9fab61/src/DVIReader.cpp#L653
                 253 => {
-                    if self.version == DviVersion::Xdv7 {
-                        got_words = true;
-                        // w[4]
-                        self.advance(4);
-                        let n = self.read_u16();
-                        // dx[4n] + dy[4] + glypns[2n]
-                        self.advance(10 * n as usize);
-                    }
+                    got_words = true;
+                    self.put_glyph_array();
                 }
                 // UTF-8, Y positions are always the same.
                 // https://github.com/mgieseki/dvisvgm/blob/ef6a9e03e72a46a41bede2d406810e0e9b9fab61/src/DVIReader.cpp#L671
+                // https://github.com/mgieseki/dvisvgm/blob/ef6a9e03e72a46a41bede2d406810e0e9b9fab61/src/BasicDVIReader.cpp#L138
                 254 => {
-                    if self.version == DviVersion::Xdv5 {
+                    if self.version == DviVersion::Xdv7 {
                         got_words = true;
-                        // l[2]
-                        let l = self.read_u16();
-                        // chars[2 * l]
-                        self.advance(2 * l as usize);
-                        // w[4]
-                        self.advance(4);
-                        // n[2]
-                        let n = self.read_u16();
-                        // (dx,dy)[(4+4)n] glyphs[2n]
-                        self.advance(6 * n as usize + 4);
+                        let num_chars = self.read_u16();
+                        // The characters.
+                        self.advance(2 * num_chars as usize);
+                        self.put_glyph_array();
                     }
                 }
                 _ => (),
@@ -321,6 +307,16 @@ impl<'t> Xdv<'t> {
         while let Ok((inext, _)) = tag::<_, _, ()>(&[223][..])(self.data) {
             self.data = inext;
         }
+    }
+
+    /// Source: https://github.com/mgieseki/dvisvgm/blob/ef6a9e03e72a46a41bede2d406810e0e9b9fab61/src/DVIReader.cpp#L693
+    fn put_glyph_array(&mut self) {
+        // Width
+        self.advance(4);
+        // self.advance(4);
+        let num_glyphs = self.read_u16();
+        // dx[4n] + dy[4] + glyphs[2n]
+        self.advance(10 * num_glyphs as usize);
     }
 }
 
