@@ -238,7 +238,7 @@ You can also, optionally, add `-x` to create a .xdv file instead of a .pdf, whic
 
 ## Changes from Python
 
-This is a Rust port of my `talmudifier` Python module. Major differences include:
+This is a Rust port of my [`talmudifier` Python module](https://github.com/subalterngames/talmudifier). Major differences include:
 
 - It's 21.6 times faster.[^3]
 - No external TeX engine needed. Talmudifier has its own internal TeX engine.
