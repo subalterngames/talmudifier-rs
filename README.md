@@ -36,7 +36,7 @@ write("out.pdf", &daf.pdf).unwrap();
 
 ## Download talmudifier
 
-On this webpage, there is a **Releases** sidebar. Click that, and download Talmudifier.
+On the GitHub repo, there is a **Releases** sidebar. Click that, and download Talmudifier.
 
 Open a terminal. You first need to change directory to Downloads (or wherever Talmudifier actually is), so:
 
