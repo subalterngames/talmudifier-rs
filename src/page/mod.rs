@@ -1,9 +1,11 @@
+use crate::font::language::Language;
+use crate::title::Title;
 use crate::{font::tex_fonts::TexFonts, prelude::FontMetrics, tex};
-
 pub use length::Length;
 pub use margins::Margins;
 pub use paper_size::PaperSize;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 pub use unit::Unit;
 
 mod length;
@@ -38,8 +40,9 @@ impl Page {
             self.paper_size.width() - (self.margins.left.get_pts() + self.margins.right.get_pts());
     }
 
-    pub(crate) fn set_preamble(&mut self, fonts: &TexFonts) {
+    pub(crate) fn set_preamble(&mut self, title: &Option<Title>, fonts: &TexFonts) {
         self.preamble = Some(Self::get_preamble(
+            title,
             fonts,
             &self.paper_size,
             &self.margins,
@@ -49,6 +52,7 @@ impl Page {
     }
 
     fn get_preamble(
+        title: &Option<Title>,
         fonts: &TexFonts,
         paper_size: &PaperSize,
         margins: &Margins,
@@ -62,9 +66,42 @@ impl Page {
         );
         preamble += &["marginnote", "sectsty", "ragged2e", "paracol", "fontspec"]
             .iter()
-            .map(|p| crate::tex!("usepackage", p))
+            .map(|p| tex!("usepackage", p))
             .collect::<Vec<String>>()
             .join("\n");
+
+        // Check if we need to include polyglossia.
+        let mut languages = HashSet::new();
+        languages.insert(fonts.left.language);
+        languages.insert(fonts.center.language);
+        languages.insert(fonts.right.language);
+        if let Some(title) = title.as_ref() {
+            languages.insert(title.language);
+        }
+        // We need to use polyglossia if there are non-English languages.
+        let polyglossia = languages
+            .iter()
+            .any(|language| *language != Language::English);
+        // Set the preamble for polyglossia.
+        if polyglossia {
+            preamble.push('\n');
+            preamble += &tex!("usepackage", "polyglossia");
+            preamble.push('\n');
+            // Let's not overthink it.
+            preamble += &tex!("setdefaultlanguage", "english");
+            preamble.push('\n');
+            // Add other languages.
+            let other_languages = languages
+                .into_iter()
+                .filter_map(|language| match language {
+                    Language::English => None,
+                    other => Some(other.to_string()),
+                })
+                .collect::<Vec<String>>();
+            if !other_languages.is_empty() {
+                preamble += &tex!("setotherlanguages", other_languages.join(","));
+            }
+        }
 
         preamble += "\n\n\\allsectionsfont{\\centering}\n\\setlength\\parindent{";
         preamble.push_str(&Length::pt(0.).to_string());
@@ -105,6 +142,7 @@ impl Default for Page {
         let table_width = get_default_table_width();
 
         let preamble = Page::get_preamble(
+            &None,
             &TexFonts::new().unwrap(),
             &paper_size,
             &margins,

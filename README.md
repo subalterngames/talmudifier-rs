@@ -2,9 +2,7 @@
 
 **Generate PDFs with page layouts similar to the [Talmud](https://en.wikipedia.org/wiki/Talmud#/media/File:First_page_of_the_first_tractate_of_the_Talmud_(Daf_Beis_of_Maseches_Brachos).jpg).**
 
-Given three paragraphs of markdown text, Talmudifier will generate a .pdf file using XeTeX (via Rust's tectonic crate). You can also include a title, basic styling (bold, italic, etc.) and marginalia.
-
-This is a Rust port of my [Talmudifier Python module](https://github.com/subalterngames/talmudifier). It's faster now.
+Given three paragraphs of markdown text, Talmudifier will generate a .pdf file using XeTeX (via Rust's tectonic crate). You can also include a title, basic styling (bold, italic, etc.) and marginalia. Talmudifier defaults to English, but you can set the language per-column.
 
 ![A PDF that Talmudifier generated. There are three columns of text, and of varying widths. The text is pulled from this README.](images/daf.jpg)
 
@@ -18,7 +16,7 @@ let directory = PathBuf::from_str("example_text").unwrap();
 // Load a default talmudifier.
 let talmudifier = Talmudifier::default()
     // Add a title to the page.
-    .title("Talmudifier")
+    .title(Title::from("Talmudifier"))
     // Set the source text as three Markdown files.
     .source_text(SourceText::Files {
         left: directory.join("left.md"),
@@ -38,7 +36,7 @@ write("out.pdf", &daf.pdf).unwrap();
 
 ## Download talmudifier
 
-On this webpage, there is a **Releases** sidebar. Click that, and download Talmudifier.
+On the GitHub repo, there is a **Releases** sidebar. Click that, and download Talmudifier.
 
 Open a terminal. You first need to change directory to Downloads (or wherever Talmudifier actually is), so:
 
@@ -140,7 +138,7 @@ Talmudifier uses JSON config files for typesetting. `example_talmudifier.json` i
 
 ### Length values
 
-Many of the values in the config file are measurements of lengths. The following units are valid: `"In"`, `"Cm"`, `"Mm"`, `"Pt"`, `"Em"`. *However*, there are many cases in which `"Em"` is not valid. This is because many of the lengths need to be converted to Pts and there's no easy way to do what with Ems because they're font-specific. I recommend using Em for values only where `example_talmdufier.json` uses Em.
+Many of the values in the config file are measurements of lengths. The following units are valid: `"In"`, `"Cm"`, `"Mm"`, `"Pt"`, `"Em"`. *However*, there are many cases in which `"Em"` is not valid. This is because many of the lengths need to be converted to Pts and there's no easy way to do what with Ems because they're font-specific. I recommend using Em for values only where `example_talmudifier.json` uses Em.
 
 ### Fonts
 
@@ -151,6 +149,23 @@ Limitations:
 - Each font style (regular, bold, etc.) *must* be a separate file.
 - A column's font files must all be in the same directory.
 - System fonts are not supported.
+
+**You can optionally set the font's language.** For example to set the font to Hebrew, add: `"language": "hebrew"`.
+
+```text
+{
+  "left": {
+    "directory": "talmudifier_fonts/left",
+    "regular": "regular.ttf",
+    "italic": "italic.ttf",
+    "bold": "bold.ttf",
+    "bold_italic": "bold_italic.ttf",
+    "language": "hebrew"
+  }
+}
+```
+
+By default, the font is `"english"`. For a list of possible languages, [read this](https://texdoc.org/serve/polyglossia/0).
 
 
 ### Source text
@@ -205,7 +220,9 @@ Links, images, headers, emoji, etc. are not supported.
 
 By default, `"title"` is set to `null`. Set it to something else to add a title to the page:
 
-`"title": "Chapter 1"`
+`"title": {"title": "Chapter 1", "language": "english"}`
+
+For a list of possible languages, [read this](https://texdoc.org/serve/polyglossia/0).
 
 ### Logging
 
@@ -234,7 +251,7 @@ For more information, read: `Printing the Talmud : a history of the earliest pri
 There is a fundamental problem in the typesetting algorithm: We need to iteratively get the number of lines in a column. Traditionally, this process would be sped up by experienced typesetters because they'd be able to eyeball how many character blocks would fit in a rectangle. Talmudifier emulates this heurisitic with the following algorithm:
 
 1. Create a table that has text only in one column (the one we're trying to measure).
-2. Using Cosmic Text, a crate normally meant for GUI text, add words to the column until we've reach the the target line count. This will be used as an initial guess in the next step for guessing the number of words that might fit on the PDF page. Cosmic Text is significantly faster than XeTeX.
+2. Using Cosmic Text, a crate normally meant for GUI text, add words to the column until we've reach the target line count. This will be used as an initial guess in the next step for guessing the number of words that might fit on the PDF page. Cosmic Text is significantly faster than XeTeX.
 3. Generate an XDV file with XeTeX in-memory. Normally, XeTeX generates an XDV file from a TeX string and then converts the XDV file to a PDF. We skip the final step because right now we just need the line counts.
 4. Extract the line count per page from the XDV file.
 5. Add or subtract a word as needed, and repeat the process until the column is filled up to the target number of lines.
@@ -275,7 +292,7 @@ You can also, optionally, add `-x` to create a .xdv file instead of a .pdf, whic
 
 ## Changes from Python
 
-This is a Rust port of my `talmudifier` Python module. Major differences include:
+This is a Rust port of my [`talmudifier` Python module](https://github.com/subalterngames/talmudifier). Major differences include:
 
 - It's 21.6 times faster.[^3]
 - No external TeX engine needed. Talmudifier has its own internal TeX engine.

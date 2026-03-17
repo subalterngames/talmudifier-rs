@@ -3,6 +3,7 @@ talmudifier_fonts/
 logs/
 *.pdf
 out.*
+hebrew.tex
 extracted_text.txt
 bad.tex
 venv/

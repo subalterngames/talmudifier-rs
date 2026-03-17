@@ -27,12 +27,15 @@ pub mod prelude;
 mod span;
 mod table;
 mod text;
+mod title;
 #[cfg(not(feature = "textest"))]
 pub(crate) mod xetex;
 
 // Used by textest to create fonts.
 #[cfg(feature = "textest")]
 pub use crate::font::default_tex_fonts::DefaultTexFonts;
+use crate::title::Title;
+
 // Used by textest to output xdv.
 #[cfg(feature = "textest")]
 pub mod xetex;
@@ -65,7 +68,7 @@ pub struct Talmudifier {
     /// Raw markdown text that will be talmudified.
     source_text: SourceText,
     /// If not None, the title will be at the top of the page.
-    title: Option<String>,
+    title: Option<Title>,
     /// If true, logging is enabled.
     log: bool,
 }
@@ -101,8 +104,8 @@ impl Talmudifier {
     }
 
     /// Set the title text. By default, there is no title.
-    pub fn title<S: ToString>(mut self, title: S) -> Self {
-        self.title = Some(title.to_string());
+    pub fn title(mut self, title: Title) -> Self {
+        self.title = Some(title);
         self
     }
 
@@ -110,7 +113,7 @@ impl Talmudifier {
     /// This will generate intermediary .pdf, .tex, and .txt files per iteration.
     /// The .txt files include the text extracted from the .pdf
     /// This function is useful for debugging because you can identify where a typesetting error occurred.
-    /// However, this function will make [`self.talmudifiy()`] run slower.
+    /// However, this function will make `self.talmudifiy()` run slower.
     pub fn log(mut self) -> Self {
         self.log = true;
         self
@@ -128,13 +131,13 @@ impl Talmudifier {
         // Clone the page.
         let mut page = self.page.clone();
         // Set the preamble using the font definitions.
-        page.set_preamble(&tex_fonts);
+        page.set_preamble(&self.title, &tex_fonts);
 
         // Set the table width.
         page.set_table_width();
 
         // Set the preamble.
-        page.set_preamble(&tex_fonts);
+        page.set_preamble(&self.title, &tex_fonts);
 
         // Get the raw text.
         let raw_text = self.source_text.get_text()?;
@@ -148,10 +151,24 @@ impl Talmudifier {
         let cosmic_fonts = self.fonts.cosmic_fonts(&page.font_metrics)?;
 
         // Get the columns.
-        let mut left = SpanColumn::new(left_span, cosmic_fonts.left, &tex_fonts.left.command);
-        let mut center =
-            SpanColumn::new(center_span, cosmic_fonts.center, &tex_fonts.center.command);
-        let mut right = SpanColumn::new(right_span, cosmic_fonts.right, &tex_fonts.right.command);
+        let mut left = SpanColumn::new(
+            left_span,
+            cosmic_fonts.left,
+            &tex_fonts.left.command,
+            tex_fonts.left.language,
+        );
+        let mut center = SpanColumn::new(
+            center_span,
+            cosmic_fonts.center,
+            &tex_fonts.center.command,
+            tex_fonts.center.language,
+        );
+        let mut right = SpanColumn::new(
+            right_span,
+            cosmic_fonts.right,
+            &tex_fonts.right.command,
+            tex_fonts.right.language,
+        );
 
         let mut tables = vec![];
 
@@ -312,6 +329,7 @@ impl Talmudifier {
 #[cfg(test)]
 mod tests {
     use serde_json::from_slice;
+    use std::fs::write;
 
     use crate::{get_pdf, Talmudifier};
 
@@ -343,5 +361,15 @@ mod tests {
     #[test]
     fn from_example_json() {
         from_slice::<Talmudifier>(include_bytes!("../example_talmudifier.json")).unwrap();
+    }
+
+    #[test]
+    fn test_hebrew() {
+        let daf = Talmudifier::new("test_hebrew/config.json")
+            .unwrap()
+            .talmudify()
+            .unwrap();
+        write("hebrew.pdf", daf.pdf).unwrap();
+        write("hebrew.tex", daf.tex).unwrap();
     }
 }

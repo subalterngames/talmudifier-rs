@@ -6,6 +6,8 @@ use maybe_span_column::MaybeSpanColumn;
 use para_column::ParaColumn;
 use position::{Position, POSITIONS};
 
+use crate::prelude::Language;
+use crate::title::Title;
 use crate::{
     error::Error,
     page::Page,
@@ -16,7 +18,7 @@ use crate::{
 mod column;
 pub(crate) mod maybe_span_column;
 mod para_column;
-mod position;
+pub(crate) mod position;
 pub(crate) mod span_column;
 mod width;
 
@@ -265,11 +267,22 @@ impl<'t> Table<'t> {
     }
 
     /// Returns a table with text on the left and right, and the title in the center.
-    pub fn get_title_table(&mut self, title: &str) -> Result<Option<String>, Error> {
+    pub fn get_title_table(&mut self, title: &Title) -> Result<Option<String>, Error> {
         const NUM_LINES: usize = 4;
 
         let left = self.get_para_column(Position::Left, None, NUM_LINES)?;
         let right = self.get_para_column(Position::Right, None, NUM_LINES)?;
+
+        // Set the language of the title.
+        let title = match title.language {
+            Language::English => title.title.clone(),
+            other => {
+                let mut t = tex!("begin", other.to_string());
+                t.push_str(&title.title);
+                t += &tex!("end", other.to_string());
+                t
+            }
+        };
 
         // The center is the title.
         // \begin{center}\centerfont{\huge{Talmudifier}}\end{center}
@@ -701,6 +714,7 @@ impl<'t> Table<'t> {
 
 #[cfg(test)]
 mod tests {
+    use crate::font::language::Language;
     use crate::{
         font::{cosmic_font::CosmicFont, tex_fonts::TexFonts},
         page::Page,
@@ -718,7 +732,12 @@ mod tests {
         assert_eq!(span.0.len(), 402);
         let cosmic_font = CosmicFont::default_left();
         let tex_fonts = TexFonts::new().unwrap();
-        let mut column = SpanColumn::new(span, cosmic_font, &tex_fonts.left.command);
+        let mut column = SpanColumn::new(
+            span,
+            cosmic_font,
+            &tex_fonts.left.command,
+            Language::English,
+        );
         let page = Page::default();
         let mut table = Table::new(
             Some(MaybeSpanColumn::Span(&mut column)),
@@ -751,15 +770,24 @@ mod tests {
 
         let tex_fonts = TexFonts::new().unwrap();
 
-        let mut left_span =
-            SpanColumn::new(left, CosmicFont::default_left(), &tex_fonts.left.command);
+        let mut left_span = SpanColumn::new(
+            left,
+            CosmicFont::default_left(),
+            &tex_fonts.left.command,
+            Language::English,
+        );
         let mut center_span = SpanColumn::new(
             center,
             CosmicFont::default_center(),
             &tex_fonts.center.command,
+            Language::English,
         );
-        let mut right_span =
-            SpanColumn::new(right, CosmicFont::default_right(), &tex_fonts.right.command);
+        let mut right_span = SpanColumn::new(
+            right,
+            CosmicFont::default_right(),
+            &tex_fonts.right.command,
+            Language::English,
+        );
 
         let page = Page::default();
         let table = Table::new(

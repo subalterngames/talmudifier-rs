@@ -12,7 +12,7 @@ let directory = PathBuf::from_str("example_text").unwrap();
 // Load a default talmudifier.
 let talmudifier = Talmudifier::default()
     // Add a title to the page.
-    .title("Talmudifier")
+    .title(Title::from("Talmudifier"))
     // Set the source text as three Markdown files.
     .source_text(SourceText::Files {
         left: directory.join("left.md"),
@@ -32,7 +32,7 @@ write("out.pdf", &daf.pdf).unwrap();
 
 ## Download talmudifier
 
-On this webpage, there is a **Releases** sidebar. Click that, and download Talmudifier.
+On the GitHub repo, there is a **Releases** sidebar. Click that, and download Talmudifier.
 
 Open a terminal. You first need to change directory to Downloads (or wherever Talmudifier actually is), so:
 
@@ -191,7 +191,9 @@ A very subset of markdown is used in Talmudifier:
 
 By default, `"title"` is set to `null`. Set it to something else to add a title to the page:
 
-`"title": "Chapter 1"`
+`"title": {"title": "Chapter 1", "language": "english"}`
+
+For a list of possible languages, [read this](https://texdoc.org/serve/polyglossia/0).
 
 ### Logging
 
@@ -236,7 +238,7 @@ You can also, optionally, add `-x` to create a .xdv file instead of a .pdf, whic
 
 ## Changes from Python
 
-This is a Rust port of my `talmudifier` Python module. Major differences include:
+This is a Rust port of my [`talmudifier` Python module](https://github.com/subalterngames/talmudifier). Major differences include:
 
 - It's 21.6 times faster.[^3]
 - No external TeX engine needed. Talmudifier has its own internal TeX engine.

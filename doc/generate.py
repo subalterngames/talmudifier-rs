@@ -32,10 +32,11 @@ overview = Path("overview.md").read_text(encoding="utf-8")
 config = Path("config.md").read_text(encoding="utf-8")
 length = Path("length.md").read_text(encoding="utf-8")
 fonts = Path("fonts.md").read_text(encoding="utf-8")
+languages = Path("languages.md").read_text(encoding="utf-8")
 markdown = Path("markdown.md").read_text(encoding="utf-8")
 how = Path("how.md").read_text(encoding="utf-8")
 
-readme = template.replace("@OVERVIEW@", overview).replace("@CONFIG@", config).replace("@LENGTH@", length).replace("@FONTS@", fonts).replace("@HOW@", how).replace("@MARKDOWN@", markdown)
+readme = template.replace("@OVERVIEW@", overview).replace("@CONFIG@", config).replace("@LENGTH@", length).replace("@FONTS@", fonts + '\n\n' + languages).replace("@HOW@", how).replace("@MARKDOWN@", markdown)
 # README.
 Path("../README.md").write_text(readme)
 

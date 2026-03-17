@@ -61,13 +61,13 @@ impl<'t> Column<'t> {
 
 #[cfg(test)]
 mod tests {
+    use super::Column;
+    use crate::font::language::Language;
     use crate::{
         font::cosmic_font::CosmicFont,
         span::Span,
         table::{maybe_span_column::MaybeSpanColumn, span_column::SpanColumn, width::Width},
     };
-
-    use super::Column;
 
     #[test]
     fn test_column() {
@@ -80,7 +80,12 @@ mod tests {
         assert!(!column.done());
 
         let span = Span::from_md(MD).unwrap();
-        let mut span_column = SpanColumn::new(span, CosmicFont::default_left(), "\\font");
+        let mut span_column = SpanColumn::new(
+            span,
+            CosmicFont::default_left(),
+            "\\font",
+            Language::English,
+        );
         span_column.start = 3;
         let full = MaybeSpanColumn::Span(&mut span_column);
         let column = Column::new(full, Width::Half);
@@ -88,7 +93,12 @@ mod tests {
 
         let span = Span::from_md(MD).unwrap();
         let len = span.0.len();
-        let mut span_column = SpanColumn::new(span, CosmicFont::default_left(), "\\font");
+        let mut span_column = SpanColumn::new(
+            span,
+            CosmicFont::default_left(),
+            "\\font",
+            Language::English,
+        );
         span_column.start = len;
         let full = MaybeSpanColumn::Span(&mut span_column);
         let column = Column::new(full, Width::Half);

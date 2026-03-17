@@ -1,3 +1,5 @@
+use crate::font::language::Language;
+use crate::table::position::Position;
 use std::path::Path;
 
 pub struct TexFont {
@@ -5,18 +7,38 @@ pub struct TexFont {
     pub font_family: String,
     /// The command used to set the text to the target font, style, and size.
     pub command: String,
+    /// The column's language.
+    pub language: Language,
 }
 
 impl TexFont {
+    #[allow(clippy::too_many_arguments)]
     pub fn new<P: AsRef<Path>>(
-        name: &str,
         path: P,
         regular: &str,
         italic: &Option<String>,
         bold: &Option<String>,
         bold_italic: &Option<String>,
+        position: Position,
+        language: Language,
+        used_languages: &mut Vec<Language>,
     ) -> Self {
         const STYLES: [&str; 3] = ["ItalicFont", "BoldFont", "BoldItalicFont"];
+
+        // Get the font family name.
+        let name = match &language {
+            // e.g. "leftfont"
+            Language::English => format!("{position}font"),
+            other => {
+                if used_languages.contains(&language) {
+                    // e.g. "leftfont"
+                    format!("{position}font")
+                } else {
+                    // e.g. "hebrewfont"
+                    format!("{other}font")
+                }
+            }
+        };
 
         // The font family declaration.
         let mut font_family = format!(
@@ -40,11 +62,29 @@ impl TexFont {
         // Add the regular style.
         font_family.push_str(&format!("]{{{}}}", regular));
 
-        // This is the font size plus the font command.
-        let command = format!("\\{}", name);
+        let command = match &language {
+            // e.g. "\leftfont"
+            Language::English => format!("\\{name}"),
+            other => {
+                if used_languages.contains(&language) {
+                    // e.g. "\hebrewfont\texthebrew{\leftfont"
+                    format!("\\{other}font\\text{other}{{\\{name}")
+                } else {
+                    // e.g. "\hebrewfont\texthebrew{"
+                    format!("\\{name}\\text{other}{{")
+                }
+            }
+        };
+
+        // Remember a new language.
+        if !used_languages.contains(&language) {
+            used_languages.push(language);
+        };
+
         Self {
             command,
             font_family,
+            language,
         }
     }
 }

@@ -2,6 +2,7 @@ use cosmic_text::AttrsOwned;
 use lazy_static::lazy_static;
 use regex::Regex;
 
+use crate::font::language::Language;
 use crate::{
     font::cosmic_font::CosmicFont,
     span::{position::Position, style::Style, Span},
@@ -21,7 +22,7 @@ lazy_static! {
 ///
 /// `SpanColumn` has a `start` index that are continuously re-sliced for typesetting.
 pub struct SpanColumn {
-    /// All of the words in the column.
+    /// All the words in the column.
     pub span: Span,
     /// The start index of the `words` slice.
     pub start: usize,
@@ -29,15 +30,18 @@ pub struct SpanColumn {
     pub cosmic_font: CosmicFont,
     /// The command to set the TeX font.
     pub tex_font: String,
+    /// The column's language.
+    pub language: Language,
 }
 
 impl SpanColumn {
-    pub fn new(span: Span, cosmic_font: CosmicFont, tex_font: &str) -> Self {
+    pub fn new(span: Span, cosmic_font: CosmicFont, tex_font: &str, language: Language) -> Self {
         Self {
             span,
             start: 0,
             cosmic_font,
             tex_font: tex_font.to_string(),
+            language,
         }
     }
 
@@ -96,7 +100,7 @@ impl SpanColumn {
         };
 
         // Build a column.
-        let mut text = self.tex_font.to_string();
+        let mut text = self.tex_font.clone();
         let mut style = Style::default();
         let mut position = Position::default();
         for word in self.span.0[self.start..end].iter() {
@@ -161,6 +165,12 @@ impl SpanColumn {
         if let Position::Margin = position {
             text.push('}');
         }
+
+        // End the language.
+        if self.language != Language::English {
+            text += "}";
+        }
+
         Self::santitize_tex(&mut text);
         text
     }
@@ -181,6 +191,7 @@ impl SpanColumn {
 
 #[cfg(test)]
 mod tests {
+    use crate::font::language::Language;
     use crate::{font::cosmic_font::CosmicFont, span::Span, table::span_column::SpanColumn};
 
     #[test]
@@ -220,6 +231,7 @@ mod tests {
             Span::from_md(md).unwrap(),
             CosmicFont::default_left(),
             "\\font",
+            Language::English,
         )
     }
 }
