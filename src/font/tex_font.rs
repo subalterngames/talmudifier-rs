@@ -62,9 +62,6 @@ impl TexFont {
         // Add the regular style.
         font_family.push_str(&format!("]{{{}}}", regular));
 
-
-        println!("{font_family}");
-
         let command = match &language {
             // e.g. "\leftfont"
             Language::English => format!("\\{name}"),
