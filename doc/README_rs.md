@@ -142,7 +142,7 @@ Talmudifier uses JSON config files for typesetting. `example_talmudifier.json` i
 
 ### Length values
 
-Many of the values in the config file are measurements of lengths. The following units are valid: `"In"`, `"Cm"`, `"Mm"`, `"Pt"`, `"Em"`. *However*, there are many cases in which `"Em"` is not valid. This is because many of the lengths need to be converted to Pts and there's no easy way to do what with Ems because they're font-specific. I recommend using Em for values only where `example_talmdufier.json` uses Em.
+Many of the values in the config file are measurements of lengths. The following units are valid: `"In"`, `"Cm"`, `"Mm"`, `"Pt"`, `"Em"`. *However*, there are many cases in which `"Em"` is not valid. This is because many of the lengths need to be converted to Pts and there's no easy way to do what with Ems because they're font-specific. I recommend using Em for values only where `example_talmudifier.json` uses Em.
 
 ### Fonts
 
@@ -169,7 +169,7 @@ Limitations:
 }
 ```
 
-By default, the font is `"english"`. For a list of possible languages, [read this](https://texdoc.org/serve/polyglossia/0). 
+By default, the font is `"english"`. For a list of possible languages, [read this](https://texdoc.org/serve/polyglossia/0).
 
 
 ### Source text
