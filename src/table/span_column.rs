@@ -30,6 +30,7 @@ pub struct SpanColumn {
     pub cosmic_font: CosmicFont,
     /// The command to set the TeX font.
     pub tex_font: String,
+    /// The column's language.
     pub language: Language,
 }
 
@@ -165,6 +166,7 @@ impl SpanColumn {
             text.push('}');
         }
 
+        // End the language.
         if self.language != Language::English {
             text += "}";
         }

@@ -78,13 +78,16 @@ impl Page {
         if let Some(title) = title.as_ref() {
             languages.insert(title.language);
         }
+        // We need to use polyglossia if there are non-English languages.
         let polyglossia = languages
             .iter()
             .any(|language| *language != Language::English);
+        // Set the preamble for polyglossia.
         if polyglossia {
             preamble.push('\n');
             preamble += &tex!("usepackage", "polyglossia");
             preamble.push('\n');
+            // Let's not overthink it.
             preamble += &tex!("setdefaultlanguage", "english");
             preamble.push('\n');
             // Add other languages.

@@ -123,11 +123,9 @@ impl<'t> Xdv<'t> {
                 // Right
                 143..=146 => self.advance4(op, 146),
                 // RightBy and set W
-                147 => (),
-                148..=151 => self.advance4(op, 151),
+                147..=151 => self.advance4(op, 151),
                 // RightBy and set X
-                152 => (),
-                153..=156 => self.advance4(op, 156),
+                152..=156 => self.advance4(op, 156),
                 // Down
                 157 => {
                     down += self.read_i8() as i32;
@@ -141,15 +139,15 @@ impl<'t> Xdv<'t> {
                 160 => {
                     down += self.read_i32();
                 }
-                // Down and set Y.
-                161..=164 => {
+                // Down and set Y
+                161..=165 => {
                     num_lines += 1;
-                    self.advance4(op, 164);
+                    self.advance4(op, 165)
                 }
-                // Down and set Z.
+                // Down and set Z
                 166..=170 => {
                     num_lines += 1;
-                    self.advance4(op, 170);
+                    self.advance4(op, 170)
                 }
                 // SetFont to i
                 171..=234 => (),
