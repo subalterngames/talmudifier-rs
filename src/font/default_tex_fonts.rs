@@ -1,5 +1,4 @@
 use super::{default_fonts::*, tex_font::TexFont, Font, DEFAULT_ROOT_DIRECTORY};
-use crate::font::language::Language;
 use crate::table::position::Position;
 use std::{
     fs::{create_dir_all, write},
