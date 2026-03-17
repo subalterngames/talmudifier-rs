@@ -7,6 +7,7 @@ fn main() {
         .source_text(SourceText::File(
             PathBuf::from_str("test_text/test.md").unwrap(),
         ))
+        .log()
         .talmudify()
         .unwrap();
     write("out.pdf", daf.pdf).unwrap();

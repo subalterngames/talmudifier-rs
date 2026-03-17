@@ -1,4 +1,4 @@
-use super::{default_fonts::*, tex_font::TexFont, DEFAULT_ROOT_DIRECTORY};
+use super::{default_fonts::*, tex_font::TexFont, Font, DEFAULT_ROOT_DIRECTORY};
 use crate::font::language::Language;
 use crate::table::position::Position;
 use std::{
@@ -38,16 +38,8 @@ impl DefaultTexFonts {
     }
 
     pub(crate) fn tex_font(&self, folder: &str, position: Position) -> TexFont {
-        TexFont::new(
-            self.directory.join(folder),
-            "regular",
-            &Some("italic".to_string()),
-            &Some("bold".to_string()),
-            &Some("bold_italic".to_string()),
-            position,
-            Language::English,
-            &mut Vec::new(),
-        )
+        let font = Font::new(&self.directory, folder);
+        font.to_tex(position, &mut Vec::new())
     }
 
     fn dump_fonts(

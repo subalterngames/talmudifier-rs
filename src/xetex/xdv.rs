@@ -27,13 +27,6 @@ use tectonic::{
     status::NoopStatusBackend,
 };
 
-macro_rules! new_line {
-    ($f:expr, $down:ident, $num_lines:ident) => {{
-        $down += $f as i32;
-        $num_lines += 1;
-    }};
-}
-
 macro_rules! xxx {
     ($self:ident, $f:ident) => {{
          let k = $self.$f() as usize;
@@ -93,7 +86,6 @@ impl<'t> Xdv<'t> {
         let mut num_lines = 1;
         let mut got_words = false;
         let mut down = 0;
-        let mut down_z = 0;
         while self.data.len() > 1 {
             // https://github.com/richard-uk1/dvi-rs/blob/c8078c37065fe7b72b09586c10ee220a7c91d99b/src/parser.rs#L12
             // Get the op code.
@@ -120,14 +112,10 @@ impl<'t> Xdv<'t> {
                     if down > 0 {
                         num_lines += 1;
                     }
-                    if down_z > 0 {
-                        num_lines += 1;
-                    }
                     num_lines_per_page.push(num_lines);
                     // Reset.
                     num_lines = 1;
                     got_words = false;
-                    down_z = 0;
                     down = 0;
                 }
                 // Push and Pop
@@ -159,11 +147,10 @@ impl<'t> Xdv<'t> {
                     self.advance4(op, 164);
                 },
                 // Down and set Z.
-                166 => num_lines += 1,
-                167 => new_line!(self.read_i8(), down_z, num_lines),
-                168 => new_line!(self.read_i16(), down_z, num_lines),
-                169 => new_line!(self.read_i24(), down_z, num_lines),
-                170 => new_line!(self.read_i32(), down_z, num_lines),
+                166..=170 => {
+                    num_lines += 1;
+                    self.advance4(op, 170);
+                }
                 // SetFont to i
                 171..=234 => (),
                 // SetFont
@@ -255,12 +242,6 @@ impl<'t> Xdv<'t> {
             };
         }
         if got_words {
-            if down > 0 {
-                num_lines += 1;
-            }
-            if down_z > 0 {
-                num_lines += 1;
-            }
             num_lines_per_page.push(num_lines);
         }
         num_lines_per_page
@@ -364,7 +345,7 @@ pub fn latex_to_xdv<T: AsRef<str>>(latex: T) -> tectonic::Result<Vec<u8>> {
             .format_cache_path(format_cache_path)
             .keep_logs(false)
             .keep_intermediates(false)
-            .print_stdout(false)
+            .print_stdout(true)
             // XDV, not PDF.
             .output_format(OutputFormat::Xdv)
             // Don't bother with Bibtex.
