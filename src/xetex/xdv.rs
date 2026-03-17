@@ -29,8 +29,8 @@ use tectonic::{
 
 macro_rules! xxx {
     ($self:ident, $f:ident) => {{
-         let k = $self.$f() as usize;
-         $self.advance(k);
+        let k = $self.$f() as usize;
+        $self.advance(k);
     }};
 }
 
@@ -145,7 +145,7 @@ impl<'t> Xdv<'t> {
                 161..=164 => {
                     num_lines += 1;
                     self.advance4(op, 164);
-                },
+                }
                 // Down and set Z.
                 166..=170 => {
                     num_lines += 1;

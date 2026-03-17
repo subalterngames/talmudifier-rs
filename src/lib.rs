@@ -328,8 +328,8 @@ impl Talmudifier {
 
 #[cfg(test)]
 mod tests {
-    use std::fs::write;
     use serde_json::from_slice;
+    use std::fs::write;
 
     use crate::{get_pdf, Talmudifier};
 
