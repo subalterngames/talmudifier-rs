@@ -93,7 +93,6 @@ impl<'t> Xdv<'t> {
         let mut num_lines = 1;
         let mut got_words = false;
         let mut down = 0;
-        let mut down_y = 0;
         let mut down_z = 0;
         while self.data.len() > 1 {
             // https://github.com/richard-uk1/dvi-rs/blob/c8078c37065fe7b72b09586c10ee220a7c91d99b/src/parser.rs#L12
@@ -118,18 +117,17 @@ impl<'t> Xdv<'t> {
                 140 => {
                     // If there was a net down, add another line.
                     // This seems to happen only when there are 2 lines.
-                    if down > 0 || down_y > 0 || down_z > 0 {
+                    if down > 0 {
                         num_lines += 1;
                     }
-                    if down_y > 0 {
-                       //num_lines += 1;
-                    }
                     if down_z > 0 {
-                        //num_lines += 1;
+                        num_lines += 1;
                     }
                     num_lines_per_page.push(num_lines);
+                    // Reset.
                     num_lines = 1;
                     got_words = false;
+                    down_z = 0;
                     down = 0;
                 }
                 // Push and Pop
@@ -155,16 +153,13 @@ impl<'t> Xdv<'t> {
                 160 => {
                     down += self.read_i32();
                 }
-                // New line.
-                161 | 166 => {
-                    num_lines += 1;
-                }
                 // Down and set Y.
-                162 => new_line!(self.read_i8(), down_y, num_lines),
-                163 => new_line!(self.read_i16(), down_y, num_lines),
-                164 => new_line!(self.read_i24(), down_y, num_lines),
-                165 => new_line!(self.read_i32(), down_y, num_lines),
+                161..=164 => {
+                    num_lines += 1;
+                    self.advance4(op, 164);
+                },
                 // Down and set Z.
+                166 => num_lines += 1,
                 167 => new_line!(self.read_i8(), down_z, num_lines),
                 168 => new_line!(self.read_i16(), down_z, num_lines),
                 169 => new_line!(self.read_i24(), down_z, num_lines),
@@ -260,6 +255,12 @@ impl<'t> Xdv<'t> {
             };
         }
         if got_words {
+            if down > 0 {
+                num_lines += 1;
+            }
+            if down_z > 0 {
+                num_lines += 1;
+            }
             num_lines_per_page.push(num_lines);
         }
         num_lines_per_page
