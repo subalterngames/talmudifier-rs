@@ -27,6 +27,20 @@ use tectonic::{
     status::NoopStatusBackend,
 };
 
+macro_rules! new_line {
+    ($f:expr, $down:ident, $num_lines:ident) => {{
+        $down += $f as i32;
+        $num_lines += 1;
+    }};
+}
+
+macro_rules! xxx {
+    ($self:ident, $f:ident) => {{
+         let k = $self.$f() as usize;
+         $self.advance(k);
+    }};
+}
+
 #[derive(Copy, Clone, Eq, PartialEq)]
 enum DviVersion {
     Dvi,
@@ -79,6 +93,8 @@ impl<'t> Xdv<'t> {
         let mut num_lines = 1;
         let mut got_words = false;
         let mut down = 0;
+        let mut down_y = 0;
+        let mut down_z = 0;
         while self.data.len() > 1 {
             // https://github.com/richard-uk1/dvi-rs/blob/c8078c37065fe7b72b09586c10ee220a7c91d99b/src/parser.rs#L12
             // Get the op code.
@@ -102,8 +118,14 @@ impl<'t> Xdv<'t> {
                 140 => {
                     // If there was a net down, add another line.
                     // This seems to happen only when there are 2 lines.
-                    if down > 0 {
+                    if down > 0 || down_y > 0 || down_z > 0 {
                         num_lines += 1;
+                    }
+                    if down_y > 0 {
+                       //num_lines += 1;
+                    }
+                    if down_z > 0 {
+                        //num_lines += 1;
                     }
                     num_lines_per_page.push(num_lines);
                     num_lines = 1;
@@ -115,9 +137,11 @@ impl<'t> Xdv<'t> {
                 // Right
                 143..=146 => self.advance4(op, 146),
                 // RightBy and set W
-                147..=151 => self.advance4(op, 151),
+                147 => (),
+                148..=151 => self.advance4(op, 151),
                 // RightBy and set X
-                152..=156 => self.advance4(op, 156),
+                152 => (),
+                153..=156 => self.advance4(op, 156),
                 // Down
                 157 => {
                     down += self.read_i8() as i32;
@@ -131,47 +155,38 @@ impl<'t> Xdv<'t> {
                 160 => {
                     down += self.read_i32();
                 }
-                // Down and set Y
-                161..=165 => {
+                // New line.
+                161 | 166 => {
                     num_lines += 1;
-                    self.advance4(op, 165)
                 }
-                // Down and set Z
-                166..=170 => {
-                    num_lines += 1;
-                    self.advance4(op, 170)
-                }
+                // Down and set Y.
+                162 => new_line!(self.read_i8(), down_y, num_lines),
+                163 => new_line!(self.read_i16(), down_y, num_lines),
+                164 => new_line!(self.read_i24(), down_y, num_lines),
+                165 => new_line!(self.read_i32(), down_y, num_lines),
+                // Down and set Z.
+                167 => new_line!(self.read_i8(), down_z, num_lines),
+                168 => new_line!(self.read_i16(), down_z, num_lines),
+                169 => new_line!(self.read_i24(), down_z, num_lines),
+                170 => new_line!(self.read_i32(), down_z, num_lines),
                 // SetFont to i
                 171..=234 => (),
                 // SetFont
                 235..=238 => self.advance4(op, 238),
                 // Xxx
-                239 => {
-                    let k = self.read_u8() as usize;
-                    self.advance(k);
-                }
-                240 => {
-                    let k = self.read_u16() as usize;
-                    self.advance(k);
-                }
-                241 => {
-                    let k = self.read_u24() as usize;
-                    self.advance(k);
-                }
-                242 => {
-                    let k = self.read_u32() as usize;
-                    self.advance(k);
-                }
+                239 => xxx!(self, read_u8),
+                240 => xxx!(self, read_u16),
+                241 => xxx!(self, read_u24),
+                242 => xxx!(self, read_u32),
                 // FontDef
-                243 => self.advance(1),
-                // FontNumberDef
-                244..=246 => self.advance4(op, 246),
+                243..=246 => self.advance4(op, 246),
                 // Pre
                 247 => {
-                    // i[1] + num[4] + den[4] + mag[4]
+                    // Format, numerator, denominator, magnification.
                     self.advance(13);
-                    // k[1] + x[k]
+                    // Comment length.
                     let k = self.read_u8() as usize;
+                    // Comment.
                     self.advance(k);
                 }
                 // Post
@@ -226,30 +241,19 @@ impl<'t> Xdv<'t> {
                 // Glyph IDs and positions.
                 // https://github.com/mgieseki/dvisvgm/blob/ef6a9e03e72a46a41bede2d406810e0e9b9fab61/src/DVIReader.cpp#L653
                 253 => {
-                    if self.version == DviVersion::Xdv7 {
-                        got_words = true;
-                        // w[4]
-                        self.advance(4);
-                        let n = self.read_u16();
-                        // dx[4n] + dy[4] + glypns[2n]
-                        self.advance(10 * n as usize);
-                    }
+                    got_words = true;
+                    self.put_glyph_array();
                 }
                 // UTF-8, Y positions are always the same.
                 // https://github.com/mgieseki/dvisvgm/blob/ef6a9e03e72a46a41bede2d406810e0e9b9fab61/src/DVIReader.cpp#L671
+                // https://github.com/mgieseki/dvisvgm/blob/ef6a9e03e72a46a41bede2d406810e0e9b9fab61/src/BasicDVIReader.cpp#L138
                 254 => {
-                    if self.version == DviVersion::Xdv5 {
+                    if self.version == DviVersion::Xdv7 {
                         got_words = true;
-                        // l[2]
-                        let l = self.read_u16();
-                        // chars[2 * l]
-                        self.advance(2 * l as usize);
-                        // w[4]
-                        self.advance(4);
-                        // n[2]
-                        let n = self.read_u16();
-                        // (dx,dy)[(4+4)n] glyphs[2n]
-                        self.advance(6 * n as usize + 4);
+                        let num_chars = self.read_u16();
+                        // The characters.
+                        self.advance(2 * num_chars as usize);
+                        self.put_glyph_array();
                     }
                 }
                 _ => (),
@@ -321,6 +325,16 @@ impl<'t> Xdv<'t> {
         while let Ok((inext, _)) = tag::<_, _, ()>(&[223][..])(self.data) {
             self.data = inext;
         }
+    }
+
+    /// Source: https://github.com/mgieseki/dvisvgm/blob/ef6a9e03e72a46a41bede2d406810e0e9b9fab61/src/DVIReader.cpp#L693
+    fn put_glyph_array(&mut self) {
+        // Width
+        self.advance(4);
+        // self.advance(4);
+        let num_glyphs = self.read_u16();
+        // dx[4n] + dy[4] + glyphs[2n]
+        self.advance(10 * num_glyphs as usize);
     }
 }
 
