@@ -42,7 +42,7 @@
   },
   "fonts": {
     "left": {
-      "directory": "examples/hebrew/fonts/TaameyFrankCLM",
+      "directory": "test_hebrew/fonts/TaameyFrankCLM",
       "regular": "TaameyFrankCLM-Medium.ttf",
       "italic": "TaameyFrankCLM-MediumOblique.ttf",
       "bold": "TaameyFrankCLM-Bold.ttf",
@@ -50,7 +50,7 @@
       "language": "hebrew"
     },
     "center": {
-      "directory": "examples/hebrew/fonts/Shofar",
+      "directory": "test_hebrew/fonts/Shofar",
       "regular": "ShofarRegular.ttf",
       "italic": "ShofarRegularOblique.ttf",
       "bold": "ShofarDemi-Bold.ttf",
@@ -58,7 +58,7 @@
       "language": "hebrew"
     },
     "right": {
-      "directory": "examples/hebrew/fonts/Noto_Rashi_Hebrew",
+      "directory": "test_hebrew/fonts/Noto_Rashi_Hebrew",
       "regular": "NotoRashiHebrew-Regular.ttf",
       "italic": "NotoRashiHebrew-Light.ttf",
       "bold": "NotoRashiHebrew-Bold.ttf",
@@ -67,14 +67,14 @@
   },
   "source_text": {
     "Files": {
-      "left": "examples/hebrew/text/left.md",
-      "center": "examples/hebrew/text/center.md",
-      "right": "examples/hebrew/text/right.md"
+      "left": "test_hebrew/text/left.md",
+      "center": "test_hebrew/text/center.md",
+      "right": "test_hebrew/text/right.md"
     }
   },
   "title": {
     "title": "לורם איפסום",
     "language": "hebrew"
   },
-  "log": true
+  "log": false
 }

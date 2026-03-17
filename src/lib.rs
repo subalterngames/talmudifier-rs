@@ -328,6 +328,7 @@ impl Talmudifier {
 
 #[cfg(test)]
 mod tests {
+    use std::fs::write;
     use serde_json::from_slice;
 
     use crate::{get_pdf, Talmudifier};
@@ -360,5 +361,15 @@ mod tests {
     #[test]
     fn from_example_json() {
         from_slice::<Talmudifier>(include_bytes!("../example_talmudifier.json")).unwrap();
+    }
+
+    #[test]
+    fn test_hebrew() {
+        let daf = Talmudifier::new("test_hebrew/config.json")
+            .unwrap()
+            .talmudify()
+            .unwrap();
+        write("hebrew.pdf", daf.pdf).unwrap();
+        write("hebrew.tex", daf.tex).unwrap();
     }
 }
